@@ -1,10 +1,11 @@
+
+
 ---
-title: "强化学习入门：从基础概念到PPO算法"
-date: 2024-11-17
-categories: [Machine Learning, Reinforcement Learning]
-tags: [RL, PPO, 强化学习, 机器学习, 算法]
-description: "以超级马里奥游戏为例，深入浅出地介绍强化学习的基本概念，从环境、智能体、状态、动作到PPO算法的完整实现原理。"
-math: true
+title: '强化学习入门：从基础概念到PPO算法'
+date: 2025-11-21
+permalink: /posts/2025/11/21/reinforcement-learning-intro/
+tags:
+  - rl
 ---
 
 # 强化学习入门：从基础概念到PPO算法
