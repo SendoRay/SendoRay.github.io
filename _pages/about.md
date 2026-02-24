@@ -1,6 +1,6 @@
 ---
 permalink: /
-title: "We go to moon"
+title: "We choose to go to the moon in this decade, not because they are easy, but because they are hard"
 author_profile: true
 redirect_from: 
   - /about/
