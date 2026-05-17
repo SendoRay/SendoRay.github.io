@@ -6,15 +6,8 @@
     <description>Recent content in Posts on chengzhy&#39;s blog</description>
     <generator>Hugo</generator>
     <language>en</language>
-    <lastBuildDate>Tue, 01 Jan 2199 00:00:00 +0000</lastBuildDate>
+    <lastBuildDate>Sun, 17 May 2026 00:00:00 +0000</lastBuildDate>
     <atom:link href="https://sendoray.github.io/posts/index.xml" rel="self" type="application/rss+xml" />
-    <item>
-      <title>Future Blog Post</title>
-      <link>https://sendoray.github.io/posts/2199-01-01-future-post/</link>
-      <pubDate>Tue, 01 Jan 2199 00:00:00 +0000</pubDate>
-      <guid>https://sendoray.github.io/posts/2199-01-01-future-post/</guid>
-      <description>&lt;p&gt;This post will show up by default. To disable scheduling of future posts, edit &lt;code&gt;config.yml&lt;/code&gt; and set &lt;code&gt;future: false&lt;/code&gt;.&lt;/p&gt;</description>
-    </item>
     <item>
       <title>Python List 相关操作与技巧</title>
       <link>https://sendoray.github.io/posts/2026-05-17-python-list-tutorial/</link>
@@ -134,52 +127,23 @@
 &lt;li&gt;轨迹 (Trajectory)：轨迹（又称为回合或episode）是指智能体在一次完整的交互过程中经历的一系列状态、动作和奖励的序列。轨迹通常表示为 $\tau = (s_0, a_0, s_1, a_1, \dots, s_T)$，其中 $s_i$ 表示第 $i$ 时刻的状态，$a_i$ 表示智能体在状态 $s_i$ 下选择的动作。。比如大语言模型生成时，它的状态就是已经生成的token序列。当前的动作是生成下一个token。当前token生成后，已生成的序列就加上新生成的token成为下一个状态。&lt;/li&gt;
 &lt;li&gt;回报 (Return Reward)：表示从当前时间步开始直到未来的累积奖励和，通常用符号 $G_t$ 表示：$G_t = R_{t+1} + R_{t+2} + \dots + R_T$。回报的定义是智能体决策的重要依据，因为强化学习的目标是训练一个策略，使得智能体在每个状态下的期望回报最大化。&lt;/li&gt;
 &lt;/ul&gt;
-&lt;!-- raw HTML omitted --&gt;
+&lt;p align=&#34;center&#34;&gt;
+    &lt;img src=&#34;https://sendoray.github.io/images/apple-touch-icon-180x180.png&#34; alt=&#34;强化学习基本概念示意图&#34; width=&#34;60%&#34;&gt;
+&lt;/p&gt;
 &lt;h2 id=&#34;强化学习的目标&#34;&gt;强化学习的目标&lt;/h2&gt;
 &lt;p&gt;在强化学习中，目标是训练一个神经网络 $Policy$ $\pi$ ，在所有状态 $s$ 下，给出相应的 $Action$ ，得到的 $Return$ 的期望值最大。即：
+&lt;/p&gt;
 $$
-E(R(\tau))&lt;em&gt;{\tau \sim P&lt;/em&gt;{\theta}(\tau)} = \sum_{\tau} R(\tau) P_{\theta}(\tau)
-$$&lt;/p&gt;</description>
-    </item>
-    <item>
-      <title>Blog Post number 4</title>
-      <link>https://sendoray.github.io/posts/2015-08-14-blog-post-4/</link>
-      <pubDate>Fri, 14 Aug 2015 00:00:00 +0000</pubDate>
-      <guid>https://sendoray.github.io/posts/2015-08-14-blog-post-4/</guid>
-      <description>&lt;p&gt;This is a sample blog post. Lorem ipsum I can&amp;rsquo;t remember the rest of lorem ipsum and don&amp;rsquo;t have an internet connection right now. Testing testing testing this blog post. Blog posts are cool.&lt;/p&gt;
-&lt;h1 id=&#34;headings-are-cool&#34;&gt;Headings are cool&lt;/h1&gt;
-&lt;h1 id=&#34;you-can-have-many-headings&#34;&gt;You can have many headings&lt;/h1&gt;
-&lt;h2 id=&#34;arent-headings-cool&#34;&gt;Aren&amp;rsquo;t headings cool?&lt;/h2&gt;</description>
-    </item>
-    <item>
-      <title>Blog Post number 3</title>
-      <link>https://sendoray.github.io/posts/2014-08-14-blog-post-3/</link>
-      <pubDate>Thu, 14 Aug 2014 00:00:00 +0000</pubDate>
-      <guid>https://sendoray.github.io/posts/2014-08-14-blog-post-3/</guid>
-      <description>&lt;p&gt;This is a sample blog post. Lorem ipsum I can&amp;rsquo;t remember the rest of lorem ipsum and don&amp;rsquo;t have an internet connection right now. Testing testing testing this blog post. Blog posts are cool.&lt;/p&gt;
-&lt;h1 id=&#34;headings-are-cool&#34;&gt;Headings are cool&lt;/h1&gt;
-&lt;h1 id=&#34;you-can-have-many-headings&#34;&gt;You can have many headings&lt;/h1&gt;
-&lt;h2 id=&#34;arent-headings-cool&#34;&gt;Aren&amp;rsquo;t headings cool?&lt;/h2&gt;</description>
-    </item>
-    <item>
-      <title>Blog Post number 2</title>
-      <link>https://sendoray.github.io/posts/2013-08-14-blog-post-2/</link>
-      <pubDate>Wed, 14 Aug 2013 00:00:00 +0000</pubDate>
-      <guid>https://sendoray.github.io/posts/2013-08-14-blog-post-2/</guid>
-      <description>&lt;p&gt;This is a sample blog post. Lorem ipsum I can&amp;rsquo;t remember the rest of lorem ipsum and don&amp;rsquo;t have an internet connection right now. Testing testing testing this blog post. Blog posts are cool.&lt;/p&gt;
-&lt;h1 id=&#34;headings-are-cool&#34;&gt;Headings are cool&lt;/h1&gt;
-&lt;h1 id=&#34;you-can-have-many-headings&#34;&gt;You can have many headings&lt;/h1&gt;
-&lt;h2 id=&#34;arent-headings-cool&#34;&gt;Aren&amp;rsquo;t headings cool?&lt;/h2&gt;</description>
-    </item>
-    <item>
-      <title>Blog Post number 1</title>
-      <link>https://sendoray.github.io/posts/2012-08-14-blog-post-1/</link>
-      <pubDate>Tue, 14 Aug 2012 00:00:00 +0000</pubDate>
-      <guid>https://sendoray.github.io/posts/2012-08-14-blog-post-1/</guid>
-      <description>&lt;p&gt;This is a sample blog post. Lorem ipsum I can&amp;rsquo;t remember the rest of lorem ipsum and don&amp;rsquo;t have an internet connection right now. Testing testing testing this blog post. Blog posts are cool.&lt;/p&gt;
-&lt;h1 id=&#34;headings-are-cool&#34;&gt;Headings are cool&lt;/h1&gt;
-&lt;h1 id=&#34;you-can-have-many-headings&#34;&gt;You can have many headings&lt;/h1&gt;
-&lt;h2 id=&#34;arent-headings-cool&#34;&gt;Aren&amp;rsquo;t headings cool?&lt;/h2&gt;</description>
+E(R(\tau))_{\tau \sim P_{\theta}(\tau)} = \sum_{\tau} R(\tau) P_{\theta}(\tau)
+$$&lt;p&gt;其中：&lt;/p&gt;
+&lt;ol&gt;
+&lt;li&gt;$E(R(\tau))_{\tau \sim P_{\theta}(\tau)}$：表示在策略 $P_{\theta}(\tau)$ 下轨迹 $\tau$ 的回报 $R(\tau)$ 的期望值。&lt;/li&gt;
+&lt;li&gt;$R(\tau)$：轨迹 $\tau$ 的回报，即从起始状态到终止状态获得的所有奖励的总和。&lt;/li&gt;
+&lt;li&gt;$\tau$：表示一条轨迹，即智能体在环境中的状态和动作序列。&lt;/li&gt;
+&lt;li&gt;$P_{\theta}(\tau)$：在参数 $\theta$ 下生成轨迹 $\tau$ 的概率，通常由策略或策略网络确定。&lt;/li&gt;
+&lt;li&gt;$\theta$：策略的参数，控制着策略 $P_{\theta}$ 的行为。&lt;/li&gt;
+&lt;/ol&gt;
+&lt;p&gt;所以，我们的目标是找到一个策略 $\pi$，使得 $E(R(\tau))_{\tau \sim P_{\theta}(\tau)}$ 最大。那怎么找到这个策略呢？我们使用梯度上升的办法，即不断地更新策略参数 $\theta$，使得 $E(R(\tau))_{\tau \sim P_{\theta}(\tau)}$ 不断增大。&lt;/p&gt;</description>
     </item>
   </channel>
 </rss>
