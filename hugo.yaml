@@ -69,18 +69,18 @@ params:
   
   # home-info mode
   homeInfoParams:
-    Title: "Hi there \\U0001F44B"
+    Title: "Hi, I'm chengzhy."
     Content: Welcome to my blog. I focus on AI infra and LLM inference optimization.
   
   socialIcons:
     - name: github
       url: "https://github.com/SendoRay"
     - name: email
-      url: "mailto:czy010919@gmail.com"
-    - name: googlescholar
-      url: "https://scholar.google.com/citations?user=PS_CX0AAAAAJ"
-    - name: orcid
-      url: "https://orcid.org/yourorcidurl"
+      url: "mailto:chengzhy0919@163.com"
+    # - name: googlescholar
+    #   url: "https://scholar.google.com/citations?user=PS_CX0AAAAAJ"
+    # - name: orcid
+    #   url: "https://orcid.org/yourorcidurl"
   
   analytics:
     google:
