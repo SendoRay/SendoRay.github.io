@@ -1,0 +1,3 @@
+User-agent: *
+Disallow:
+Sitemap: https://sendoray.github.io/sitemap.xml
