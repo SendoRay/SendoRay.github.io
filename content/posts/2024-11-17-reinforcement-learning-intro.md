@@ -2,8 +2,9 @@
 title: 强化学习入门：从基础概念到PPO算法
 date: '2025-11-21'
 tags:
-- rl
+- RL
 draft: false
+math: true
 ShowToc: true
 TocOpen: false
 ShowReadingTime: true
@@ -24,7 +25,7 @@ ShowPostNavLinks: true
 - 回报 (Return Reward)：表示从当前时间步开始直到未来的累积奖励和，通常用符号 $G_t$ 表示：$G_t = R_{t+1} + R_{t+2} + \dots + R_T$。回报的定义是智能体决策的重要依据，因为强化学习的目标是训练一个策略，使得智能体在每个状态下的期望回报最大化。
 
 <p align="center">
-    <img src="/assets/images/rl/image-1.png" alt="强化学习基本概念示意图" width="60%">
+    <img src="/images/apple-touch-icon-180x180.png" alt="强化学习基本概念示意图" width="60%">
 </p>
 
 ## 强化学习的目标
