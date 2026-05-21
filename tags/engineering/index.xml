@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom" xmlns:content="http://purl.org/rss/1.0/modules/content/">
+  <channel>
+    <title>Engineering on chengzhy&#39;s blog</title>
+    <link>https://sendoray.github.io/tags/engineering/</link>
+    <description>Recent content in Engineering on chengzhy&#39;s blog</description>
+    <generator>Hugo</generator>
+    <language>en</language>
+    <lastBuildDate>Thu, 21 May 2026 00:00:00 +0000</lastBuildDate>
+    <atom:link href="https://sendoray.github.io/tags/engineering/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>一次新功能开发的工程方法论：以接入 Min-P 采样算子为例</title>
+      <link>https://sendoray.github.io/posts/2026-05-21-engineering-methodology-min-p-sampling/</link>
+      <pubDate>Thu, 21 May 2026 00:00:00 +0000</pubDate>
+      <guid>https://sendoray.github.io/posts/2026-05-21-engineering-methodology-min-p-sampling/</guid>
+      <description>&lt;h1 id=&#34;一次新功能开发的工程方法论以接入-min-p-采样算子为例&#34;&gt;一次新功能开发的工程方法论：以接入 Min-P 采样算子为例&lt;/h1&gt;
+&lt;p&gt;最近在给推理框架接入一个新的采样算子（Min-P Sampling）时，复盘了一下自己的开发节奏，发现一个比较稳定的&amp;quot;四步法&amp;quot;非常好用。这篇博客不聊采样算法本身的数学细节，而是把它当成一个载体，记录一下我现在做新功能时的工程方法论。&lt;/p&gt;
+&lt;blockquote&gt;
+&lt;p&gt;TL;DR：&lt;strong&gt;先理解背景 → 再看历史方案 → 写 minimal test 跑通新功能 → 接入大框架&lt;/strong&gt;。每一步都要有明确的退出条件，不要跳步。&lt;/p&gt;&lt;/blockquote&gt;
+&lt;h2 id=&#34;为什么需要方法论&#34;&gt;为什么需要方法论？&lt;/h2&gt;
+&lt;p&gt;做推理框架这种&amp;quot;大型系统中的小改动&amp;quot;，最容易踩的坑不是算法本身，而是：&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;上来就在大框架里改代码，跑一次端到端要好几分钟，debug 链路超长；&lt;/li&gt;
+&lt;li&gt;不了解既有方案，自己造了一个和已有 API 风格冲突的轮子；&lt;/li&gt;
+&lt;li&gt;改完之后才发现假设错了，要回退一大片；&lt;/li&gt;
+&lt;li&gt;接入后某个边界条件挂了，但因为没有最小可复现用例，定位非常困难。&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;我现在的做法是把整个开发过程拆成四个阶段，每个阶段产出一个&lt;strong&gt;最小的、可验证的&lt;/strong&gt;交付物，然后再往下走。&lt;/p&gt;
+&lt;h2 id=&#34;step-1详细分析背景&#34;&gt;Step 1：详细分析背景&lt;/h2&gt;
+&lt;p&gt;这一步的目标是回答清楚三个问题：&lt;/p&gt;
+&lt;ol&gt;
+&lt;li&gt;&lt;strong&gt;我到底要做什么？&lt;/strong&gt;——把需求翻译成一句可以贴在 PR 描述里的话。&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;它在系统里的位置在哪？&lt;/strong&gt;——是新增一条独立路径，还是替换/扩展已有的某个模块？&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;成功的标准是什么？&lt;/strong&gt;——什么样的测试通过、什么样的指标达标，才算&amp;quot;做完了&amp;quot;。&lt;/li&gt;
+&lt;/ol&gt;
+&lt;p&gt;以 Min-P 采样为例，这一步我会写下来类似这样的笔记：&lt;/p&gt;
+&lt;blockquote&gt;
+&lt;p&gt;&lt;strong&gt;需求&lt;/strong&gt;：在现有采样器中新增 Min-P 采样策略，作为 Top-K / Top-P 之外的可选项。&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;位置&lt;/strong&gt;：推理框架的 &lt;code&gt;Sampler&lt;/code&gt; 模块，紧跟在 logits 后处理之后、&lt;code&gt;multinomial&lt;/code&gt; 采样之前。和现有的 Top-K / Top-P 是兄弟关系，不替换它们。&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;成功标准&lt;/strong&gt;：&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;给定一组固定的 logits 和 &lt;code&gt;min_p&lt;/code&gt; 阈值，输出的候选 token 集合可被手工验证；&lt;/li&gt;
+&lt;li&gt;与已有的 Top-K / Top-P 可以叠加使用，行为符合预期；&lt;/li&gt;
+&lt;li&gt;接入后端到端跑一个小模型，开启 Min-P 不会触发任何已有测试回归。&lt;/li&gt;
+&lt;/ul&gt;&lt;/blockquote&gt;
+&lt;p&gt;这一步的关键不是写得多漂亮，而是&lt;strong&gt;把模糊的需求收敛成可以验证的条件&lt;/strong&gt;。如果连成功标准都说不清楚，后面的所有工作都是没有方向的。&lt;/p&gt;</description>
+    </item>
+  </channel>
+</rss>

@@ -35,13 +35,13 @@ $$
 E(R(\tau))_{\tau \sim P_{\theta}(\tau)} = \sum_{\tau} R(\tau) P_{\theta}(\tau)
 $$&lt;p&gt;其中：&lt;/p&gt;
 &lt;ol&gt;
-&lt;li&gt;$E(R(\tau))_{\tau \sim P_{\theta}(\tau)}$：表示在策略 $P_{\theta}(\tau)$ 下轨迹 $\tau$ 的回报 $R(\tau)$ 的期望值。&lt;/li&gt;
+&lt;li&gt;$E(R(\tau))&lt;em&gt;{\tau \sim P&lt;/em&gt;{\theta}(\tau)}$：表示在策略 $P_{\theta}(\tau)$ 下轨迹 $\tau$ 的回报 $R(\tau)$ 的期望值。&lt;/li&gt;
 &lt;li&gt;$R(\tau)$：轨迹 $\tau$ 的回报，即从起始状态到终止状态获得的所有奖励的总和。&lt;/li&gt;
 &lt;li&gt;$\tau$：表示一条轨迹，即智能体在环境中的状态和动作序列。&lt;/li&gt;
 &lt;li&gt;$P_{\theta}(\tau)$：在参数 $\theta$ 下生成轨迹 $\tau$ 的概率，通常由策略或策略网络确定。&lt;/li&gt;
 &lt;li&gt;$\theta$：策略的参数，控制着策略 $P_{\theta}$ 的行为。&lt;/li&gt;
 &lt;/ol&gt;
-&lt;p&gt;所以，我们的目标是找到一个策略 $\pi$，使得 $E(R(\tau))_{\tau \sim P_{\theta}(\tau)}$ 最大。那怎么找到这个策略呢？我们使用梯度上升的办法，即不断地更新策略参数 $\theta$，使得 $E(R(\tau))_{\tau \sim P_{\theta}(\tau)}$ 不断增大。&lt;/p&gt;</description>
+&lt;p&gt;所以，我们的目标是找到一个策略 $\pi$，使得 $E(R(\tau))&lt;em&gt;{\tau \sim P&lt;/em&gt;{\theta}(\tau)}$ 最大。那怎么找到这个策略呢？我们使用梯度上升的办法，即不断地更新策略参数 $\theta$，使得 $E(R(\tau))&lt;em&gt;{\tau \sim P&lt;/em&gt;{\theta}(\tau)}$ 不断增大。&lt;/p&gt;</description>
     </item>
   </channel>
 </rss>
