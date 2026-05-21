@@ -3,8 +3,7 @@ title: Python List 相关操作与技巧
 date: '2026-05-17'
 tags:
 - python
-- list
-- programming
+
 draft: false
 ShowToc: true
 TocOpen: false

@@ -63,8 +63,7 @@ $$
 \begin{align*}
 \frac{1}{N} \sum_{n=1}^{N} R(\tau^n) \nabla \log P_{\theta}(\tau^n) &= \frac{1}{N} \sum_{n=1}^{N} R(\tau^n) \nabla \log \prod_{t=1}^{T_n} P_{\theta}(a_n^t \mid s_n^t) \\
 &= \frac{1}{N} \sum_{n=1}^{N} R(\tau^n) \sum_{t=1}^{T_n} \nabla \log P_{\theta}(a_n^t \mid s_n^t) \\
-&= \frac{1}{N} \sum_{n=1}^{N} \sum_{t=1}^{T_n} R(\tau^n) \nabla \log P_{\theta}(a_n^t \mid s_n^t) \\
-&= \frac{1}{N} \sum_{n=1}^{N} \sum_{t=1}^{T_n} R(\tau^n) \log P_{\theta}(a_n^t \mid s_n^t)
+&= \frac{1}{N} \sum_{n=1}^{N} \sum_{t=1}^{T_n} R(\tau^n) \nabla \log P_{\theta}(a_n^t \mid s_n^t)
 \end{align*}
 $$
 
