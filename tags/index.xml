@@ -6,8 +6,50 @@
     <description>Recent content in Tags on chengzhy&#39;s blog</description>
     <generator>Hugo</generator>
     <language>en</language>
-    <lastBuildDate>Thu, 21 May 2026 00:00:00 +0000</lastBuildDate>
+    <lastBuildDate>Mon, 25 May 2026 00:00:00 +0000</lastBuildDate>
     <atom:link href="https://sendoray.github.io/tags/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>Docker</title>
+      <link>https://sendoray.github.io/tags/docker/</link>
+      <pubDate>Mon, 25 May 2026 00:00:00 +0000</pubDate>
+      <guid>https://sendoray.github.io/tags/docker/</guid>
+      <description></description>
+    </item>
+    <item>
+      <title>Git</title>
+      <link>https://sendoray.github.io/tags/git/</link>
+      <pubDate>Mon, 25 May 2026 00:00:00 +0000</pubDate>
+      <guid>https://sendoray.github.io/tags/git/</guid>
+      <description></description>
+    </item>
+    <item>
+      <title>Linux</title>
+      <link>https://sendoray.github.io/tags/linux/</link>
+      <pubDate>Mon, 25 May 2026 00:00:00 +0000</pubDate>
+      <guid>https://sendoray.github.io/tags/linux/</guid>
+      <description></description>
+    </item>
+    <item>
+      <title>Regex</title>
+      <link>https://sendoray.github.io/tags/regex/</link>
+      <pubDate>Mon, 25 May 2026 00:00:00 +0000</pubDate>
+      <guid>https://sendoray.github.io/tags/regex/</guid>
+      <description></description>
+    </item>
+    <item>
+      <title>Shell</title>
+      <link>https://sendoray.github.io/tags/shell/</link>
+      <pubDate>Mon, 25 May 2026 00:00:00 +0000</pubDate>
+      <guid>https://sendoray.github.io/tags/shell/</guid>
+      <description></description>
+    </item>
+    <item>
+      <title>Vim</title>
+      <link>https://sendoray.github.io/tags/vim/</link>
+      <pubDate>Mon, 25 May 2026 00:00:00 +0000</pubDate>
+      <guid>https://sendoray.github.io/tags/vim/</guid>
+      <description></description>
+    </item>
     <item>
       <title>Engineering</title>
       <link>https://sendoray.github.io/tags/engineering/</link>
