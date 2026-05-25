@@ -8,6 +8,7 @@ tags:
 - Shell
 - Vim
 - Regex
+- Tmux
 
 draft: false
 ShowToc: true
@@ -18,7 +19,7 @@ ShowPostNavLinks: true
 ---
 # 程序员速查手册
 
-> 一份覆盖日常开发高频场景的速查手册，涵盖 Git 规范、Linux 命令、Vim、Shell 脚本、Docker、正则表达式。
+> 一份覆盖日常开发高频场景的速查手册，涵盖 Git 规范、Linux 命令、Vim、Shell 脚本、Docker、正则表达式、tmux。
 > 建议放进 Obsidian / 语雀 / Notion 中，搭配检索使用。
 
 ---
@@ -32,7 +33,8 @@ ShowPostNavLinks: true
 5. [Shell / Bash 脚本语法](#5-shell--bash-脚本语法)
 6. [Docker 常用命令](#6-docker-常用命令)
 7. [正则表达式速查](#7-正则表达式速查)
-8. [优质在线资源推荐](#8-优质在线资源推荐)
+8. [tmux 命令行管理](#8-tmux-命令行管理)
+9. [优质在线资源推荐](#9-优质在线资源推荐)
 
 ---
 
@@ -785,7 +787,113 @@ docker system prune -a --volumes    # 全清（慎用）
 
 ---
 
-## 8. 优质在线资源推荐
+## 8. tmux 命令行管理
+
+tmux 是终端复用器，核心价值：**断开 SSH 后进程不终止**，且支持多窗口/分屏。所有内部快捷键的前缀为 `Ctrl+b`（先按 Ctrl+b 松开，再按功能键）。
+
+### 8.1 会话管理
+
+| 命令 | 作用 |
+|------|------|
+| `tmux ls` 或 `tmux list-sessions` | 列出所有运行中的会话 |
+| `tmux new -s <名称>` | 创建并进入新会话 |
+| `tmux attach -t <名称>` | 重新连接指定会话 |
+| `tmux kill-server` | 一键关闭所有 tmux 会话及服务（彻底重置） |
+| `tmux kill-session -t <名称>` | 关闭指定会话 |
+| `tmux detach` 或 `Ctrl+b d` | 脱离当前会话（会话后台继续运行） |
+| `tmux rename-session -t <旧名> <新名>` | 重命名会话 |
+| `tmux switch -t <名称>` | 切换到另一个会话 |
+
+**加载/恢复旧会话的典型流程：**
+
+```bash
+# 场景：SSH 断开后重连
+# 1. 先列出正在运行的会话
+tmux ls
+# 输出示例：
+# dev: 3 windows (created Mon May 25 10:00:00 2026)
+# train: 1 windows (created Mon May 25 09:30:00 2026)
+
+# 2. 连回指定会话
+tmux attach -t dev
+# 或简写
+tmux a -t dev
+
+# 3. 如果只有一个会话，直接接上
+tmux a
+
+# 4. 在会话内脱离（不终止）
+# 按 Ctrl+b d
+
+# 5. 如果忘了会话名，接上最近的
+tmux a
+```
+
+### 8.2 窗口与分屏快捷键
+
+前缀：`Ctrl+b`
+
+| 功能 | 按键顺序 | 说明 |
+|------|---------|------|
+| 新建窗口 | `c` | `Ctrl+b c` |
+| 重命名窗口 | `,` | `Ctrl+b ,` 输入新名称回车 |
+| 切换窗口 | `0-9` | `Ctrl+b 0` 切到第 0 个窗口 |
+| 上下分屏 | `"` | 水平分割，焦点留在上方 |
+| 左右分屏 | `%` | 垂直分割，焦点留在左方 |
+| 切换窗格 | `o` / `↑↓←→` | 循环切换或定向跳转 |
+| 关闭窗格 | `x` | 需确认（或直接在窗格内输 `exit` / `Ctrl+d`） |
+| 调整窗格大小 | `Ctrl+↑↓←→` | 持续按住可连续调整 |
+| 显示窗格编号 | `q` | 快速定位 |
+| 交换窗格位置 | `{` / `}` | 与前/后窗格互换 |
+
+### 8.3 滚动与复制模式
+
+| 操作 | 按键 |
+|------|------|
+| 进入滚动模式 | `Ctrl+b [` |
+| 翻页 / 移动 | `↑↓` / `PageUp/Down` / `Ctrl+f`(下一页) / `Ctrl+b`(上一页) |
+| 开始选择文本 | `空格键`（进入高亮选择） |
+| 复制选中内容 | `回车键` / `Enter`（自动存入 tmux 剪贴板） |
+| 粘贴内容 | `Ctrl+b ]` |
+| 退出滚动模式 | `q` 或 `Esc` |
+
+> 提示：如果需要复制到系统剪贴板，可配置 `bind-key -T copy-mode-vi y send-keys -X copy-pipe-and-cancel "xclip -selection clipboard"`。
+
+### 8.4 实用配置片段
+
+在 `~/.tmux.conf` 中添加：
+
+```bash
+# 鼠标支持（滚动、点击切换窗格、调整窗格大小）
+set -g mouse on
+
+# 状态栏美化
+set -g status-style 'bg=#333333 fg=#ffffff'
+
+# 窗口编号从 1 开始
+set -g base-index 1
+setw -g pane-base-index 1
+
+# 减少 ESC 延迟（Vim 用户必加）
+set -sg escape-time 0
+
+# 历史行数
+set -g history-limit 10000
+
+# 分屏时保持当前路径
+bind '"' split-window -v -c "#{pane_current_path}"
+bind '%' split-window -h -c "#{pane_current_path}"
+
+# 用 | 和 - 代替 % 和 " 分屏（更直觉）
+bind '|' split-window -h -c "#{pane_current_path}"
+bind '-' split-window -v -c "#{pane_current_path}"
+```
+
+修改后生效：`tmux source-file ~/.tmux.conf` 或在 tmux 内 `Ctrl+b :` 输入 `source-file ~/.tmux.conf`。
+
+---
+
+## 9. 优质在线资源推荐
 
 ### Git
 
@@ -828,6 +936,13 @@ docker system prune -a --volumes    # 全清（慎用）
 - [Docker 官方文档](https://docs.docker.com/) — 权威
 - [Docker — 从入门到实践](https://yeasy.gitbook.io/docker_practice/) — 中文开源书
 - [Play with Docker](https://labs.play-with-docker.com/) — 浏览器在线沙盒
+
+### tmux
+
+- [tmux 官方仓库](https://github.com/tmux/tmux) — 源码与文档
+- [tmux 入门教程（阮一峰）](https://wangdoc.com/bash/tmux.html) — 中文友好入门
+- [tmuxcheatsheet.com](https://tmuxcheatsheet.com/) — 交互式速查表
+- [A Quick and Easy Guide to tmux](https://www.hamvocke.com/blog/a-quick-and-easy-guide-to-tmux/) — 英文图文教程
 
 ### 其他高频
 

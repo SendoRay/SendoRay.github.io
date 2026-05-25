@@ -3,7 +3,6 @@ title: 一次新功能开发的工程方法论：以接入 Min-P 采样算子为
 date: '2026-05-21'
 tags:
 - LLM
-- Inference
 - Engineering
 draft: false
 math: true
