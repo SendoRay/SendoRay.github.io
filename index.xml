@@ -15,7 +15,7 @@
       <guid>https://sendoray.github.io/posts/2026-05-25-programmer-cheatsheet/</guid>
       <description>&lt;h1 id=&#34;程序员速查手册&#34;&gt;程序员速查手册&lt;/h1&gt;
 &lt;blockquote&gt;
-&lt;p&gt;一份覆盖日常开发高频场景的速查手册，涵盖 Git 规范、Linux 命令、Vim、Shell 脚本、Docker、正则表达式。
+&lt;p&gt;一份覆盖日常开发高频场景的速查手册，涵盖 Git 规范、Linux 命令、Vim、Shell 脚本、Docker、正则表达式、tmux。
 建议放进 Obsidian / 语雀 / Notion 中，搭配检索使用。&lt;/p&gt;&lt;/blockquote&gt;
 &lt;hr&gt;
 &lt;h2 id=&#34;目录&#34;&gt;目录&lt;/h2&gt;
@@ -27,7 +27,8 @@
 &lt;li&gt;&lt;a href=&#34;#5-shell--bash-%E8%84%9A%E6%9C%AC%E8%AF%AD%E6%B3%95&#34;&gt;Shell / Bash 脚本语法&lt;/a&gt;&lt;/li&gt;
 &lt;li&gt;&lt;a href=&#34;#6-docker-%E5%B8%B8%E7%94%A8%E5%91%BD%E4%BB%A4&#34;&gt;Docker 常用命令&lt;/a&gt;&lt;/li&gt;
 &lt;li&gt;&lt;a href=&#34;#7-%E6%AD%A3%E5%88%99%E8%A1%A8%E8%BE%BE%E5%BC%8F%E9%80%9F%E6%9F%A5&#34;&gt;正则表达式速查&lt;/a&gt;&lt;/li&gt;
-&lt;li&gt;&lt;a href=&#34;#8-%E4%BC%98%E8%B4%A8%E5%9C%A8%E7%BA%BF%E8%B5%84%E6%BA%90%E6%8E%A8%E8%8D%90&#34;&gt;优质在线资源推荐&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&#34;#8-tmux-%E5%91%BD%E4%BB%A4%E8%A1%8C%E7%AE%A1%E7%90%86&#34;&gt;tmux 命令行管理&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&#34;#9-%E4%BC%98%E8%B4%A8%E5%9C%A8%E7%BA%BF%E8%B5%84%E6%BA%90%E6%8E%A8%E8%8D%90&#34;&gt;优质在线资源推荐&lt;/a&gt;&lt;/li&gt;
 &lt;/ol&gt;
 &lt;hr&gt;
 &lt;h2 id=&#34;1-git-命名与提交规范&#34;&gt;1. Git 命名与提交规范&lt;/h2&gt;
@@ -269,26 +270,31 @@ My main job now is about AI infra and LLM inference optimization.&lt;/p&gt;</des
 &lt;li&gt;动作 (Action)：动作是智能体对当前状态的反应。基于当前的状态，智能体使用其策略函数来决定下一步要采取的动作。例如，在超级玛丽中，动作可以包括“向左移动”、“向右移动”和“跳跃”。动作可以是离散的（如跳跃或移动的方向选择）或者连续的（如机器手臂在三维空间中的移动角度）。强化学习的核心在于使智能体学会如何在每个状态下选择最优的动作，从而最大化回报。&lt;/li&gt;
 &lt;li&gt;奖励 (Reward)：奖励是环境对智能体执行动作后给予的反馈。奖励可以是正的（奖励）或者负的（惩罚）。例如，在超级马里奥游戏中，吃到金币可以获得正奖励（例如 +10 分），而碰到敌人会得到负奖励（例如 -100 分）。&lt;/li&gt;
 &lt;li&gt;动作空间 (Action Space)：指智能体在当前状态下可以选择的动作集合。&lt;/li&gt;
-&lt;li&gt;轨迹 (Trajectory)：轨迹（又称为回合或episode）是指智能体在一次完整的交互过程中经历的一系列状态、动作和奖励的序列。轨迹通常表示为 $\tau = (s_0, a_0, s_1, a_1, \dots, s_T)$，其中 $s_i$ 表示第 $i$ 时刻的状态，$a_i$ 表示智能体在状态 $s_i$ 下选择的动作。。比如大语言模型生成时，它的状态就是已经生成的token序列。当前的动作是生成下一个token。当前token生成后，已生成的序列就加上新生成的token成为下一个状态。&lt;/li&gt;
-&lt;li&gt;回报 (Return Reward)：表示从当前时间步开始直到未来的累积奖励和，通常用符号 $G_t$ 表示：$G_t = R_{t+1} + R_{t+2} + \dots + R_T$。回报的定义是智能体决策的重要依据，因为强化学习的目标是训练一个策略，使得智能体在每个状态下的期望回报最大化。&lt;/li&gt;
+&lt;li&gt;轨迹 (Trajectory)：轨迹（又称为回合或episode）是指智能体在一次完整的交互过程中经历的一系列状态、动作和奖励的序列。轨迹通常表示为 &lt;span class=&#34;math inline&#34;&gt;\(\tau = (s_0, a_0, s_1, a_1, \dots, s_T)\)&lt;/span&gt;
+，其中 &lt;span class=&#34;math inline&#34;&gt;\(s_i\)&lt;/span&gt;
+ 表示第 &lt;span class=&#34;math inline&#34;&gt;\(i\)&lt;/span&gt;
+ 时刻的状态，&lt;span class=&#34;math inline&#34;&gt;\(a_i\)&lt;/span&gt;
+ 表示智能体在状态 &lt;span class=&#34;math inline&#34;&gt;\(s_i\)&lt;/span&gt;
+ 下选择的动作。。比如大语言模型生成时，它的状态就是已经生成的token序列。当前的动作是生成下一个token。当前token生成后，已生成的序列就加上新生成的token成为下一个状态。&lt;/li&gt;
+&lt;li&gt;回报 (Return Reward)：表示从当前时间步开始直到未来的累积奖励和，通常用符号 &lt;span class=&#34;math inline&#34;&gt;\(G_t\)&lt;/span&gt;
+ 表示：&lt;span class=&#34;math inline&#34;&gt;\(G_t = R_{t&amp;#43;1} &amp;#43; R_{t&amp;#43;2} &amp;#43; \dots &amp;#43; R_T\)&lt;/span&gt;
+。回报的定义是智能体决策的重要依据，因为强化学习的目标是训练一个策略，使得智能体在每个状态下的期望回报最大化。&lt;/li&gt;
 &lt;/ul&gt;
 &lt;p align=&#34;center&#34;&gt;
     &lt;img src=&#34;https://sendoray.github.io/images/apple-touch-icon-180x180.png&#34; alt=&#34;强化学习基本概念示意图&#34; width=&#34;60%&#34;&gt;
 &lt;/p&gt;
 &lt;h2 id=&#34;强化学习的目标&#34;&gt;强化学习的目标&lt;/h2&gt;
-&lt;p&gt;在强化学习中，目标是训练一个神经网络 $Policy$ $\pi$ ，在所有状态 $s$ 下，给出相应的 $Action$ ，得到的 $Return$ 的期望值最大。即：
+&lt;p&gt;在强化学习中，目标是训练一个神经网络 &lt;span class=&#34;math inline&#34;&gt;\(Policy\)&lt;/span&gt;
+ &lt;span class=&#34;math inline&#34;&gt;\(\pi\)&lt;/span&gt;
+ ，在所有状态 &lt;span class=&#34;math inline&#34;&gt;\(s\)&lt;/span&gt;
+ 下，给出相应的 &lt;span class=&#34;math inline&#34;&gt;\(Action\)&lt;/span&gt;
+ ，得到的 &lt;span class=&#34;math inline&#34;&gt;\(Return\)&lt;/span&gt;
+ 的期望值最大。即：
 &lt;/p&gt;
-$$
+&lt;div class=&#34;math display&#34;&gt;\[
 E(R(\tau))_{\tau \sim P_{\theta}(\tau)} = \sum_{\tau} R(\tau) P_{\theta}(\tau)
-$$&lt;p&gt;其中：&lt;/p&gt;
-&lt;ol&gt;
-&lt;li&gt;$E(R(\tau))&lt;em&gt;{\tau \sim P&lt;/em&gt;{\theta}(\tau)}$：表示在策略 $P_{\theta}(\tau)$ 下轨迹 $\tau$ 的回报 $R(\tau)$ 的期望值。&lt;/li&gt;
-&lt;li&gt;$R(\tau)$：轨迹 $\tau$ 的回报，即从起始状态到终止状态获得的所有奖励的总和。&lt;/li&gt;
-&lt;li&gt;$\tau$：表示一条轨迹，即智能体在环境中的状态和动作序列。&lt;/li&gt;
-&lt;li&gt;$P_{\theta}(\tau)$：在参数 $\theta$ 下生成轨迹 $\tau$ 的概率，通常由策略或策略网络确定。&lt;/li&gt;
-&lt;li&gt;$\theta$：策略的参数，控制着策略 $P_{\theta}$ 的行为。&lt;/li&gt;
-&lt;/ol&gt;
-&lt;p&gt;所以，我们的目标是找到一个策略 $\pi$，使得 $E(R(\tau))&lt;em&gt;{\tau \sim P&lt;/em&gt;{\theta}(\tau)}$ 最大。那怎么找到这个策略呢？我们使用梯度上升的办法，即不断地更新策略参数 $\theta$，使得 $E(R(\tau))&lt;em&gt;{\tau \sim P&lt;/em&gt;{\theta}(\tau)}$ 不断增大。&lt;/p&gt;</description>
+\]&lt;/div&gt;
+&lt;p&gt;其中：&lt;/p&gt;</description>
     </item>
   </channel>
 </rss>
