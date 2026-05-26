@@ -24,9 +24,9 @@ ShowPostNavLinks: true
 - 轨迹 (Trajectory)：轨迹（又称为回合或episode）是指智能体在一次完整的交互过程中经历的一系列状态、动作和奖励的序列。轨迹通常表示为 $\tau = (s_0, a_0, s_1, a_1, \dots, s_T)$，其中 $s_i$ 表示第 $i$ 时刻的状态，$a_i$ 表示智能体在状态 $s_i$ 下选择的动作。。比如大语言模型生成时，它的状态就是已经生成的token序列。当前的动作是生成下一个token。当前token生成后，已生成的序列就加上新生成的token成为下一个状态。
 - 回报 (Return Reward)：表示从当前时间步开始直到未来的累积奖励和，通常用符号 $G_t$ 表示：$G_t = R_{t+1} + R_{t+2} + \dots + R_T$。回报的定义是智能体决策的重要依据，因为强化学习的目标是训练一个策略，使得智能体在每个状态下的期望回报最大化。
 
-<p align="center">
+<!-- <p align="center">
     <img src="/images/apple-touch-icon-180x180.png" alt="强化学习基本概念示意图" width="60%">
-</p>
+</p> -->
 
 ## 强化学习的目标
 
