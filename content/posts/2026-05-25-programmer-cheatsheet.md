@@ -2,13 +2,7 @@
 title: 程序员速查手册
 date: '2026-05-25'
 tags:
-- Git
-- Linux
-- Docker
-- Shell
-- Vim
-- Regex
-- Tmux
+- Engineering
 
 draft: false
 ShowToc: true
