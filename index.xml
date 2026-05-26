@@ -9,6 +9,106 @@
     <lastBuildDate>Mon, 25 May 2026 00:00:00 +0000</lastBuildDate>
     <atom:link href="https://sendoray.github.io/index.xml" rel="self" type="application/rss+xml" />
     <item>
+      <title>投资者必知必会手册</title>
+      <link>https://sendoray.github.io/posts/2026-05-25-investor-essential-handbook/</link>
+      <pubDate>Mon, 25 May 2026 00:00:00 +0000</pubDate>
+      <guid>https://sendoray.github.io/posts/2026-05-25-investor-essential-handbook/</guid>
+      <description>&lt;h1 id=&#34;投资者必知必会手册&#34;&gt;投资者必知必会手册&lt;/h1&gt;
+&lt;blockquote&gt;
+&lt;p&gt;本手册以贵州茅台（600519）2025年真实财报数据为贯穿案例，系统梳理投资核心知识体系。&lt;/p&gt;&lt;/blockquote&gt;
+&lt;hr&gt;
+&lt;h2 id=&#34;一财务报表深度解析&#34;&gt;一、财务报表深度解析&lt;/h2&gt;
+&lt;p&gt;财务报表是投资者洞察企业内在价值的核心窗口，如同一张&amp;quot;体检报告&amp;quot;，揭示企业的盈利能力、偿债能力、运营效率和成长潜力。完整的财务分析围绕四个维度展开：资产质量、资本结构质量、利润质量和现金流量质量。&lt;/p&gt;
+&lt;h3 id=&#34;11-资产负债表企业家底的静态快照&#34;&gt;1.1 资产负债表——企业&amp;quot;家底&amp;quot;的静态快照&lt;/h3&gt;
+&lt;p&gt;资产负债表反映企业在特定时点的资产、负债和所有者权益状况，核心是评估财务健康度和抗风险能力。&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;关键指标：&lt;/strong&gt;&lt;/p&gt;
+&lt;table&gt;
+  &lt;thead&gt;
+      &lt;tr&gt;
+          &lt;th&gt;指标&lt;/th&gt;
+          &lt;th&gt;公式&lt;/th&gt;
+          &lt;th&gt;参考标准&lt;/th&gt;
+      &lt;/tr&gt;
+  &lt;/thead&gt;
+  &lt;tbody&gt;
+      &lt;tr&gt;
+          &lt;td&gt;流动比率&lt;/td&gt;
+          &lt;td&gt;流动资产 ÷ 流动负债&lt;/td&gt;
+          &lt;td&gt;&amp;gt;2 为良好&lt;/td&gt;
+      &lt;/tr&gt;
+      &lt;tr&gt;
+          &lt;td&gt;速动比率&lt;/td&gt;
+          &lt;td&gt;(流动资产-存货) ÷ 流动负债&lt;/td&gt;
+          &lt;td&gt;&amp;gt;1 为良好&lt;/td&gt;
+      &lt;/tr&gt;
+      &lt;tr&gt;
+          &lt;td&gt;资产负债率&lt;/td&gt;
+          &lt;td&gt;负债总额 ÷ 资产总额&lt;/td&gt;
+          &lt;td&gt;制造业&amp;lt;60%，越低越稳健&lt;/td&gt;
+      &lt;/tr&gt;
+  &lt;/tbody&gt;
+&lt;/table&gt;
+&lt;p&gt;&lt;strong&gt;案例——贵州茅台 2025 年资产负债表核心数据：&lt;/strong&gt;&lt;/p&gt;
+&lt;table&gt;
+  &lt;thead&gt;
+      &lt;tr&gt;
+          &lt;th&gt;项目&lt;/th&gt;
+          &lt;th&gt;数值&lt;/th&gt;
+          &lt;th&gt;解读&lt;/th&gt;
+      &lt;/tr&gt;
+  &lt;/thead&gt;
+  &lt;tbody&gt;
+      &lt;tr&gt;
+          &lt;td&gt;资产负债率&lt;/td&gt;
+          &lt;td&gt;约 25%&lt;/td&gt;
+          &lt;td&gt;财务结构极为稳健，无有息负债&lt;/td&gt;
+      &lt;/tr&gt;
+      &lt;tr&gt;
+          &lt;td&gt;现金余额&lt;/td&gt;
+          &lt;td&gt;1,264.26 亿元&lt;/td&gt;
+          &lt;td&gt;巨额现金储备，流动性极强&lt;/td&gt;
+      &lt;/tr&gt;
+      &lt;tr&gt;
+          &lt;td&gt;市净率(PB)&lt;/td&gt;
+          &lt;td&gt;约 7 倍&lt;/td&gt;
+          &lt;td&gt;账面净资产未体现品牌无形资产，PB 偏高是常态&lt;/td&gt;
+      &lt;/tr&gt;
+  &lt;/tbody&gt;
+&lt;/table&gt;
+&lt;p&gt;&lt;strong&gt;识别陷阱：&lt;/strong&gt; 警惕应收账款异常增长、存货堆积、商誉过高等情况，它们可能掩盖经营恶化。&lt;/p&gt;
+&lt;hr&gt;
+&lt;h3 id=&#34;12-利润表经营成果的动态画像&#34;&gt;1.2 利润表——经营成果的动态画像&lt;/h3&gt;
+&lt;p&gt;利润表描绘企业在一定期间的经营成果，核心在于衡量盈利能力及利润质量。&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;关键指标：&lt;/strong&gt;&lt;/p&gt;
+&lt;table&gt;
+  &lt;thead&gt;
+      &lt;tr&gt;
+          &lt;th&gt;指标&lt;/th&gt;
+          &lt;th&gt;公式&lt;/th&gt;
+          &lt;th&gt;说明&lt;/th&gt;
+      &lt;/tr&gt;
+  &lt;/thead&gt;
+  &lt;tbody&gt;
+      &lt;tr&gt;
+          &lt;td&gt;毛利率&lt;/td&gt;
+          &lt;td&gt;(营收-营业成本) ÷ 营收&lt;/td&gt;
+          &lt;td&gt;反映产品定价权和竞争壁垒&lt;/td&gt;
+      &lt;/tr&gt;
+      &lt;tr&gt;
+          &lt;td&gt;净利率&lt;/td&gt;
+          &lt;td&gt;净利润 ÷ 营收&lt;/td&gt;
+          &lt;td&gt;体现全链条的盈利效率&lt;/td&gt;
+      &lt;/tr&gt;
+      &lt;tr&gt;
+          &lt;td&gt;ROE（净资产收益率）&lt;/td&gt;
+          &lt;td&gt;净利润 ÷ 平均净资产&lt;/td&gt;
+          &lt;td&gt;&amp;gt;15% 为优秀，&amp;gt;30% 为顶级&lt;/td&gt;
+      &lt;/tr&gt;
+  &lt;/tbody&gt;
+&lt;/table&gt;
+&lt;p&gt;&lt;strong&gt;案例——贵州茅台 2025 年利润表核心数据：&lt;/strong&gt;&lt;/p&gt;</description>
+    </item>
+    <item>
       <title>程序员速查手册</title>
       <link>https://sendoray.github.io/posts/2026-05-25-programmer-cheatsheet/</link>
       <pubDate>Mon, 25 May 2026 00:00:00 +0000</pubDate>
