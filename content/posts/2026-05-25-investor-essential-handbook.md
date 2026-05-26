@@ -2,10 +2,7 @@
 title: 投资者必知必会手册
 date: '2026-05-25'
 tags:
-- 投资
-- 财务分析
-- 估值
-- 风险控制
+- Investment
 
 draft: false
 ShowToc: true
