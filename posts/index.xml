@@ -371,9 +371,9 @@
  表示：&lt;span class=&#34;math inline&#34;&gt;\(G_t = R_{t&amp;#43;1} &amp;#43; R_{t&amp;#43;2} &amp;#43; \dots &amp;#43; R_T\)&lt;/span&gt;
 。回报的定义是智能体决策的重要依据，因为强化学习的目标是训练一个策略，使得智能体在每个状态下的期望回报最大化。&lt;/li&gt;
 &lt;/ul&gt;
-&lt;p align=&#34;center&#34;&gt;
+&lt;!-- &lt;p align=&#34;center&#34;&gt;
     &lt;img src=&#34;https://sendoray.github.io/images/apple-touch-icon-180x180.png&#34; alt=&#34;强化学习基本概念示意图&#34; width=&#34;60%&#34;&gt;
-&lt;/p&gt;
+&lt;/p&gt; --&gt;
 &lt;h2 id=&#34;强化学习的目标&#34;&gt;强化学习的目标&lt;/h2&gt;
 &lt;p&gt;在强化学习中，目标是训练一个神经网络 &lt;span class=&#34;math inline&#34;&gt;\(Policy\)&lt;/span&gt;
  &lt;span class=&#34;math inline&#34;&gt;\(\pi\)&lt;/span&gt;
