@@ -13,8 +13,7 @@ ShowPostNavLinks: true
 ---
 # 程序员速查手册
 
-> 一份覆盖日常开发高频场景的速查手册，涵盖 Git 规范、Linux 命令、Vim、Shell 脚本、Docker、正则表达式、tmux。
-> 建议放进 Obsidian / 语雀 / Notion 中，搭配检索使用。
+> 一份覆盖日常开发高频场景的速查手册，涵盖 Git 规范、Linux 命令、Vim、Shell 脚本、Docker、正则表达式、tmux、行业黑话。
 
 ---
 
@@ -28,7 +27,8 @@ ShowPostNavLinks: true
 6. [Docker 常用命令](#6-docker-常用命令)
 7. [正则表达式速查](#7-正则表达式速查)
 8. [tmux 命令行管理](#8-tmux-命令行管理)
-9. [优质在线资源推荐](#9-优质在线资源推荐)
+9. [行业黑话速查](#9-行业黑话速查)
+10. [优质在线资源推荐](#10-优质在线资源推荐)
 
 ---
 
@@ -887,7 +887,140 @@ bind '-' split-window -v -c "#{pane_current_path}"
 
 ---
 
-## 9. 优质在线资源推荐
+## 9. 行业黑话速查
+
+程序员日常沟通中充斥着各种缩写和行话，新人往往一头雾水。以下按场景分类整理，帮助你快速"听懂人话"。
+
+### 9.1 代码审查与协作
+
+| 黑话 | 全称 | 含义 |
+|------|------|------|
+| **WIP** | Work In Progress | 还没做完，别合（PR 标题常见） |
+| **PR** | Pull Request | GitHub 上的合并请求 |
+| **MR** | Merge Request | GitLab 上的合并请求，和 PR 本质相同 |
+| **CR** | Code Review | 代码审查 |
+| **LGTM** | Looks Good To Me | 审查通过，可以合并 |
+| **SGTM** | Sounds Good To Me | 赞同你的方案 |
+| **PTAL** | Please Take A Look | 请帮忙看一下 |
+| **TL;DR** | Too Long; Didn't Read | 太长不看，通常后面跟一段总结 |
+| **Nit / Nitpick** | Nitpick | 小问题挑剔，不影响功能的细节建议 |
+| **NACK** | Negative Acknowledge | 不接受 / 反对 |
+| **ACK** | Acknowledge | 接受 / 确认 |
+| **RFC** | Request For Comments | 提案征集意见，常用于架构设计讨论 |
+| **FYI** | For Your Information | 供你参考 |
+| **CC** | Carbon Copy | 抄送（邮件/PR 中） |
+| **TBR** | To Be Reviewed | 待审查 |
+| **DNM** | Do Not Merge | 不要合并（PR 标签） |
+| **ETA** | Estimated Time of Arrival | 预计完成时间 |
+
+### 9.2 架构与设计原则
+
+| 黑话 | 全称 | 含义 |
+|------|------|------|
+| **KISS** | Keep It Simple, Stupid | 保持简单，别过度设计 |
+| **DRY** | Don't Repeat Yourself | 不要重复自己，抽取复用 |
+| **YAGNI** | You Aren't Gonna Need It | 你不会需要它的，别提前过度设计 |
+| **SOLID** | 五大面向对象原则 | SRP/OCP/LSP/ISP/DIP 的缩写 |
+| **POC** | Proof Of Concept | 概念验证，先跑通再说 |
+| **MVP** | Minimum Viable Product | 最小可行产品 |
+| **IaC** | Infrastructure as Code | 基础设施即代码（Terraform、Ansible） |
+| **DDD** | Domain-Driven Design | 领域驱动设计 |
+| **BFF** | Backend For Frontend | 为前端服务的后端中间层 |
+| **SPOF** | Single Point Of Failure | 单点故障 |
+| **DSL** | Domain-Specific Language | 领域特定语言 |
+
+### 9.3 运维与稳定性
+
+| 黑话 | 全称 | 含义 |
+|------|------|------|
+| **SLA** | Service Level Agreement | 服务等级协议（对客户的承诺） |
+| **SLO** | Service Level Objective | 服务等级目标（内部目标） |
+| **SLI** | Service Level Indicator | 服务等级指标（衡量 SLO 的数据） |
+| **SEV** | Severity | 事故等级（SEV1 最严重） |
+| **P0/P1/P2** | Priority 0/1/2 | 优先级，P0 最紧急 |
+| **On-call** | On-call | 值班，负责响应线上问题 |
+| **Runbook** | Runbook | 运维操作手册，出事照着做 |
+| **Toil** | Toil | 重复性、无成长的运维琐事 |
+| **Blameless Post-mortem** | — | 无指责复盘，只找根因不追责 |
+| **MTTR** | Mean Time To Recovery | 平均恢复时间 |
+| **MTBF** | Mean Time Between Failures | 平均故障间隔 |
+| **OOM** | Out Of Memory | 内存溢出 |
+| **CPU throttle** | — | CPU 被限流（容器/K8s 场景常见） |
+| **Page / Alert** | — | 报警通知（源自 PagerDuty） |
+
+### 9.4 产品与数据指标
+
+| 黑话 | 全称 | 含义 |
+|------|------|------|
+| **DAU** | Daily Active Users | 日活跃用户数 |
+| **MAU** | Monthly Active Users | 月活跃用户数 |
+| **QPS** | Queries Per Second | 每秒查询数 |
+| **TPS** | Transactions Per Second | 每秒事务数 |
+| **RPS** | Requests Per Second | 每秒请求数 |
+| **PV / UV** | Page View / Unique Visitor | 页面浏览量 / 独立访客数 |
+| **GMV** | Gross Merchandise Volume | 成交总额（电商常用） |
+| **ROI** | Return On Investment | 投资回报率 |
+| **ARPU** | Average Revenue Per User | 每用户平均收入 |
+| **LTV** | Life Time Value | 用户生命周期价值 |
+| **CAC** | Customer Acquisition Cost | 获客成本 |
+| **Churn Rate** | — | 流失率 |
+| **Retention Rate** | — | 留存率 |
+
+### 9.5 开发文化与调试行话
+
+| 黑话 | 含义 |
+|------|------|
+| **Dogfooding** | 自己用自己开发的产品（吃自己的狗粮） |
+| **Rubber Ducking** | 橡皮鸭调试法：对着玩具鸭子讲代码逻辑，讲着讲着就找到 bug 了 |
+| **Yak Shaving** | 牦牛剃毛：为了解决 A，必须先解决 B，B 又依赖 C……无限嵌套 |
+| **Bikeshedding** | 自行车棚效应：在琐事上争论不休，大事反而无人关注 |
+| **Tech Debt** | 技术债：为短期速度牺牲的代码质量，迟早要还 |
+| **Gold Plating** | 镀金：过度完善本不需要的功能 |
+| **Happy Path** | 正常流程（没考虑异常的那条路） |
+| **Smoke Test** | 冒烟测试：最基本的功能验证，跑不过就别往下测了 |
+| **Flaky Test** | 时过时不过的测试，最烦人 |
+| **Regression** | 回归：新改动导致原来正常的功能挂了 |
+| **Heisenbug** | 海森堡 bug：一调试就消失，不调试就出现 |
+| **Bohrbug** | 玻尔 bug：可稳定复现的 bug（和 Heisenbug 对应） |
+| **Moth** | 世上第一个 bug：1947 年一只飞蛾卡在继电器里 |
+| **Shotgun Debugging** | 散弹枪调试：瞎改一通看哪个能修 |
+| **voodoo programming** | 巫毒编程：复制粘贴一段代码不知道原理但能用 |
+
+### 9.6 安全相关缩写
+
+| 黑话 | 全称 | 含义 |
+|------|------|------|
+| **XSS** | Cross-Site Scripting | 跨站脚本攻击 |
+| **CSRF** | Cross-Site Request Forgery | 跨站请求伪造 |
+| **SQLi** | SQL Injection | SQL 注入 |
+| **RCE** | Remote Code Execution | 远程代码执行（最严重的漏洞类型之一） |
+| **MITM** | Man-In-The-Middle | 中间人攻击 |
+| **DoS / DDoS** | (Distributed) Denial of Service | （分布式）拒绝服务攻击 |
+| **OWASP** | Open Web Application Security Project | Web 安全标准组织 |
+| **CVE** | Common Vulnerabilities and Exposures | 公开漏洞编号 |
+| **0-day** | Zero-day | 还没被公开/修补的漏洞 |
+| **PE** | Privilege Escalation | 提权 |
+| **RBAC** | Role-Based Access Control | 基于角色的访问控制 |
+
+### 9.7 通用缩写与网络用语
+
+| 黑话 | 全称 | 含义 |
+|------|------|------|
+| **AFAIK** | As Far As I Know | 据我所知 |
+| **IMO / IMHO** | In My (Humble) Opinion | 依我（谦逊）之见 |
+| **TIL** | Today I Learned | 今天学到了 |
+| **RTFM** | Read The F***ing Manual | 自己看文档去（语气不善） |
+| **GIYF** | Google Is Your Friend | 自己搜去 |
+| **IANAL** | I Am Not A Lawyer | 我不是律师（免责声明） |
+| **BOFH** | Bastard Operator From Hell | 暴躁运维（网络梗） |
+| **JFGI** | Just F***ing Google It | 自己搜 |
+| **FWIW** | For What It's Worth | 不管有没有用，说一下 |
+| **IIRC** | If I Recall/Remember Correctly | 如果没记错的话 |
+| **AFK** | Away From Keyboard | 离开键盘（不在工位） |
+
+---
+
+## 10. 优质在线资源推荐
 
 ### Git
 
