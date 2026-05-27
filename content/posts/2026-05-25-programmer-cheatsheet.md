@@ -899,19 +899,11 @@ bind '-' split-window -v -c "#{pane_current_path}"
 | **PR** | Pull Request | GitHub 上的合并请求 |
 | **MR** | Merge Request | GitLab 上的合并请求，和 PR 本质相同 |
 | **CR** | Code Review | 代码审查 |
-| **LGTM** | Looks Good To Me | 审查通过，可以合并 |
-| **SGTM** | Sounds Good To Me | 赞同你的方案 |
-| **PTAL** | Please Take A Look | 请帮忙看一下 |
 | **TL;DR** | Too Long; Didn't Read | 太长不看，通常后面跟一段总结 |
 | **Nit / Nitpick** | Nitpick | 小问题挑剔，不影响功能的细节建议 |
-| **NACK** | Negative Acknowledge | 不接受 / 反对 |
-| **ACK** | Acknowledge | 接受 / 确认 |
 | **RFC** | Request For Comments | 提案征集意见，常用于架构设计讨论 |
-| **FYI** | For Your Information | 供你参考 |
 | **CC** | Carbon Copy | 抄送（邮件/PR 中） |
-| **TBR** | To Be Reviewed | 待审查 |
-| **DNM** | Do Not Merge | 不要合并（PR 标签） |
-| **ETA** | Estimated Time of Arrival | 预计完成时间 |
+
 
 ### 9.2 架构与设计原则
 
