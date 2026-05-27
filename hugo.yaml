@@ -96,11 +96,6 @@ params:
     hiddenInList: true
     hiddenInSingle: true
   
-  editPost:
-    URL: "https://github.com/SendoRay/SendoRay.github.io/content"
-    Text: "Suggest Changes"
-    appendFilePath: true
-  
   # for search
   fuseOpts:
     isCaseSensitive: false
