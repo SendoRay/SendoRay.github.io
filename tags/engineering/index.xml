@@ -13,8 +13,7 @@
       <link>https://sendoray.github.io/posts/2026-05-25-programmer-cheatsheet/</link>
       <pubDate>Mon, 25 May 2026 00:00:00 +0000</pubDate>
       <guid>https://sendoray.github.io/posts/2026-05-25-programmer-cheatsheet/</guid>
-      <description>&lt;h1 id=&#34;程序员速查手册&#34;&gt;程序员速查手册&lt;/h1&gt;
-&lt;blockquote&gt;
+      <description>&lt;blockquote&gt;
 &lt;p&gt;一份覆盖日常开发高频场景的速查手册，涵盖 Git 规范、Linux 命令、Vim、Shell 脚本、Docker、正则表达式、tmux、行业黑话。&lt;/p&gt;&lt;/blockquote&gt;
 &lt;hr&gt;
 &lt;h2 id=&#34;目录&#34;&gt;目录&lt;/h2&gt;
@@ -113,8 +112,7 @@
       <link>https://sendoray.github.io/posts/2026-05-21-engineering-methodology-min-p-sampling/</link>
       <pubDate>Thu, 21 May 2026 00:00:00 +0000</pubDate>
       <guid>https://sendoray.github.io/posts/2026-05-21-engineering-methodology-min-p-sampling/</guid>
-      <description>&lt;h1 id=&#34;一次新功能开发的工程方法论以接入-min-p-采样算子为例&#34;&gt;一次新功能开发的工程方法论：以接入 Min-P 采样算子为例&lt;/h1&gt;
-&lt;p&gt;最近在给推理框架接入一个新的采样算子（Min-P Sampling）时，复盘了一下自己的开发节奏，发现一个比较稳定的&amp;quot;四步法&amp;quot;非常好用。这篇博客不聊采样算法本身的数学细节，而是把它当成一个载体，记录一下我现在做新功能时的工程方法论。&lt;/p&gt;
+      <description>&lt;p&gt;最近在给推理框架接入一个新的采样算子（Min-P Sampling）时，复盘了一下自己的开发节奏，发现一个比较稳定的&amp;quot;四步法&amp;quot;非常好用。这篇博客不聊采样算法本身的数学细节，而是把它当成一个载体，记录一下我现在做新功能时的工程方法论。&lt;/p&gt;
 &lt;blockquote&gt;
 &lt;p&gt;TL;DR：&lt;strong&gt;先理解背景 → 再看历史方案 → 写 minimal test 跑通新功能 → 接入大框架&lt;/strong&gt;。每一步都要有明确的退出条件，不要跳步。&lt;/p&gt;&lt;/blockquote&gt;
 &lt;h2 id=&#34;为什么需要方法论&#34;&gt;为什么需要方法论？&lt;/h2&gt;
@@ -143,7 +141,9 @@
 &lt;li&gt;与已有的 Top-K / Top-P 可以叠加使用，行为符合预期；&lt;/li&gt;
 &lt;li&gt;接入后端到端跑一个小模型，开启 Min-P 不会触发任何已有测试回归。&lt;/li&gt;
 &lt;/ul&gt;&lt;/blockquote&gt;
-&lt;p&gt;这一步的关键不是写得多漂亮，而是&lt;strong&gt;把模糊的需求收敛成可以验证的条件&lt;/strong&gt;。如果连成功标准都说不清楚，后面的所有工作都是没有方向的。&lt;/p&gt;</description>
+&lt;p&gt;这一步的关键不是写得多漂亮，而是&lt;strong&gt;把模糊的需求收敛成可以验证的条件&lt;/strong&gt;。如果连成功标准都说不清楚，后面的所有工作都是没有方向的。&lt;/p&gt;
+&lt;h2 id=&#34;step-2弄清楚之前是怎么做的&#34;&gt;Step 2：弄清楚之前是怎么做的&lt;/h2&gt;
+&lt;p&gt;我以前的习惯是看完需求就开始动手，结果经常出现两种尴尬：&lt;/p&gt;</description>
     </item>
   </channel>
 </rss>

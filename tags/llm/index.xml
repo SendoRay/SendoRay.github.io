@@ -13,9 +13,7 @@
       <link>https://sendoray.github.io/posts/2026-05-26-cuda-graph-deep-dive/</link>
       <pubDate>Tue, 26 May 2026 00:00:00 +0000</pubDate>
       <guid>https://sendoray.github.io/posts/2026-05-26-cuda-graph-deep-dive/</guid>
-      <description>&lt;h1 id=&#34;cuda-graph-深度解析原理机制与-vllmsglang-中的工程实践&#34;&gt;CUDA Graph 深度解析：原理、机制与 vLLM/SGLang 中的工程实践&lt;/h1&gt;
-&lt;hr&gt;
-&lt;h2 id=&#34;一背景为什么需要-cuda-graph&#34;&gt;一、背景：为什么需要 CUDA Graph&lt;/h2&gt;
+      <description>&lt;h2 id=&#34;一背景为什么需要-cuda-graph&#34;&gt;一、背景：为什么需要 CUDA Graph&lt;/h2&gt;
 &lt;p&gt;GPU 越来越快，单个 kernel 的执行时间已经降到微秒级别。但 &lt;strong&gt;每次从 CPU 提交一个 GPU 操作（kernel launch、memcpy 等）本身也有微秒级的 overhead&lt;/strong&gt;：&lt;/p&gt;
 &lt;ul&gt;
 &lt;li&gt;CPU 调用 CUDA 驱动接口&lt;/li&gt;
@@ -63,8 +61,7 @@
       <link>https://sendoray.github.io/posts/2026-05-21-engineering-methodology-min-p-sampling/</link>
       <pubDate>Thu, 21 May 2026 00:00:00 +0000</pubDate>
       <guid>https://sendoray.github.io/posts/2026-05-21-engineering-methodology-min-p-sampling/</guid>
-      <description>&lt;h1 id=&#34;一次新功能开发的工程方法论以接入-min-p-采样算子为例&#34;&gt;一次新功能开发的工程方法论：以接入 Min-P 采样算子为例&lt;/h1&gt;
-&lt;p&gt;最近在给推理框架接入一个新的采样算子（Min-P Sampling）时，复盘了一下自己的开发节奏，发现一个比较稳定的&amp;quot;四步法&amp;quot;非常好用。这篇博客不聊采样算法本身的数学细节，而是把它当成一个载体，记录一下我现在做新功能时的工程方法论。&lt;/p&gt;
+      <description>&lt;p&gt;最近在给推理框架接入一个新的采样算子（Min-P Sampling）时，复盘了一下自己的开发节奏，发现一个比较稳定的&amp;quot;四步法&amp;quot;非常好用。这篇博客不聊采样算法本身的数学细节，而是把它当成一个载体，记录一下我现在做新功能时的工程方法论。&lt;/p&gt;
 &lt;blockquote&gt;
 &lt;p&gt;TL;DR：&lt;strong&gt;先理解背景 → 再看历史方案 → 写 minimal test 跑通新功能 → 接入大框架&lt;/strong&gt;。每一步都要有明确的退出条件，不要跳步。&lt;/p&gt;&lt;/blockquote&gt;
 &lt;h2 id=&#34;为什么需要方法论&#34;&gt;为什么需要方法论？&lt;/h2&gt;
@@ -93,7 +90,9 @@
 &lt;li&gt;与已有的 Top-K / Top-P 可以叠加使用，行为符合预期；&lt;/li&gt;
 &lt;li&gt;接入后端到端跑一个小模型，开启 Min-P 不会触发任何已有测试回归。&lt;/li&gt;
 &lt;/ul&gt;&lt;/blockquote&gt;
-&lt;p&gt;这一步的关键不是写得多漂亮，而是&lt;strong&gt;把模糊的需求收敛成可以验证的条件&lt;/strong&gt;。如果连成功标准都说不清楚，后面的所有工作都是没有方向的。&lt;/p&gt;</description>
+&lt;p&gt;这一步的关键不是写得多漂亮，而是&lt;strong&gt;把模糊的需求收敛成可以验证的条件&lt;/strong&gt;。如果连成功标准都说不清楚，后面的所有工作都是没有方向的。&lt;/p&gt;
+&lt;h2 id=&#34;step-2弄清楚之前是怎么做的&#34;&gt;Step 2：弄清楚之前是怎么做的&lt;/h2&gt;
+&lt;p&gt;我以前的习惯是看完需求就开始动手，结果经常出现两种尴尬：&lt;/p&gt;</description>
     </item>
   </channel>
 </rss>

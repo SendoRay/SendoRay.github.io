@@ -13,9 +13,7 @@
       <link>https://sendoray.github.io/posts/2026-05-26-cuda-graph-deep-dive/</link>
       <pubDate>Tue, 26 May 2026 00:00:00 +0000</pubDate>
       <guid>https://sendoray.github.io/posts/2026-05-26-cuda-graph-deep-dive/</guid>
-      <description>&lt;h1 id=&#34;cuda-graph-深度解析原理机制与-vllmsglang-中的工程实践&#34;&gt;CUDA Graph 深度解析：原理、机制与 vLLM/SGLang 中的工程实践&lt;/h1&gt;
-&lt;hr&gt;
-&lt;h2 id=&#34;一背景为什么需要-cuda-graph&#34;&gt;一、背景：为什么需要 CUDA Graph&lt;/h2&gt;
+      <description>&lt;h2 id=&#34;一背景为什么需要-cuda-graph&#34;&gt;一、背景：为什么需要 CUDA Graph&lt;/h2&gt;
 &lt;p&gt;GPU 越来越快，单个 kernel 的执行时间已经降到微秒级别。但 &lt;strong&gt;每次从 CPU 提交一个 GPU 操作（kernel launch、memcpy 等）本身也有微秒级的 overhead&lt;/strong&gt;：&lt;/p&gt;
 &lt;ul&gt;
 &lt;li&gt;CPU 调用 CUDA 驱动接口&lt;/li&gt;

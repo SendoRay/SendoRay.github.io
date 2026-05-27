@@ -13,9 +13,7 @@
       <link>https://sendoray.github.io/posts/2026-05-26-cuda-graph-deep-dive/</link>
       <pubDate>Tue, 26 May 2026 00:00:00 +0000</pubDate>
       <guid>https://sendoray.github.io/posts/2026-05-26-cuda-graph-deep-dive/</guid>
-      <description>&lt;h1 id=&#34;cuda-graph-深度解析原理机制与-vllmsglang-中的工程实践&#34;&gt;CUDA Graph 深度解析：原理、机制与 vLLM/SGLang 中的工程实践&lt;/h1&gt;
-&lt;hr&gt;
-&lt;h2 id=&#34;一背景为什么需要-cuda-graph&#34;&gt;一、背景：为什么需要 CUDA Graph&lt;/h2&gt;
+      <description>&lt;h2 id=&#34;一背景为什么需要-cuda-graph&#34;&gt;一、背景：为什么需要 CUDA Graph&lt;/h2&gt;
 &lt;p&gt;GPU 越来越快，单个 kernel 的执行时间已经降到微秒级别。但 &lt;strong&gt;每次从 CPU 提交一个 GPU 操作（kernel launch、memcpy 等）本身也有微秒级的 overhead&lt;/strong&gt;：&lt;/p&gt;
 &lt;ul&gt;
 &lt;li&gt;CPU 调用 CUDA 驱动接口&lt;/li&gt;
@@ -59,12 +57,11 @@
 &lt;p&gt;CUDA Graph 的思路很简单：&lt;strong&gt;把反复执行的 kernel 序列&amp;quot;录制&amp;quot;成一张图，后续每次只需一次 CPU 调用就可以回放整张图&lt;/strong&gt;。&lt;/p&gt;</description>
     </item>
     <item>
-      <title>投资者必知必会手册</title>
+      <title>投资者必知必会</title>
       <link>https://sendoray.github.io/posts/2026-05-25-investor-essential-handbook/</link>
       <pubDate>Mon, 25 May 2026 00:00:00 +0000</pubDate>
       <guid>https://sendoray.github.io/posts/2026-05-25-investor-essential-handbook/</guid>
-      <description>&lt;h1 id=&#34;投资者必知必会手册&#34;&gt;投资者必知必会手册&lt;/h1&gt;
-&lt;blockquote&gt;
+      <description>&lt;blockquote&gt;
 &lt;p&gt;本手册以贵州茅台（600519）2025年真实财报数据为贯穿案例，系统梳理投资核心知识体系。&lt;/p&gt;&lt;/blockquote&gt;
 &lt;hr&gt;
 &lt;h2 id=&#34;一财务报表深度解析&#34;&gt;一、财务报表深度解析&lt;/h2&gt;
@@ -163,8 +160,7 @@
       <link>https://sendoray.github.io/posts/2026-05-25-programmer-cheatsheet/</link>
       <pubDate>Mon, 25 May 2026 00:00:00 +0000</pubDate>
       <guid>https://sendoray.github.io/posts/2026-05-25-programmer-cheatsheet/</guid>
-      <description>&lt;h1 id=&#34;程序员速查手册&#34;&gt;程序员速查手册&lt;/h1&gt;
-&lt;blockquote&gt;
+      <description>&lt;blockquote&gt;
 &lt;p&gt;一份覆盖日常开发高频场景的速查手册，涵盖 Git 规范、Linux 命令、Vim、Shell 脚本、Docker、正则表达式、tmux、行业黑话。&lt;/p&gt;&lt;/blockquote&gt;
 &lt;hr&gt;
 &lt;h2 id=&#34;目录&#34;&gt;目录&lt;/h2&gt;
@@ -263,8 +259,7 @@
       <link>https://sendoray.github.io/posts/2026-05-21-engineering-methodology-min-p-sampling/</link>
       <pubDate>Thu, 21 May 2026 00:00:00 +0000</pubDate>
       <guid>https://sendoray.github.io/posts/2026-05-21-engineering-methodology-min-p-sampling/</guid>
-      <description>&lt;h1 id=&#34;一次新功能开发的工程方法论以接入-min-p-采样算子为例&#34;&gt;一次新功能开发的工程方法论：以接入 Min-P 采样算子为例&lt;/h1&gt;
-&lt;p&gt;最近在给推理框架接入一个新的采样算子（Min-P Sampling）时，复盘了一下自己的开发节奏，发现一个比较稳定的&amp;quot;四步法&amp;quot;非常好用。这篇博客不聊采样算法本身的数学细节，而是把它当成一个载体，记录一下我现在做新功能时的工程方法论。&lt;/p&gt;
+      <description>&lt;p&gt;最近在给推理框架接入一个新的采样算子（Min-P Sampling）时，复盘了一下自己的开发节奏，发现一个比较稳定的&amp;quot;四步法&amp;quot;非常好用。这篇博客不聊采样算法本身的数学细节，而是把它当成一个载体，记录一下我现在做新功能时的工程方法论。&lt;/p&gt;
 &lt;blockquote&gt;
 &lt;p&gt;TL;DR：&lt;strong&gt;先理解背景 → 再看历史方案 → 写 minimal test 跑通新功能 → 接入大框架&lt;/strong&gt;。每一步都要有明确的退出条件，不要跳步。&lt;/p&gt;&lt;/blockquote&gt;
 &lt;h2 id=&#34;为什么需要方法论&#34;&gt;为什么需要方法论？&lt;/h2&gt;
@@ -293,15 +288,16 @@
 &lt;li&gt;与已有的 Top-K / Top-P 可以叠加使用，行为符合预期；&lt;/li&gt;
 &lt;li&gt;接入后端到端跑一个小模型，开启 Min-P 不会触发任何已有测试回归。&lt;/li&gt;
 &lt;/ul&gt;&lt;/blockquote&gt;
-&lt;p&gt;这一步的关键不是写得多漂亮，而是&lt;strong&gt;把模糊的需求收敛成可以验证的条件&lt;/strong&gt;。如果连成功标准都说不清楚，后面的所有工作都是没有方向的。&lt;/p&gt;</description>
+&lt;p&gt;这一步的关键不是写得多漂亮，而是&lt;strong&gt;把模糊的需求收敛成可以验证的条件&lt;/strong&gt;。如果连成功标准都说不清楚，后面的所有工作都是没有方向的。&lt;/p&gt;
+&lt;h2 id=&#34;step-2弄清楚之前是怎么做的&#34;&gt;Step 2：弄清楚之前是怎么做的&lt;/h2&gt;
+&lt;p&gt;我以前的习惯是看完需求就开始动手，结果经常出现两种尴尬：&lt;/p&gt;</description>
     </item>
     <item>
       <title>Python List 相关操作与技巧</title>
       <link>https://sendoray.github.io/posts/2026-05-17-python-list-tutorial/</link>
       <pubDate>Sun, 17 May 2026 00:00:00 +0000</pubDate>
       <guid>https://sendoray.github.io/posts/2026-05-17-python-list-tutorial/</guid>
-      <description>&lt;h1 id=&#34;python-list-相关操作与技巧&#34;&gt;Python List 相关操作与技巧&lt;/h1&gt;
-&lt;p&gt;在Python编程中，列表（List）是最常用和最重要的数据结构之一。它提供了一种灵活的方式来存储和管理有序的数据集合。本文将详细介绍Python列表的各种操作和实用技巧。&lt;/p&gt;
+      <description>&lt;p&gt;在Python编程中，列表（List）是最常用和最重要的数据结构之一。它提供了一种灵活的方式来存储和管理有序的数据集合。本文将详细介绍Python列表的各种操作和实用技巧。&lt;/p&gt;
 &lt;h2 id=&#34;什么是列表&#34;&gt;什么是列表？&lt;/h2&gt;
 &lt;p&gt;列表是Python中的一种可变序列类型，可以包含任意类型的元素，包括数字、字符串、对象，甚至其他列表。列表使用方括号 &lt;code&gt;[]&lt;/code&gt; 定义，元素之间用逗号分隔。&lt;/p&gt;
 &lt;div class=&#34;highlight&#34;&gt;&lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code class=&#34;language-python&#34; data-lang=&#34;python&#34;&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;c1&#34;&gt;# 创建列表&lt;/span&gt;
@@ -402,8 +398,7 @@
       <link>https://sendoray.github.io/posts/2024-11-17-reinforcement-learning-intro/</link>
       <pubDate>Fri, 21 Nov 2025 00:00:00 +0000</pubDate>
       <guid>https://sendoray.github.io/posts/2024-11-17-reinforcement-learning-intro/</guid>
-      <description>&lt;h1 id=&#34;强化学习入门从基础概念到ppo算法&#34;&gt;强化学习入门：从基础概念到PPO算法&lt;/h1&gt;
-&lt;p&gt;我们以超级马里奥游戏为例，逐步了解强化学习中涉及的基本概念：&lt;/p&gt;
+      <description>&lt;p&gt;我们以超级马里奥游戏为例，逐步了解强化学习中涉及的基本概念：&lt;/p&gt;
 &lt;ul&gt;
 &lt;li&gt;环境 (Environment)：环境是智能体所处的外部系统，它负责产生当前的状态，接收智能体的动作并返回新的状态和对应的奖励。环境的作用相当于模拟现实中的条件和反应规则，智能体只能通过与环境的交互来了解其动态变化。以超级马里奥游戏为例，环境包括玩家看到的游戏画面和后台程序逻辑。环境控制了游戏进程，例如生成敌人、提供奖励以及决定游戏何时结束。智能体并不知道环境的内部实现细节，只能依靠输入输出规则与环境互动。&lt;/li&gt;
 &lt;li&gt;智能体 (Agent)：智能体是强化学习中的决策者，它会不断地观察环境的状态，并根据其策略选择动作。智能体的目标是通过选择一系列最优动作，获得尽可能多的累积奖励。&lt;/li&gt;

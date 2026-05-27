@@ -13,8 +13,7 @@
       <link>https://sendoray.github.io/posts/2026-05-17-python-list-tutorial/</link>
       <pubDate>Sun, 17 May 2026 00:00:00 +0000</pubDate>
       <guid>https://sendoray.github.io/posts/2026-05-17-python-list-tutorial/</guid>
-      <description>&lt;h1 id=&#34;python-list-相关操作与技巧&#34;&gt;Python List 相关操作与技巧&lt;/h1&gt;
-&lt;p&gt;在Python编程中，列表（List）是最常用和最重要的数据结构之一。它提供了一种灵活的方式来存储和管理有序的数据集合。本文将详细介绍Python列表的各种操作和实用技巧。&lt;/p&gt;
+      <description>&lt;p&gt;在Python编程中，列表（List）是最常用和最重要的数据结构之一。它提供了一种灵活的方式来存储和管理有序的数据集合。本文将详细介绍Python列表的各种操作和实用技巧。&lt;/p&gt;
 &lt;h2 id=&#34;什么是列表&#34;&gt;什么是列表？&lt;/h2&gt;
 &lt;p&gt;列表是Python中的一种可变序列类型，可以包含任意类型的元素，包括数字、字符串、对象，甚至其他列表。列表使用方括号 &lt;code&gt;[]&lt;/code&gt; 定义，元素之间用逗号分隔。&lt;/p&gt;
 &lt;div class=&#34;highlight&#34;&gt;&lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code class=&#34;language-python&#34; data-lang=&#34;python&#34;&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;c1&#34;&gt;# 创建列表&lt;/span&gt;
