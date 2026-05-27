@@ -6,8 +6,15 @@
     <description>Recent content on chengzhy&#39;s blog</description>
     <generator>Hugo</generator>
     <language>en</language>
-    <lastBuildDate>Tue, 26 May 2026 00:00:00 +0000</lastBuildDate>
+    <lastBuildDate>Wed, 27 May 2026 00:00:00 +0000</lastBuildDate>
     <atom:link href="https://sendoray.github.io/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>Recommended</title>
+      <link>https://sendoray.github.io/recommended/</link>
+      <pubDate>Wed, 27 May 2026 00:00:00 +0000</pubDate>
+      <guid>https://sendoray.github.io/recommended/</guid>
+      <description>多和有审美的人交往，因为做坏事不符合他们的审美。</description>
+    </item>
     <item>
       <title>CUDA Graph 深度解析：原理、机制与 vLLM/SGLang 中的工程实践</title>
       <link>https://sendoray.github.io/posts/2026-05-26-cuda-graph-deep-dive/</link>
