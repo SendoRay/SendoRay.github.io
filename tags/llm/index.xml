@@ -6,8 +6,58 @@
     <description>Recent content in LLM on chengzhy&#39;s blog</description>
     <generator>Hugo</generator>
     <language>en</language>
-    <lastBuildDate>Thu, 21 May 2026 00:00:00 +0000</lastBuildDate>
+    <lastBuildDate>Tue, 26 May 2026 00:00:00 +0000</lastBuildDate>
     <atom:link href="https://sendoray.github.io/tags/llm/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>CUDA Graph 深度解析：原理、机制与 vLLM/SGLang 中的工程实践</title>
+      <link>https://sendoray.github.io/posts/2026-05-26-cuda-graph-deep-dive/</link>
+      <pubDate>Tue, 26 May 2026 00:00:00 +0000</pubDate>
+      <guid>https://sendoray.github.io/posts/2026-05-26-cuda-graph-deep-dive/</guid>
+      <description>&lt;h1 id=&#34;cuda-graph-深度解析原理机制与-vllmsglang-中的工程实践&#34;&gt;CUDA Graph 深度解析：原理、机制与 vLLM/SGLang 中的工程实践&lt;/h1&gt;
+&lt;hr&gt;
+&lt;h2 id=&#34;一背景为什么需要-cuda-graph&#34;&gt;一、背景：为什么需要 CUDA Graph&lt;/h2&gt;
+&lt;p&gt;GPU 越来越快，单个 kernel 的执行时间已经降到微秒级别。但 &lt;strong&gt;每次从 CPU 提交一个 GPU 操作（kernel launch、memcpy 等）本身也有微秒级的 overhead&lt;/strong&gt;：&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;CPU 调用 CUDA 驱动接口&lt;/li&gt;
+&lt;li&gt;驱动验证参数、编码命令&lt;/li&gt;
+&lt;li&gt;将命令写入 command queue&lt;/li&gt;
+&lt;li&gt;GPU 轮询 queue、解码命令、启动执行&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;当你的推理循环每次迭代都要 launch 几十上百个 kernel（QKV projection、attention、FFN、layernorm……），这些 launch overhead 累积起来，可能占总耗时的 30%~70%。&lt;/p&gt;
+&lt;table&gt;
+  &lt;thead&gt;
+      &lt;tr&gt;
+          &lt;th&gt;场景&lt;/th&gt;
+          &lt;th&gt;耗时来源&lt;/th&gt;
+      &lt;/tr&gt;
+  &lt;/thead&gt;
+  &lt;tbody&gt;
+      &lt;tr&gt;
+          &lt;td&gt;kernel 实际执行&lt;/td&gt;
+          &lt;td&gt;2.9 μs（示例）&lt;/td&gt;
+      &lt;/tr&gt;
+      &lt;tr&gt;
+          &lt;td&gt;单次 launch overhead&lt;/td&gt;
+          &lt;td&gt;~3-6 μs&lt;/td&gt;
+      &lt;/tr&gt;
+      &lt;tr&gt;
+          &lt;td&gt;20 个 kernel 逐个同步 launch&lt;/td&gt;
+          &lt;td&gt;9.6 μs/kernel（overhead 占 70%）&lt;/td&gt;
+      &lt;/tr&gt;
+      &lt;tr&gt;
+          &lt;td&gt;20 个 kernel 流水 launch&lt;/td&gt;
+          &lt;td&gt;3.8 μs/kernel（仍有 overhead）&lt;/td&gt;
+      &lt;/tr&gt;
+      &lt;tr&gt;
+          &lt;td&gt;CUDA Graph&lt;/td&gt;
+          &lt;td&gt;3.4 μs/kernel（接近理论极限）&lt;/td&gt;
+      &lt;/tr&gt;
+  &lt;/tbody&gt;
+&lt;/table&gt;
+&lt;hr&gt;
+&lt;h2 id=&#34;二cuda-graph-核心原理&#34;&gt;二、CUDA Graph 核心原理&lt;/h2&gt;
+&lt;p&gt;CUDA Graph 的思路很简单：&lt;strong&gt;把反复执行的 kernel 序列&amp;quot;录制&amp;quot;成一张图，后续每次只需一次 CPU 调用就可以回放整张图&lt;/strong&gt;。&lt;/p&gt;</description>
+    </item>
     <item>
       <title>一次新功能开发的工程方法论：以接入 Min-P 采样算子为例</title>
       <link>https://sendoray.github.io/posts/2026-05-21-engineering-methodology-min-p-sampling/</link>
