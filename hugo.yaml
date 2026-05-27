@@ -55,10 +55,10 @@ params:
   
   # profile-mode
   profileMode:
-    enabled: false
+    enabled: true
     title: "chengzhy's blog"
-    subtitle: "AI infra and LLM inference optimization"
-    imageUrl: "<img location>"
+    subtitle: "We choose to go to the moon, not because they are easy, but because they are hard."
+    imageUrl: "images/bio-photo.jpg"
     imageWidth: 120
     imageHeight: 120
     imageTitle: my image
@@ -67,6 +67,8 @@ params:
         url: posts
       - name: About
         url: about
+      - name: Recommended
+        url: recommended
   
   # home-info mode
   homeInfoParams:
