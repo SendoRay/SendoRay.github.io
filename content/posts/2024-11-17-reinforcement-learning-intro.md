@@ -11,7 +11,6 @@ ShowReadingTime: true
 ShowBreadCrumbs: true
 ShowPostNavLinks: true
 ---
-# 强化学习入门：从基础概念到PPO算法
 
 我们以超级马里奥游戏为例，逐步了解强化学习中涉及的基本概念：
 

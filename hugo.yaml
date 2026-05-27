@@ -1,7 +1,7 @@
 baseURL: "https://SendoRay.github.io/"
 title: "chengzhy's blog"
 pagination:
-  pagerSize: 5
+  pagerSize: 100
 theme: PaperMod
 
 enableRobotsTXT: true

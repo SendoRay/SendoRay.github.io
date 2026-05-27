@@ -1,5 +1,5 @@
 ---
-title: 投资者必知必会手册
+title: 投资者必知必会
 date: '2026-05-25'
 tags:
 - Investment
@@ -11,7 +11,6 @@ ShowReadingTime: true
 ShowBreadCrumbs: true
 ShowPostNavLinks: true
 ---
-# 投资者必知必会手册
 
 > 本手册以贵州茅台（600519）2025年真实财报数据为贯穿案例，系统梳理投资核心知识体系。
 
