@@ -11,3 +11,5 @@ https://zhuanlan.zhihu.com/p/2024601794567762221 dualpath
 
 
 快速 bash 行首 行尾
+
+写一下 自己对于ai的分析 是作为consultant，或者一个管家
