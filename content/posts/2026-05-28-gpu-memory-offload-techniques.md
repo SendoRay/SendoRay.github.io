@@ -4,7 +4,6 @@ date: '2026-05-28'
 tags:
 - LLM
 - GPU
-- CUDA
 
 draft: false
 ShowToc: true
