@@ -14,9 +14,11 @@
       <pubDate>Thu, 28 May 2026 00:00:00 +0000</pubDate>
       <guid>https://sendoray.github.io/posts/2026-05-28-gpu-memory-offload-techniques/</guid>
       <description>&lt;blockquote&gt;
-&lt;p&gt;作者：菽陌松囿
-链接：https://www.zhihu.com/question/1989041714380416374/answer/1990864712833967977
-来源：知乎&lt;/p&gt;&lt;/blockquote&gt;
+&lt;p&gt;作者：菽陌松囿&lt;/p&gt;&lt;/blockquote&gt;
+&lt;blockquote&gt;
+&lt;p&gt;链接：https://www.zhihu.com/question/1989041714380416374/answer/1990864712833967977&lt;/p&gt;&lt;/blockquote&gt;
+&lt;blockquote&gt;
+&lt;p&gt;来源：知乎&lt;/p&gt;&lt;/blockquote&gt;
 &lt;hr&gt;
 &lt;p&gt;有钱有卡的话（团队可操控千卡+左右，模型几百B），边际收益（做东西你要承担风险）有限，但是你如果只有 256/512 卡，单卡 80G-140G 显存，offload 还是有不少收益的，不是没事可做，只是大家还没玩溜，没有现成可抄的。&lt;/p&gt;
 &lt;hr&gt;
