@@ -230,6 +230,53 @@ git fsck --lost-found             # 找回悬空对象
 git checkout -b rescue <commit>   # 用旧 commit 创建分支救回
 ```
 
+### 2.9 子模块（submodule，俗称 submod）
+
+**submod 是什么？** `submod` 是 `git submodule` 的口头缩写，指 Git 的「子模块」机制：把另一个 Git 仓库作为子目录嵌入当前仓库，主仓只记录子仓的某个 commit 指针，不复制其代码。常见用途：引入第三方库、Hugo 主题（如本博客的 `themes/PaperMod`）、跨项目共享组件。
+
+配置文件 `.gitmodules` 会记录子模块的路径与远程地址，提交后协作者可一键拉取。
+
+```bash
+# 添加子模块（最常用）
+git submodule add <url> <path>          # 例：git submodule add https://github.com/adityatelange/hugo-PaperMod themes/PaperMod
+git submodule add -b main <url> <path>  # 指定跟踪分支
+
+# 克隆带子模块的仓库
+git clone --recurse-submodules <url>    # 克隆时一并拉取所有子模块
+git clone --recursive <url>             # 同上简写
+
+# 已克隆的仓库初始化子模块
+git submodule init                       # 注册 .gitmodules 中的配置
+git submodule update                     # 拉取子模块到主仓记录的 commit
+git submodule update --init --recursive  # 初始化 + 拉取 + 嵌套子模块（最常用）
+
+# 更新子模块到远程最新
+git submodule update --remote                 # 拉取所有子模块的最新
+git submodule update --remote <path>          # 仅更新指定子模块
+git submodule update --remote --merge         # 拉取后 merge
+git submodule update --remote --rebase        # 拉取后 rebase
+
+# 查看子模块状态
+git submodule status                     # 查看每个子模块当前 commit
+git submodule summary                    # 查看主仓与子模块的差异
+git submodule foreach 'git status'       # 对每个子模块执行命令
+
+# 修改子模块远程地址
+git submodule set-url <path> <new-url>   # 修改 .gitmodules 中的 URL
+git submodule sync                       # 同步 .gitmodules 到 .git/config
+
+# 删除子模块（需三步，且容易踩坑）
+git submodule deinit -f <path>           # 1. 反初始化
+git rm -f <path>                         # 2. 从工作区与索引删除
+rm -rf .git/modules/<path>               # 3. 删除 .git 内部记录
+```
+
+**易踩坑提示：**
+
+- 主仓提交时，子模块只会记录一个 commit hash；协作者拉取后必须执行 `git submodule update --init --recursive` 才能看到内容
+- 进入子模块目录后，它就是一个独立 Git 仓库，可以正常 `git checkout` `git pull`，但改完要回主仓再 `git add <path> && git commit` 让主仓指针前进
+- CI/CD 上常忘记勾选「拉取子模块」，导致构建缺文件；GitHub Actions 中要写 `submodules: recursive`
+
 ---
 
 ## 3. Linux 常用命令
