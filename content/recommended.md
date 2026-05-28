@@ -29,7 +29,7 @@ hideSummary: true
 
 > 韩国版跑男
 
-The only reason to recommend it is with ffin
+The only reason to recommend it is with FFin
 
 [在B站看](https://www.bilibili.com/bangumi/play/ss26128)
 
