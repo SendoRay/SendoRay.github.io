@@ -29,7 +29,7 @@ hideSummary: true
 
 > 韩国版跑男
 
-with ffin
+with ffin is the only reason
 
 [在B站看](https://www.bilibili.com/bangumi/play/ss26128)
 
