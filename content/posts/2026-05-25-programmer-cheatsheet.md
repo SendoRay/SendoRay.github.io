@@ -12,7 +12,7 @@ ShowBreadCrumbs: true
 ShowPostNavLinks: true
 ---
 
-> 一份覆盖日常开发高频场景的速查手册，涵盖 Git 规范、Linux 命令、Vim、Shell 脚本、Docker、正则表达式、tmux、行业黑话。
+> 一份覆盖日常开发高频场景的速查手册，涵盖 Git 规范、Linux 命令、Vim、Shell 脚本、Docker、正则表达式、tmux、行业黑话、Claude Code。
 
 ---
 
@@ -27,7 +27,8 @@ ShowPostNavLinks: true
 7. [正则表达式速查](#7-正则表达式速查)
 8. [tmux 命令行管理](#8-tmux-命令行管理)
 9. [行业黑话速查](#9-行业黑话速查)
-10. [优质在线资源推荐](#10-优质在线资源推荐)
+10. [Claude Code 速查](#10-claude-code-速查)
+11. [优质在线资源推荐](#11-优质在线资源推荐)
 
 ---
 
@@ -951,114 +952,68 @@ bind '-' split-window -v -c "#{pane_current_path}"
 | **CC** | Carbon Copy | 抄送（邮件/PR 中） |
 
 
-### 9.2 架构与设计原则
 
-| 黑话 | 全称 | 含义 |
-|------|------|------|
-| **KISS** | Keep It Simple, Stupid | 保持简单，别过度设计 |
-| **DRY** | Don't Repeat Yourself | 不要重复自己，抽取复用 |
-| **YAGNI** | You Aren't Gonna Need It | 你不会需要它的，别提前过度设计 |
-| **SOLID** | 五大面向对象原则 | SRP/OCP/LSP/ISP/DIP 的缩写 |
-| **POC** | Proof Of Concept | 概念验证，先跑通再说 |
-| **MVP** | Minimum Viable Product | 最小可行产品 |
-| **IaC** | Infrastructure as Code | 基础设施即代码（Terraform、Ansible） |
-| **DDD** | Domain-Driven Design | 领域驱动设计 |
-| **BFF** | Backend For Frontend | 为前端服务的后端中间层 |
-| **SPOF** | Single Point Of Failure | 单点故障 |
-| **DSL** | Domain-Specific Language | 领域特定语言 |
-
-### 9.3 运维与稳定性
-
-| 黑话 | 全称 | 含义 |
-|------|------|------|
-| **SLA** | Service Level Agreement | 服务等级协议（对客户的承诺） |
-| **SLO** | Service Level Objective | 服务等级目标（内部目标） |
-| **SLI** | Service Level Indicator | 服务等级指标（衡量 SLO 的数据） |
-| **SEV** | Severity | 事故等级（SEV1 最严重） |
-| **P0/P1/P2** | Priority 0/1/2 | 优先级，P0 最紧急 |
-| **On-call** | On-call | 值班，负责响应线上问题 |
-| **Runbook** | Runbook | 运维操作手册，出事照着做 |
-| **Toil** | Toil | 重复性、无成长的运维琐事 |
-| **Blameless Post-mortem** | — | 无指责复盘，只找根因不追责 |
-| **MTTR** | Mean Time To Recovery | 平均恢复时间 |
-| **MTBF** | Mean Time Between Failures | 平均故障间隔 |
-| **OOM** | Out Of Memory | 内存溢出 |
-| **CPU throttle** | — | CPU 被限流（容器/K8s 场景常见） |
-| **Page / Alert** | — | 报警通知（源自 PagerDuty） |
-
-### 9.4 产品与数据指标
-
-| 黑话 | 全称 | 含义 |
-|------|------|------|
-| **DAU** | Daily Active Users | 日活跃用户数 |
-| **MAU** | Monthly Active Users | 月活跃用户数 |
-| **QPS** | Queries Per Second | 每秒查询数 |
-| **TPS** | Transactions Per Second | 每秒事务数 |
-| **RPS** | Requests Per Second | 每秒请求数 |
-| **PV / UV** | Page View / Unique Visitor | 页面浏览量 / 独立访客数 |
-| **GMV** | Gross Merchandise Volume | 成交总额（电商常用） |
-| **ROI** | Return On Investment | 投资回报率 |
-| **ARPU** | Average Revenue Per User | 每用户平均收入 |
-| **LTV** | Life Time Value | 用户生命周期价值 |
-| **CAC** | Customer Acquisition Cost | 获客成本 |
-| **Churn Rate** | — | 流失率 |
-| **Retention Rate** | — | 留存率 |
-
-### 9.5 开发文化与调试行话
-
-| 黑话 | 含义 |
-|------|------|
-| **Dogfooding** | 自己用自己开发的产品（吃自己的狗粮） |
-| **Rubber Ducking** | 橡皮鸭调试法：对着玩具鸭子讲代码逻辑，讲着讲着就找到 bug 了 |
-| **Yak Shaving** | 牦牛剃毛：为了解决 A，必须先解决 B，B 又依赖 C……无限嵌套 |
-| **Bikeshedding** | 自行车棚效应：在琐事上争论不休，大事反而无人关注 |
-| **Tech Debt** | 技术债：为短期速度牺牲的代码质量，迟早要还 |
-| **Gold Plating** | 镀金：过度完善本不需要的功能 |
-| **Happy Path** | 正常流程（没考虑异常的那条路） |
-| **Smoke Test** | 冒烟测试：最基本的功能验证，跑不过就别往下测了 |
-| **Flaky Test** | 时过时不过的测试，最烦人 |
-| **Regression** | 回归：新改动导致原来正常的功能挂了 |
-| **Heisenbug** | 海森堡 bug：一调试就消失，不调试就出现 |
-| **Bohrbug** | 玻尔 bug：可稳定复现的 bug（和 Heisenbug 对应） |
-| **Moth** | 世上第一个 bug：1947 年一只飞蛾卡在继电器里 |
-| **Shotgun Debugging** | 散弹枪调试：瞎改一通看哪个能修 |
-| **voodoo programming** | 巫毒编程：复制粘贴一段代码不知道原理但能用 |
-
-### 9.6 安全相关缩写
-
-| 黑话 | 全称 | 含义 |
-|------|------|------|
-| **XSS** | Cross-Site Scripting | 跨站脚本攻击 |
-| **CSRF** | Cross-Site Request Forgery | 跨站请求伪造 |
-| **SQLi** | SQL Injection | SQL 注入 |
-| **RCE** | Remote Code Execution | 远程代码执行（最严重的漏洞类型之一） |
-| **MITM** | Man-In-The-Middle | 中间人攻击 |
-| **DoS / DDoS** | (Distributed) Denial of Service | （分布式）拒绝服务攻击 |
-| **OWASP** | Open Web Application Security Project | Web 安全标准组织 |
-| **CVE** | Common Vulnerabilities and Exposures | 公开漏洞编号 |
-| **0-day** | Zero-day | 还没被公开/修补的漏洞 |
-| **PE** | Privilege Escalation | 提权 |
-| **RBAC** | Role-Based Access Control | 基于角色的访问控制 |
-
-### 9.7 通用缩写与网络用语
-
-| 黑话 | 全称 | 含义 |
-|------|------|------|
-| **AFAIK** | As Far As I Know | 据我所知 |
-| **IMO / IMHO** | In My (Humble) Opinion | 依我（谦逊）之见 |
-| **TIL** | Today I Learned | 今天学到了 |
-| **RTFM** | Read The F***ing Manual | 自己看文档去（语气不善） |
-| **GIYF** | Google Is Your Friend | 自己搜去 |
-| **IANAL** | I Am Not A Lawyer | 我不是律师（免责声明） |
-| **BOFH** | Bastard Operator From Hell | 暴躁运维（网络梗） |
-| **JFGI** | Just F***ing Google It | 自己搜 |
-| **FWIW** | For What It's Worth | 不管有没有用，说一下 |
-| **IIRC** | If I Recall/Remember Correctly | 如果没记错的话 |
-| **AFK** | Away From Keyboard | 离开键盘（不在工位） |
 
 ---
 
-## 10. 优质在线资源推荐
+## 10. Claude Code 速查
+
+Claude Code 是 Anthropic 官方的 AI 编程 CLI 工具，直接在终端中与 Claude 协作完成开发任务。支持代码生成、调试、重构、Git 操作、代码审查等。
+
+### 10.1 启动与基础用法
+
+```bash
+claude                            # 启动交互式会话
+claude --resume     / -r              # 恢复上一次会话
+claude --continue       / -c          # 继续最近的会话
+claude --debug                    # 调试模式启动
+```
+
+### 10.2 高频命令
+
+会话内输入 `/` 可查看所有命令，输入 `/` 后跟字母可筛选。
+
+| 命令 | 用途 |
+|------|------|
+| `/plan [描述]` | 进入 Plan Mode，先规划再动手 |
+| `/model [模型]` | 切换模型 |
+| `/compact [指令]` | 总结对话释放上下文 |
+| `/diff` | 查看未提交的更改和每轮差异 |
+| `/rewind` | 回滚代码和对话到检查点 |
+| `/code-review` | 审查当前差异，找正确性错误和清理建议 |
+| `/simplify` | 审查更改的代码并应用清理 |
+| `/background` | 分离会话到后台继续运行 |
+| `/memory` | 编辑 CLAUDE.md 内存文件 |
+| `/goal [条件]` | 设置目标，Claude 持续工作直到满足 |
+| `/btw <问题>` | 快速侧面提问，不加入对话历史 |
+
+### 10.3 键盘快捷键
+
+| 快捷键 | 描述 |
+|--------|------|
+| `Ctrl+C` | 中断操作 / 清除输入 / 退出 |
+| `Esc` | 中断 Claude 当前响应 |
+| `Esc Esc` | 清除输入草稿，或打开回退菜单 |
+| `Ctrl+B` | 后台运行当前任务（tmux 用户按两次） |
+| `Ctrl+T` | 切换任务列表 |
+| `Ctrl+L` | 重绘屏幕 , 终于知道vscode里面画面崩了之后咋办了|
+| `Ctrl+V` | 粘贴图像 |
+| `Shift+Tab` | 循环权限模式 |
+
+
+
+### 10.5 快速输入前缀
+
+| 前缀 | 用途 | 示例 |
+|------|------|------|
+| `/` | 命令或 skill | `/plan 重构用户模块` |
+| `!` | 直接执行 shell 命令 | `! npm test` |
+| `@` | 文件路径提及（触发自动补全） | `@src/index.ts` |
+
+
+---
+
+## 11. 优质在线资源推荐
 
 ### Git
 
@@ -1108,6 +1063,13 @@ bind '-' split-window -v -c "#{pane_current_path}"
 - [tmux 入门教程（阮一峰）](https://wangdoc.com/bash/tmux.html) — 中文友好入门
 - [tmuxcheatsheet.com](https://tmuxcheatsheet.com/) — 交互式速查表
 - [A Quick and Easy Guide to tmux](https://www.hamvocke.com/blog/a-quick-and-easy-guide-to-tmux/) — 英文图文教程
+
+### Claude Code
+
+- [Claude Code 官方文档](https://docs.anthropic.com/en/docs/claude-code) — 完整使用指南
+- [命令参考](https://code.claude.com/docs/commands) — 所有命令一览
+- [交互模式参考](https://code.claude.com/docs/interactive-mode) — 快捷键与输入模式
+- [CLI 参考](https://code.claude.com/docs/cli-reference) — 启动标志与环境变量
 
 ### 其他高频
 
