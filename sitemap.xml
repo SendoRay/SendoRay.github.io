@@ -3,7 +3,22 @@
   xmlns:xhtml="http://www.w3.org/1999/xhtml">
   <url>
     <loc>https://sendoray.github.io/</loc>
-    <lastmod>2026-05-28T00:00:00+00:00</lastmod>
+    <lastmod>2026-06-03T00:00:00+00:00</lastmod>
+  </url><url>
+    <loc>https://sendoray.github.io/tags/engineering/</loc>
+    <lastmod>2026-06-03T00:00:00+00:00</lastmod>
+  </url><url>
+    <loc>https://sendoray.github.io/posts/</loc>
+    <lastmod>2026-06-03T00:00:00+00:00</lastmod>
+  </url><url>
+    <loc>https://sendoray.github.io/tags/system/</loc>
+    <lastmod>2026-06-03T00:00:00+00:00</lastmod>
+  </url><url>
+    <loc>https://sendoray.github.io/tags/</loc>
+    <lastmod>2026-06-03T00:00:00+00:00</lastmod>
+  </url><url>
+    <loc>https://sendoray.github.io/posts/communicate/</loc>
+    <lastmod>2026-06-03T00:00:00+00:00</lastmod>
   </url><url>
     <loc>https://sendoray.github.io/tags/gpu/</loc>
     <lastmod>2026-05-28T00:00:00+00:00</lastmod>
@@ -14,20 +29,11 @@
     <loc>https://sendoray.github.io/tags/llm/</loc>
     <lastmod>2026-05-28T00:00:00+00:00</lastmod>
   </url><url>
-    <loc>https://sendoray.github.io/posts/</loc>
-    <lastmod>2026-05-28T00:00:00+00:00</lastmod>
-  </url><url>
-    <loc>https://sendoray.github.io/tags/</loc>
-    <lastmod>2026-05-28T00:00:00+00:00</lastmod>
-  </url><url>
     <loc>https://sendoray.github.io/recommended/</loc>
     <lastmod>2026-05-27T00:00:00+00:00</lastmod>
   </url><url>
     <loc>https://sendoray.github.io/posts/2026-05-26-cuda-graph-deep-dive/</loc>
     <lastmod>2026-05-26T00:00:00+00:00</lastmod>
-  </url><url>
-    <loc>https://sendoray.github.io/tags/engineering/</loc>
-    <lastmod>2026-05-25T00:00:00+00:00</lastmod>
   </url><url>
     <loc>https://sendoray.github.io/tags/investment/</loc>
     <lastmod>2026-05-25T00:00:00+00:00</lastmod>

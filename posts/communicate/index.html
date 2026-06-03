@@ -1,0 +1,231 @@
+<!doctype html><html lang=en dir=auto data-theme=auto><head><meta charset=utf-8><meta http-equiv=X-UA-Compatible content="IE=edge"><meta name=viewport content="width=device-width,initial-scale=1,shrink-to-fit=no"><meta name=robots content="index, follow"><title>图解 DMA、Zero-Copy 与 GPUDirect | chengzhy's blog</title>
+<meta name=keywords content="Engineering,System"><meta name=description content='
+从一台机器的硬件结构出发，逐步讲清 DMA、Pinned Memory、Zero-Copy 和 GPUDirect RDMA 的本质。
+
+第一步：先搞清楚一台机器长什么样
+┌─────────────────────────────────────────────────────────────────────┐
+│                        一台物理机（一个节点）                         │
+│                                                                      │
+│   ┌─────────────────────────────────────────────────────────┐       │
+│   │                    主板 (Motherboard)                    │       │
+│   │                                                          │       │
+│   │   ┌──────────┐        ┌──────────────────────────────┐  │       │
+│   │   │   CPU    │        │       内存条 (DRAM)           │  │       │
+│   │   │  (大脑)  │◄──────►│    CPU 能直接读写的地方       │  │       │
+│   │   │          │  内存总线│       DDR5, 64~512GB         │  │       │
+│   │   └────┬─────┘        └──────────────────────────────┘  │       │
+│   │        │                                                  │       │
+│   │        │  PCIe 总线（高速公路，连接各种外设）             │       │
+│   │   ─────┼──────────────────────────────────────           │       │
+│   │        │         │              │            │            │       │
+│   │   ┌────┴───┐ ┌───┴────┐ ┌──────┴───┐ ┌─────┴────┐      │       │
+│   │   │  GPU   │ │  NIC   │ │  NVMe    │ │  其他    │      │       │
+│   │   │(显卡)  │ │ (网卡) │ │  (硬盘)  │ │  外设    │      │       │
+│   │   │ HBM内存│ │        │ │          │ │          │      │       │
+│   │   └────────┘ └────────┘ └──────────┘ └──────────┘      │       │
+│   └─────────────────────────────────────────────────────────┘       │
+│                                                                      │
+│   这整个大框框 = 一个"节点" (Node)                                   │
+│   多台这样的机器用网线连起来 = 集群                                   │
+└─────────────────────────────────────────────────────────────────────┘
+关键认知：'><meta name=author content="cheng zhiyuan"><link rel=canonical href=https://sendoray.github.io/posts/communicate/><meta name=google-site-verification content="XYZabc"><meta name=yandex-verification content="XYZabc"><meta name=msvalidate.01 content="XYZabc"><link crossorigin=anonymous href=/assets/css/stylesheet.6ff46447b1fa3f8a5cc0bcae48088decc3ae37f5fbc99406a3aefc3bf0e6044a.css integrity="sha256-b/RkR7H6P4pcwLyuSAiN7MOuN/X7yZQGo678O/DmBEo=" rel="preload stylesheet" as=style><link rel=icon href=https://sendoray.github.io/%3Clink%20/%20abs%20url%3E><link rel=icon type=image/png sizes=16x16 href=https://sendoray.github.io/%3Clink%20/%20abs%20url%3E><link rel=icon type=image/png sizes=32x32 href=https://sendoray.github.io/%3Clink%20/%20abs%20url%3E><link rel=apple-touch-icon href=https://sendoray.github.io/%3Clink%20/%20abs%20url%3E><link rel=mask-icon href=https://sendoray.github.io/%3Clink%20/%20abs%20url%3E><meta name=theme-color content="#2e2e33"><meta name=msapplication-TileColor content="#2e2e33"><link rel=alternate hreflang=en href=https://sendoray.github.io/posts/communicate/><noscript><style>#theme-toggle,.top-link{display:none}</style><style>@media(prefers-color-scheme:dark){:root{--theme:rgb(29, 30, 32);--entry:rgb(46, 46, 51);--primary:rgb(218, 218, 219);--secondary:rgb(155, 156, 157);--tertiary:rgb(65, 66, 68);--content:rgb(196, 196, 197);--code-block-bg:rgb(46, 46, 51);--code-bg:rgb(55, 56, 62);--border:rgb(51, 51, 51);color-scheme:dark}.list{background:var(--theme)}.toc{background:var(--entry)}}</style></noscript><script>localStorage.getItem("pref-theme")==="dark"?document.querySelector("html").dataset.theme="dark":localStorage.getItem("pref-theme")==="light"?document.querySelector("html").dataset.theme="light":window.matchMedia("(prefers-color-scheme: dark)").matches?document.querySelector("html").dataset.theme="dark":document.querySelector("html").dataset.theme="light"</script><link rel=stylesheet href=https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css integrity=sha384-nB0miv6/jRmo5UMMR1wu3Gz6NLsoTkbqJghGIsx//Rlm+ZU03BU6SQNC66uf4l5+ crossorigin=anonymous><script defer src=https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js integrity=sha384-7zkQWkzuo3B5mTepMUcHkMB5jZaolc2xDwL6VFqjFALcbeS9Ggm/Yr2r3Dy4lfFg crossorigin=anonymous></script><script defer src=https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js integrity=sha384-43gviWU0YVjaDtb/GhzOouOXtZMP/7XUzwPTstBeZFe/+rCMvRwr4yROQP43s0Xk crossorigin=anonymous></script><script>document.addEventListener("DOMContentLoaded",function(){renderMathInElement(document.body,{delimiters:[{left:"\\[",right:"\\]",display:!0},{left:"$$",right:"$$",display:!0},{left:"\\(",right:"\\)",display:!1},{left:"$",right:"$",display:!1}],throwOnError:!1})})</script><meta property="og:url" content="https://sendoray.github.io/posts/communicate/"><meta property="og:site_name" content="chengzhy's blog"><meta property="og:title" content="图解 DMA、Zero-Copy 与 GPUDirect"><meta property="og:description" content='从一台机器的硬件结构出发，逐步讲清 DMA、Pinned Memory、Zero-Copy 和 GPUDirect RDMA 的本质。
+第一步：先搞清楚一台机器长什么样 ┌─────────────────────────────────────────────────────────────────────┐ │ 一台物理机（一个节点） │ │ │ │ ┌─────────────────────────────────────────────────────────┐ │ │ │ 主板 (Motherboard) │ │ │ │ │ │ │ │ ┌──────────┐ ┌──────────────────────────────┐ │ │ │ │ │ CPU │ │ 内存条 (DRAM) │ │ │ │ │ │ (大脑) │◄──────►│ CPU 能直接读写的地方 │ │ │ │ │ │ │ 内存总线│ DDR5, 64~512GB │ │ │ │ │ └────┬─────┘ └──────────────────────────────┘ │ │ │ │ │ │ │ │ │ │ PCIe 总线（高速公路，连接各种外设） │ │ │ │ ─────┼────────────────────────────────────── │ │ │ │ │ │ │ │ │ │ │ │ ┌────┴───┐ ┌───┴────┐ ┌──────┴───┐ ┌─────┴────┐ │ │ │ │ │ GPU │ │ NIC │ │ NVMe │ │ 其他 │ │ │ │ │ │(显卡) │ │ (网卡) │ │ (硬盘) │ │ 外设 │ │ │ │ │ │ HBM内存│ │ │ │ │ │ │ │ │ │ │ └────────┘ └────────┘ └──────────┘ └──────────┘ │ │ │ └─────────────────────────────────────────────────────────┘ │ │ │ │ 这整个大框框 = 一个"节点" (Node) │ │ 多台这样的机器用网线连起来 = 集群 │ └─────────────────────────────────────────────────────────────────────┘ 关键认知：'><meta property="og:locale" content="en"><meta property="og:type" content="article"><meta property="article:section" content="posts"><meta property="article:published_time" content="2026-06-03T00:00:00+00:00"><meta property="article:modified_time" content="2026-06-03T00:00:00+00:00"><meta property="article:tag" content="Engineering"><meta property="article:tag" content="System"><meta name=twitter:card content="summary"><meta name=twitter:title content="图解 DMA、Zero-Copy 与 GPUDirect"><meta name=twitter:description content='从一台机器的硬件结构出发，逐步讲清 DMA、Pinned Memory、Zero-Copy 和 GPUDirect RDMA 的本质。
+第一步：先搞清楚一台机器长什么样 ┌─────────────────────────────────────────────────────────────────────┐ │ 一台物理机（一个节点） │ │ │ │ ┌─────────────────────────────────────────────────────────┐ │ │ │ 主板 (Motherboard) │ │ │ │ │ │ │ │ ┌──────────┐ ┌──────────────────────────────┐ │ │ │ │ │ CPU │ │ 内存条 (DRAM) │ │ │ │ │ │ (大脑) │◄──────►│ CPU 能直接读写的地方 │ │ │ │ │ │ │ 内存总线│ DDR5, 64~512GB │ │ │ │ │ └────┬─────┘ └──────────────────────────────┘ │ │ │ │ │ │ │ │ │ │ PCIe 总线（高速公路，连接各种外设） │ │ │ │ ─────┼────────────────────────────────────── │ │ │ │ │ │ │ │ │ │ │ │ ┌────┴───┐ ┌───┴────┐ ┌──────┴───┐ ┌─────┴────┐ │ │ │ │ │ GPU │ │ NIC │ │ NVMe │ │ 其他 │ │ │ │ │ │(显卡) │ │ (网卡) │ │ (硬盘) │ │ 外设 │ │ │ │ │ │ HBM内存│ │ │ │ │ │ │ │ │ │ │ └────────┘ └────────┘ └──────────┘ └──────────┘ │ │ │ └─────────────────────────────────────────────────────────┘ │ │ │ │ 这整个大框框 = 一个"节点" (Node) │ │ 多台这样的机器用网线连起来 = 集群 │ └─────────────────────────────────────────────────────────────────────┘ 关键认知：'><script type=application/ld+json>{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Posts","item":"https://sendoray.github.io/posts/"},{"@type":"ListItem","position":2,"name":"图解 DMA、Zero-Copy 与 GPUDirect","item":"https://sendoray.github.io/posts/communicate/"}]}</script><script type=application/ld+json>{"@context":"https://schema.org","@type":"BlogPosting","headline":"图解 DMA、Zero-Copy 与 GPUDirect","name":"图解 DMA、Zero-Copy 与 GPUDirect","description":" 从一台机器的硬件结构出发，逐步讲清 DMA、Pinned Memory、Zero-Copy 和 GPUDirect RDMA 的本质。\n第一步：先搞清楚一台机器长什么样 ┌─────────────────────────────────────────────────────────────────────┐ │ 一台物理机（一个节点） │ │ │ │ ┌─────────────────────────────────────────────────────────┐ │ │ │ 主板 (Motherboard) │ │ │ │ │ │ │ │ ┌──────────┐ ┌──────────────────────────────┐ │ │ │ │ │ CPU │ │ 内存条 (DRAM) │ │ │ │ │ │ (大脑) │◄──────►│ CPU 能直接读写的地方 │ │ │ │ │ │ │ 内存总线│ DDR5, 64~512GB │ │ │ │ │ └────┬─────┘ └──────────────────────────────┘ │ │ │ │ │ │ │ │ │ │ PCIe 总线（高速公路，连接各种外设） │ │ │ │ ─────┼────────────────────────────────────── │ │ │ │ │ │ │ │ │ │ │ │ ┌────┴───┐ ┌───┴────┐ ┌──────┴───┐ ┌─────┴────┐ │ │ │ │ │ GPU │ │ NIC │ │ NVMe │ │ 其他 │ │ │ │ │ │(显卡) │ │ (网卡) │ │ (硬盘) │ │ 外设 │ │ │ │ │ │ HBM内存│ │ │ │ │ │ │ │ │ │ │ └────────┘ └────────┘ └──────────┘ └──────────┘ │ │ │ └─────────────────────────────────────────────────────────┘ │ │ │ │ 这整个大框框 = 一个\u0026#34;节点\u0026#34; (Node) │ │ 多台这样的机器用网线连起来 = 集群 │ └─────────────────────────────────────────────────────────────────────┘ 关键认知：\n","keywords":["Engineering","System"],"articleBody":" 从一台机器的硬件结构出发，逐步讲清 DMA、Pinned Memory、Zero-Copy 和 GPUDirect RDMA 的本质。\n第一步：先搞清楚一台机器长什么样 ┌─────────────────────────────────────────────────────────────────────┐ │ 一台物理机（一个节点） │ │ │ │ ┌─────────────────────────────────────────────────────────┐ │ │ │ 主板 (Motherboard) │ │ │ │ │ │ │ │ ┌──────────┐ ┌──────────────────────────────┐ │ │ │ │ │ CPU │ │ 内存条 (DRAM) │ │ │ │ │ │ (大脑) │◄──────►│ CPU 能直接读写的地方 │ │ │ │ │ │ │ 内存总线│ DDR5, 64~512GB │ │ │ │ │ └────┬─────┘ └──────────────────────────────┘ │ │ │ │ │ │ │ │ │ │ PCIe 总线（高速公路，连接各种外设） │ │ │ │ ─────┼────────────────────────────────────── │ │ │ │ │ │ │ │ │ │ │ │ ┌────┴───┐ ┌───┴────┐ ┌──────┴───┐ ┌─────┴────┐ │ │ │ │ │ GPU │ │ NIC │ │ NVMe │ │ 其他 │ │ │ │ │ │(显卡) │ │ (网卡) │ │ (硬盘) │ │ 外设 │ │ │ │ │ │ HBM内存│ │ │ │ │ │ │ │ │ │ │ └────────┘ └────────┘ └──────────┘ └──────────┘ │ │ │ └─────────────────────────────────────────────────────────┘ │ │ │ │ 这整个大框框 = 一个\"节点\" (Node) │ │ 多台这样的机器用网线连起来 = 集群 │ └─────────────────────────────────────────────────────────────────────┘ 关键认知：\nCPU 能直接读写的只有 DRAM（主内存） GPU/NIC/NVMe 都是\"外设\"，挂在 PCIe 总线上 CPU 不能直接用指针访问 GPU HBM / NVMe 里的数据 第二步：搞懂 DMA（最重要的基础） DMA 出现之前的世界（PIO 模式） 问题场景：CPU 想把 DRAM 里的数据搬到网卡发出去。\nPIO (Programmed I/O) 时代： DRAM CPU NIC ┌──────┐ ┌─────┐ ┌──────┐ │data │ 读一个字 │ │ 写一个字 │ │ │[0] │──────────►│ 寄 │───────────►│ buf │ │[1] │ 读一个字 │ 存 │ 写一个字 │ │ │[2] │──────────►│ 器 │───────────►│ │ │[3] │ ... │ │ ... │ │ └──────┘ └─────┘ └──────┘ CPU 全程参与每一个字节的搬运！ CPU 在搬数据期间完全被占用，不能干别的 1GB 数据 → CPU 忙几秒钟 → 浪费！ DMA 出现后 DMA = Direct Memory Access 直接 内存 访问 核心思想： 在 CPU 和 外设 之间，加一个\"搬运工\" —— DMA Controller CPU 只需要\"下命令\"，具体搬运由 DMA Controller 完成 CPU 说： DMA Controller 执行： \"把 DRAM 地址 0x1000 ┌──────────────────────┐ 开始的 1GB 数据 │ 自己去 DRAM 读数据 │ 搬到 NIC 的缓冲区\" │ 自己写到 NIC │ │ │ 搬完了通知 CPU(中断) │ │ 下完命令就去 └──────────────────────┘ │ 干别的了 ▼ CPU 解放！ DRAM DMA Controller NIC ┌──────┐ ┌────────────────┐ ┌──────┐ │data │◄───────►│ 有自己的 │─────►│ buf │ │ │ 总线访问│ 地址寄存器 │ │ │ │ │ │ 长度寄存器 │ │ │ └──────┘ │ 方向寄存器 │ └──────┘ └────────────────┘ ▲ CPU 写这几个寄存器 相当于\"下命令\" 然后 CPU 去干别的 DMA 的本质 ┌─────────────────────────────────────────────────────────────┐ │ DMA 的本质是： │ │ │ │ 让外设（NIC/GPU/NVMe）能够 │ │ 直接访问主内存（DRAM）， │ │ 而不需要 CPU 一个字节一个字节地中转 │ │ │ │ DMA Controller 本质上就是： │ │ 一个能发起内存总线事务的小处理器 │ │ 它会在总线上说： │ │ \"我要读地址 0x1000 的数据\" │ │ \"我要写数据到地址 0x2000\" │ │ 跟 CPU 访问内存的方式完全一样，只是发起者不是 CPU │ └─────────────────────────────────────────────────────────────┘ 现代系统里，DMA Controller 通常内置在外设里：\nNIC 内置 DMA → NIC 自己去读写 DRAM NVMe 内置 DMA → NVMe 自己去读写 DRAM GPU 内置 DMA（叫 Copy Engine）→ GPU 自己去读写 DRAM 第三步：为什么需要 Pinned Memory（理解 Zero-Copy 的前提） 问题：DMA 需要知道物理地址，但 CPU 用的是虚拟地址 现代操作系统用虚拟内存： 程序看到的地址：0x1000（虚拟地址） 实际物理内存： 可能在 0xABCD1000（物理地址） OS 随时可以把这页内存\"换出\"到磁盘，物理位置会变！ 程序的虚拟地址空间： 实际物理内存： 0x0000 ┌──────────┐ ┌──────────┐ 物理页 A │ page 1 │───────►│ 在这里 │ 0x1000 ├──────────┤ ├──────────┤ 物理页 B │ page 2 │ ┌───► │ 在这里 │ 0x2000 ├──────────┤ │ ├──────────┤ │ page 3 │ │ │ (被换出 │ ← 可能在磁盘上！ └──────────┘ │ │ 到磁盘)│ │ └──────────┘ OS 维护页表，把虚拟地址翻译成物理地址 OS 可以随时把某页换出到磁盘，物理地址变了 DMA 的困境：\nDMA Controller 只认物理地址 如果 DMA 正在搬运，OS 突然把这页内存换到磁盘 DMA 就会读到错误的数据，或者访问到别人的内存 → 崩溃！ Pinned Memory 解决方案 普通内存（Pageable）： malloc() 分配 OS 可以随时换页 DMA 不安全 ┌──────────┐ │ page │ ← OS说：我可以把你换到磁盘 └──────────┘ Pinned Memory（页锁定内存）： cudaMallocHost() 或 mlock() 分配 告诉 OS：这块内存不许换出，永远在物理内存里 物理地址固定 → DMA 可以安全访问 ┌──────────┐ │ page 📌 │ ← 钉在这里，OS不能动 └──────────┘ 代价： 占用物理内存，OS 不能灵活调度 过多 pinned memory 会导致系统内存压力大 没有 Pinned Memory 时发生什么（有 CPU bounce） cudaMemcpy(gpu_ptr, cpu_ptr, size, H2D) 如果 cpu_ptr 是普通 malloc 的内存： DRAM (pageable) DRAM (pinned临时) GPU HBM ┌─────────────┐ ┌─────────────┐ ┌─────────┐ │你的数据 │───►│ 临时缓冲区 │──────►│ │ │(普通malloc) │CPU │(CUDA偷偷创建)│ DMA │ │ └─────────────┘拷贝└─────────────┘ └─────────┘ 第一次拷贝 第二次拷贝 (CPU执行，慢) (DMA执行，快) 总共两次拷贝！第一次是\"CPU bounce\"（CPU被迫参与） 如果 cpu_ptr 是 cudaMallocHost() 的 pinned memory： DRAM (pinned) GPU HBM ┌─────────────┐ ┌─────────┐ │你的数据 📌 │──────────────────────────►│ │ │ │ DMA直接搬 │ │ └─────────────┘ └─────────┘ 只有一次拷贝，CPU不参与 ✅ DMA 登记一览 设备 DMA 访问的内存 如何登记 GPU (Copy Engine) CPU DRAM（必须 pinned） cudaMallocHost() CUDA 驱动负责登记 NIC (DMA Engine) CPU DRAM（必须 pinned） 普通 TCP: 内核自动处理；RDMA: ibv_reg_mr() 手动注册 NVMe SSD (DMA Engine) CPU DRAM（必须 pinned） 内核 NVMe 驱动自动处理；io_uring 可用用户态 buffer NIC (DMA Engine) GPU HBM（跨设备！） GPUDirect RDMA，nvidia-peermem 内核模块，NIC 的 DMA 直接访问 GPU 内存 所有 DMA 都遵循同一个原则：\n目标内存必须物理地址固定（pinned） 必须向 IOMMU 登记，获得访问权限 然后 DMA Engine 就能绕过 CPU 直接搬运数据 第四步：Zero-Copy 到底是什么 Zero-Copy 的定义 ┌─────────────────────────────────────────────────────────────┐ │ Zero-Copy 的含义： │ │ │ │ 数据从 A 到 B，中间没有任何额外的内存拷贝 │ │ （拷贝次数 = 0 次额外拷贝，不是说完全没有移动） │ │ │ │ 关键词：额外的（unnecessary copy） │ └─────────────────────────────────────────────────────────────┘ 对比：发送文件的场景 传统方式（4次拷贝！）： NVMe 内核缓冲区 用户空间 内核Socket缓冲区 NIC ┌────┐ ┌──────────┐ ┌──────────┐ ┌──────────────┐ ┌────┐ │文件│───►│page cache│──►│ 你的 │───►│ socket │──►│发送│ │ │ │ │ │ buffer │ │ buffer │ │ │ └────┘ └──────────┘ └──────────┘ └──────────────┘ └────┘ ①DMA拷贝 ②CPU拷贝 ③CPU拷贝 ④DMA拷贝 磁盘→内核 内核→用户 用户→内核 内核→NIC 涉及2次CPU参与的拷贝 + 2次DMA拷贝 = 4次总拷贝 CPU必须把数据\"摸一遍\" sendfile() Zero-Copy（2次拷贝）： NVMe 内核缓冲区 NIC ┌────┐ ┌──────────┐ ┌────┐ │文件│───►│page cache│──────────────────────────────────────►│发送│ │ │ │ │ 内核直接传输 │ │ └────┘ └──────────┘ └────┘ ①DMA拷贝 ②DMA拷贝 数据从没进入用户空间！CPU完全不碰数据！ 只有2次DMA拷贝，0次CPU拷贝 → Zero-Copy GPU 场景的 Zero-Copy 场景：GPU 计算结果 → 发送到网络\n有 CPU bounce（老方式）：3次拷贝 GPU HBM CPU DRAM CPU DRAM NIC 网线 ┌──────────┐ ┌──────────┐ ┌──────────┐ ┌────────┐ │ 计算结果 │ │ staging │ │ socket │ │ │ ════════ │ tensor │─►│ buffer │──►│ buffer │──►│ │──► └──────────┘ └──────────┘ └──────────┘ └────────┘ ① ② ③ PCIe DMA CPU 拷贝 DMA GPU→CPU内存 内核内拷贝 内核→NIC ↑ CPU 被迫参与！ 而且数据在 CPU DRAM 里被摸了两次 GPUDirect RDMA（Zero-Copy）：1次拷贝 GPU HBM NIC 网线 ┌──────────────────────────┐ ┌────────┐ │ 计算结果 tensor 📌 │ │ │ ════════ │ (已向NIC驱动登记) │──►│ │──► └──────────────────────────┘ └────────┘ ① PCIe DMA NIC 直接读 GPU HBM CPU 完全不在数据路径上！ 持续完善中。后续补充 RDMA 详解与各场景关键代码示例。\n","wordCount":"890","inLanguage":"en","datePublished":"2026-06-03T00:00:00Z","dateModified":"2026-06-03T00:00:00Z","author":{"@type":"Person","name":"cheng zhiyuan"},"mainEntityOfPage":{"@type":"WebPage","@id":"https://sendoray.github.io/posts/communicate/"},"publisher":{"@type":"Organization","name":"chengzhy's blog","logo":{"@type":"ImageObject","url":"https://sendoray.github.io/%3Clink%20/%20abs%20url%3E"}}}</script></head><body id=top><header class=header><nav class=header-nav><div class=logo><a href=https://sendoray.github.io/ accesskey=h title="Home (Alt + H)"><img src=https://sendoray.github.io/apple-touch-icon.png alt aria-label=logo height=35>Home</a><div class=logo-switches><button id=theme-toggle class=theme-toggle accesskey=t title="(Alt + T)" aria-label="Toggle theme"><svg class="moon" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentcolor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"/></svg><svg class="sun" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentcolor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg></button></div></div><ul id=menu class=menu><li><a href=https://sendoray.github.io/posts/ title=Posts><span>Posts</span></a></li><li><a href=https://sendoray.github.io/about/ title=About><span>About</span></a></li><li><a href=https://sendoray.github.io/tags/ title=Tags><span>Tags</span></a></li><li><a href=https://sendoray.github.io/recommended/ title=Recommended><span>Recommended</span></a></li></ul></nav></header><main class=main><article class=post-single><header class=post-header><nav class=breadcrumbs role=navigation aria-label=Breadcrumb><a href=/>Home</a>
+<svg viewBox="0 0 24 24" fill="none" stroke="currentcolor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-chevron-right"><polyline points="9 18 15 12 9 6"/></svg>
+<a href=/posts/>Posts</a><svg viewBox="0 0 24 24" fill="none" stroke="currentcolor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-chevron-right"><polyline points="9 18 15 12 9 6"/></svg></nav><h1 class="post-title entry-hint-parent">图解 DMA、Zero-Copy 与 GPUDirect</h1><div class=post-meta><span title='2026-06-03 00:00:00 +0000 UTC'>June 3, 2026</span>&nbsp;·&nbsp;<span>5 min</span>&nbsp;·&nbsp;<span>890 words</span>&nbsp;·&nbsp;<span>cheng zhiyuan</span></div></header><details class=toc><summary accesskey=c title="(Alt + C)"><span class=title>Table of Contents</span></summary><div class=inner><nav id=TableOfContents><ul><li><a href=#第一步先搞清楚一台机器长什么样>第一步：先搞清楚一台机器长什么样</a></li><li><a href=#第二步搞懂-dma最重要的基础>第二步：搞懂 DMA（最重要的基础）</a><ul><li><a href=#dma-出现之前的世界pio-模式>DMA 出现之前的世界（PIO 模式）</a></li><li><a href=#dma-出现后>DMA 出现后</a></li><li><a href=#dma-的本质>DMA 的本质</a></li></ul></li><li><a href=#第三步为什么需要-pinned-memory理解-zero-copy-的前提>第三步：为什么需要 Pinned Memory（理解 Zero-Copy 的前提）</a><ul><li><a href=#pinned-memory-解决方案>Pinned Memory 解决方案</a></li><li><a href=#没有-pinned-memory-时发生什么有-cpu-bounce>没有 Pinned Memory 时发生什么（有 CPU bounce）</a></li><li><a href=#dma-登记一览>DMA 登记一览</a></li></ul></li><li><a href=#第四步zero-copy-到底是什么>第四步：Zero-Copy 到底是什么</a><ul><li><a href=#zero-copy-的定义>Zero-Copy 的定义</a></li><li><a href=#对比发送文件的场景>对比：发送文件的场景</a></li><li><a href=#gpu-场景的-zero-copy>GPU 场景的 Zero-Copy</a></li></ul></li></ul></nav></div></details><div class="post-content md-content"><blockquote><p>从一台机器的硬件结构出发，逐步讲清 DMA、Pinned Memory、Zero-Copy 和 GPUDirect RDMA 的本质。</p></blockquote><hr><h2 id=第一步先搞清楚一台机器长什么样>第一步：先搞清楚一台机器长什么样<a hidden class=anchor aria-hidden=true href=#第一步先搞清楚一台机器长什么样>#</a></h2><pre tabindex=0><code>┌─────────────────────────────────────────────────────────────────────┐
+│                        一台物理机（一个节点）                         │
+│                                                                      │
+│   ┌─────────────────────────────────────────────────────────┐       │
+│   │                    主板 (Motherboard)                    │       │
+│   │                                                          │       │
+│   │   ┌──────────┐        ┌──────────────────────────────┐  │       │
+│   │   │   CPU    │        │       内存条 (DRAM)           │  │       │
+│   │   │  (大脑)  │◄──────►│    CPU 能直接读写的地方       │  │       │
+│   │   │          │  内存总线│       DDR5, 64~512GB         │  │       │
+│   │   └────┬─────┘        └──────────────────────────────┘  │       │
+│   │        │                                                  │       │
+│   │        │  PCIe 总线（高速公路，连接各种外设）             │       │
+│   │   ─────┼──────────────────────────────────────           │       │
+│   │        │         │              │            │            │       │
+│   │   ┌────┴───┐ ┌───┴────┐ ┌──────┴───┐ ┌─────┴────┐      │       │
+│   │   │  GPU   │ │  NIC   │ │  NVMe    │ │  其他    │      │       │
+│   │   │(显卡)  │ │ (网卡) │ │  (硬盘)  │ │  外设    │      │       │
+│   │   │ HBM内存│ │        │ │          │ │          │      │       │
+│   │   └────────┘ └────────┘ └──────────┘ └──────────┘      │       │
+│   └─────────────────────────────────────────────────────────┘       │
+│                                                                      │
+│   这整个大框框 = 一个&#34;节点&#34; (Node)                                   │
+│   多台这样的机器用网线连起来 = 集群                                   │
+└─────────────────────────────────────────────────────────────────────┘
+</code></pre><p><strong>关键认知：</strong></p><ul><li>CPU 能直接读写的只有 DRAM（主内存）</li><li>GPU/NIC/NVMe 都是"外设"，挂在 PCIe 总线上</li><li>CPU 不能直接用指针访问 GPU HBM / NVMe 里的数据</li></ul><hr><h2 id=第二步搞懂-dma最重要的基础>第二步：搞懂 DMA（最重要的基础）<a hidden class=anchor aria-hidden=true href=#第二步搞懂-dma最重要的基础>#</a></h2><h3 id=dma-出现之前的世界pio-模式>DMA 出现之前的世界（PIO 模式）<a hidden class=anchor aria-hidden=true href=#dma-出现之前的世界pio-模式>#</a></h3><p>问题场景：CPU 想把 DRAM 里的数据搬到网卡发出去。</p><pre tabindex=0><code>PIO (Programmed I/O) 时代：
+
+  DRAM                CPU                 NIC
+  ┌──────┐           ┌─────┐            ┌──────┐
+  │data  │  读一个字 │     │  写一个字  │      │
+  │[0]   │──────────►│ 寄 │───────────►│ buf  │
+  │[1]   │  读一个字 │ 存 │  写一个字  │      │
+  │[2]   │──────────►│ 器 │───────────►│      │
+  │[3]   │    ...    │     │    ...     │      │
+  └──────┘           └─────┘            └──────┘
+
+  CPU 全程参与每一个字节的搬运！
+  CPU 在搬数据期间完全被占用，不能干别的
+  1GB 数据 → CPU 忙几秒钟 → 浪费！
+</code></pre><h3 id=dma-出现后>DMA 出现后<a hidden class=anchor aria-hidden=true href=#dma-出现后>#</a></h3><pre tabindex=0><code>DMA = Direct Memory Access
+      直接  内存  访问
+
+核心思想：
+  在 CPU 和 外设 之间，加一个&#34;搬运工&#34; —— DMA Controller
+  CPU 只需要&#34;下命令&#34;，具体搬运由 DMA Controller 完成
+
+  CPU 说：                DMA Controller 执行：
+  &#34;把 DRAM 地址 0x1000   ┌──────────────────────┐
+   开始的 1GB 数据        │ 自己去 DRAM 读数据   │
+   搬到 NIC 的缓冲区&#34;     │ 自己写到 NIC         │
+        │                 │ 搬完了通知 CPU(中断) │
+        │ 下完命令就去     └──────────────────────┘
+        │ 干别的了
+        ▼
+      CPU 解放！
+</code></pre><pre tabindex=0><code>  DRAM              DMA Controller           NIC
+  ┌──────┐         ┌────────────────┐      ┌──────┐
+  │data  │◄───────►│ 有自己的       │─────►│ buf  │
+  │      │  总线访问│ 地址寄存器    │      │      │
+  │      │         │ 长度寄存器     │      │      │
+  └──────┘         │ 方向寄存器     │      └──────┘
+                   └────────────────┘
+                         ▲
+                    CPU 写这几个寄存器
+                    相当于&#34;下命令&#34;
+                    然后 CPU 去干别的
+</code></pre><h3 id=dma-的本质>DMA 的本质<a hidden class=anchor aria-hidden=true href=#dma-的本质>#</a></h3><pre tabindex=0><code>┌─────────────────────────────────────────────────────────────┐
+│  DMA 的本质是：                                              │
+│                                                             │
+│  让外设（NIC/GPU/NVMe）能够                                 │
+│  直接访问主内存（DRAM），                                    │
+│  而不需要 CPU 一个字节一个字节地中转                         │
+│                                                             │
+│  DMA Controller 本质上就是：                                │
+│  一个能发起内存总线事务的小处理器                            │
+│  它会在总线上说：                                           │
+│  &#34;我要读地址 0x1000 的数据&#34;                                 │
+│  &#34;我要写数据到地址 0x2000&#34;                                  │
+│  跟 CPU 访问内存的方式完全一样，只是发起者不是 CPU           │
+└─────────────────────────────────────────────────────────────┘
+</code></pre><p>现代系统里，DMA Controller 通常内置在外设里：</p><ul><li><strong>NIC</strong> 内置 DMA → NIC 自己去读写 DRAM</li><li><strong>NVMe</strong> 内置 DMA → NVMe 自己去读写 DRAM</li><li><strong>GPU</strong> 内置 DMA（叫 Copy Engine）→ GPU 自己去读写 DRAM</li></ul><hr><h2 id=第三步为什么需要-pinned-memory理解-zero-copy-的前提>第三步：为什么需要 Pinned Memory（理解 Zero-Copy 的前提）<a hidden class=anchor aria-hidden=true href=#第三步为什么需要-pinned-memory理解-zero-copy-的前提>#</a></h2><pre tabindex=0><code>问题：DMA 需要知道物理地址，但 CPU 用的是虚拟地址
+
+现代操作系统用虚拟内存：
+  程序看到的地址：0x1000（虚拟地址）
+  实际物理内存：   可能在 0xABCD1000（物理地址）
+  OS 随时可以把这页内存&#34;换出&#34;到磁盘，物理位置会变！
+
+  程序的虚拟地址空间：        实际物理内存：
+  0x0000 ┌──────────┐        ┌──────────┐ 物理页 A
+         │  page 1  │───────►│  在这里  │
+  0x1000 ├──────────┤        ├──────────┤ 物理页 B
+         │  page 2  │  ┌───► │  在这里  │
+  0x2000 ├──────────┤  │     ├──────────┤
+         │  page 3  │  │     │  (被换出 │ ← 可能在磁盘上！
+         └──────────┘  │     │   到磁盘)│
+                       │     └──────────┘
+  OS 维护页表，把虚拟地址翻译成物理地址
+  OS 可以随时把某页换出到磁盘，物理地址变了
+</code></pre><p><strong>DMA 的困境：</strong></p><ul><li>DMA Controller 只认物理地址</li><li>如果 DMA 正在搬运，OS 突然把这页内存换到磁盘</li><li>DMA 就会读到错误的数据，或者访问到别人的内存 → 崩溃！</li></ul><h3 id=pinned-memory-解决方案>Pinned Memory 解决方案<a hidden class=anchor aria-hidden=true href=#pinned-memory-解决方案>#</a></h3><pre tabindex=0><code>普通内存（Pageable）：
+  malloc() 分配
+  OS 可以随时换页
+  DMA 不安全
+  ┌──────────┐
+  │  page    │ ← OS说：我可以把你换到磁盘
+  └──────────┘
+
+Pinned Memory（页锁定内存）：
+  cudaMallocHost() 或 mlock() 分配
+  告诉 OS：这块内存不许换出，永远在物理内存里
+  物理地址固定 → DMA 可以安全访问
+  ┌──────────┐
+  │  page 📌 │ ← 钉在这里，OS不能动
+  └──────────┘
+
+代价：
+  占用物理内存，OS 不能灵活调度
+  过多 pinned memory 会导致系统内存压力大
+</code></pre><h3 id=没有-pinned-memory-时发生什么有-cpu-bounce>没有 Pinned Memory 时发生什么（有 CPU bounce）<a hidden class=anchor aria-hidden=true href=#没有-pinned-memory-时发生什么有-cpu-bounce>#</a></h3><pre tabindex=0><code>cudaMemcpy(gpu_ptr, cpu_ptr, size, H2D)
+如果 cpu_ptr 是普通 malloc 的内存：
+
+  DRAM (pageable)    DRAM (pinned临时)      GPU HBM
+  ┌─────────────┐    ┌─────────────┐       ┌─────────┐
+  │你的数据     │───►│  临时缓冲区  │──────►│         │
+  │(普通malloc) │CPU │(CUDA偷偷创建)│  DMA  │         │
+  └─────────────┘拷贝└─────────────┘       └─────────┘
+       第一次拷贝          第二次拷贝
+     (CPU执行，慢)       (DMA执行，快)
+
+总共两次拷贝！第一次是&#34;CPU bounce&#34;（CPU被迫参与）
+</code></pre><pre tabindex=0><code>如果 cpu_ptr 是 cudaMallocHost() 的 pinned memory：
+
+  DRAM (pinned)                              GPU HBM
+  ┌─────────────┐                           ┌─────────┐
+  │你的数据 📌  │──────────────────────────►│         │
+  │             │        DMA直接搬           │         │
+  └─────────────┘                           └─────────┘
+       只有一次拷贝，CPU不参与 ✅
+</code></pre><h3 id=dma-登记一览>DMA 登记一览<a hidden class=anchor aria-hidden=true href=#dma-登记一览>#</a></h3><table><thead><tr><th>设备</th><th>DMA 访问的内存</th><th>如何登记</th></tr></thead><tbody><tr><td>GPU (Copy Engine)</td><td>CPU DRAM（必须 pinned）</td><td><code>cudaMallocHost()</code> CUDA 驱动负责登记</td></tr><tr><td>NIC (DMA Engine)</td><td>CPU DRAM（必须 pinned）</td><td>普通 TCP: 内核自动处理；RDMA: <code>ibv_reg_mr()</code> 手动注册</td></tr><tr><td>NVMe SSD (DMA Engine)</td><td>CPU DRAM（必须 pinned）</td><td>内核 NVMe 驱动自动处理；io_uring 可用用户态 buffer</td></tr><tr><td>NIC (DMA Engine)</td><td>GPU HBM（跨设备！）</td><td>GPUDirect RDMA，nvidia-peermem 内核模块，NIC 的 DMA 直接访问 GPU 内存</td></tr></tbody></table><p><strong>所有 DMA 都遵循同一个原则：</strong></p><ol><li>目标内存必须物理地址固定（pinned）</li><li>必须向 IOMMU 登记，获得访问权限</li><li>然后 DMA Engine 就能绕过 CPU 直接搬运数据</li></ol><hr><h2 id=第四步zero-copy-到底是什么>第四步：Zero-Copy 到底是什么<a hidden class=anchor aria-hidden=true href=#第四步zero-copy-到底是什么>#</a></h2><h3 id=zero-copy-的定义>Zero-Copy 的定义<a hidden class=anchor aria-hidden=true href=#zero-copy-的定义>#</a></h3><pre tabindex=0><code>┌─────────────────────────────────────────────────────────────┐
+│  Zero-Copy 的含义：                                          │
+│                                                             │
+│  数据从 A 到 B，中间没有任何额外的内存拷贝                   │
+│  （拷贝次数 = 0 次额外拷贝，不是说完全没有移动）             │
+│                                                             │
+│  关键词：额外的（unnecessary copy）                          │
+└─────────────────────────────────────────────────────────────┘
+</code></pre><h3 id=对比发送文件的场景>对比：发送文件的场景<a hidden class=anchor aria-hidden=true href=#对比发送文件的场景>#</a></h3><pre tabindex=0><code>传统方式（4次拷贝！）：
+  NVMe       内核缓冲区      用户空间        内核Socket缓冲区     NIC
+  ┌────┐    ┌──────────┐   ┌──────────┐    ┌──────────────┐   ┌────┐
+  │文件│───►│page cache│──►│  你的    │───►│   socket     │──►│发送│
+  │    │    │          │   │  buffer  │    │   buffer     │   │    │
+  └────┘    └──────────┘   └──────────┘    └──────────────┘   └────┘
+            ①DMA拷贝       ②CPU拷贝        ③CPU拷贝           ④DMA拷贝
+            磁盘→内核       内核→用户        用户→内核           内核→NIC
+
+  涉及2次CPU参与的拷贝 + 2次DMA拷贝 = 4次总拷贝
+  CPU必须把数据&#34;摸一遍&#34;
+</code></pre><pre tabindex=0><code>sendfile() Zero-Copy（2次拷贝）：
+  NVMe       内核缓冲区                                          NIC
+  ┌────┐    ┌──────────┐                                       ┌────┐
+  │文件│───►│page cache│──────────────────────────────────────►│发送│
+  │    │    │          │           内核直接传输                 │    │
+  └────┘    └──────────┘                                       └────┘
+            ①DMA拷贝                                           ②DMA拷贝
+            数据从没进入用户空间！CPU完全不碰数据！
+
+  只有2次DMA拷贝，0次CPU拷贝 → Zero-Copy
+</code></pre><h3 id=gpu-场景的-zero-copy>GPU 场景的 Zero-Copy<a hidden class=anchor aria-hidden=true href=#gpu-场景的-zero-copy>#</a></h3><p>场景：GPU 计算结果 → 发送到网络</p><pre tabindex=0><code>有 CPU bounce（老方式）：3次拷贝
+
+  GPU HBM        CPU DRAM        CPU DRAM         NIC          网线
+  ┌──────────┐  ┌──────────┐   ┌──────────┐   ┌────────┐
+  │ 计算结果  │  │ staging  │   │ socket   │   │        │   ════════
+  │ tensor   │─►│ buffer   │──►│ buffer   │──►│        │──►
+  └──────────┘  └──────────┘   └──────────┘   └────────┘
+       ①              ②               ③
+   PCIe DMA       CPU 拷贝          DMA
+   GPU→CPU内存    内核内拷贝        内核→NIC
+                      ↑
+                 CPU 被迫参与！
+                 而且数据在 CPU DRAM
+                 里被摸了两次
+</code></pre><pre tabindex=0><code>GPUDirect RDMA（Zero-Copy）：1次拷贝
+
+  GPU HBM                          NIC              网线
+  ┌──────────────────────────┐   ┌────────┐
+  │ 计算结果 tensor 📌        │   │        │   ════════
+  │ (已向NIC驱动登记)         │──►│        │──►
+  └──────────────────────────┘   └────────┘
+                ①
+           PCIe DMA
+        NIC 直接读 GPU HBM
+        CPU 完全不在数据路径上！
+</code></pre><hr><blockquote><p>持续完善中。后续补充 RDMA 详解与各场景关键代码示例。</p></blockquote></div><footer class=post-footer><ul class=post-tags><li><a href=https://sendoray.github.io/tags/engineering/>Engineering</a></li><li><a href=https://sendoray.github.io/tags/system/>System</a></li></ul><nav class=paginav><a class=next href=https://sendoray.github.io/posts/2026-05-28-gpu-memory-offload-techniques/><span class=title>Next »</span>
+<span>GPU 显存 Offload 技术：训练与推理中的工程实践</span></a></nav></footer></article></main><footer class=footer><span>&copy; 2026 <a href=https://sendoray.github.io/>chengzhy's blog</a></span> ·
+<span>Powered by
+<a href="https://gohugo.io/?utm_source=papermod" rel=noopener target=_blank>Hugo</a> &
+        <a href=https://github.com/adityatelange/hugo-PaperMod/ rel=noopener target=_blank>PaperMod</a></span></footer><a href=#top id=top-link class="top-link hidden" aria-label="go to top" title="Go to Top (Alt + G)" accesskey=g><svg viewBox="0 0 24 24" fill="none" stroke="currentcolor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-chevrons-up"><polyline points="17 11 12 6 7 11"/><polyline points="17 18 12 13 7 18"/></svg>
+</a><script>let menu=document.getElementById("menu");if(menu){const e=localStorage.getItem("menu-scroll-position");e&&(menu.scrollLeft=parseInt(e,10)),menu.onscroll=function(){localStorage.setItem("menu-scroll-position",menu.scrollLeft)}}document.querySelectorAll('a[href^="#"]').forEach(e=>{e.addEventListener("click",function(e){e.preventDefault();var t=this.getAttribute("href").substr(1);window.matchMedia("(prefers-reduced-motion: reduce)").matches?document.querySelector(`[id='${decodeURIComponent(t)}']`).scrollIntoView():document.querySelector(`[id='${decodeURIComponent(t)}']`).scrollIntoView({behavior:"smooth"}),t==="top"?history.replaceState(null,null," "):history.pushState(null,null,`#${t}`)})})</script><script>var toplink=document.getElementById("top-link");window.onscroll=function(){const e=window.innerHeight;document.body.scrollTop>e||document.documentElement.scrollTop>e?toplink.classList.remove("hidden"):toplink.classList.add("hidden")}</script><script>document.getElementById("theme-toggle").addEventListener("click",()=>{const e=document.querySelector("html");e.dataset.theme==="dark"?(e.dataset.theme="light",localStorage.setItem("pref-theme","light")):(e.dataset.theme="dark",localStorage.setItem("pref-theme","dark"))})</script><script>document.querySelectorAll("pre > code").forEach(e=>{const n=e.parentNode.parentNode,t=document.createElement("button");t.classList.add("copy-code"),t.innerHTML="copy";function s(){t.innerHTML="copied!",setTimeout(()=>{t.innerHTML="copy"},2e3)}t.addEventListener("click",t=>{if("clipboard"in navigator){navigator.clipboard.writeText(e.textContent),s();return}const n=document.createRange();n.selectNodeContents(e);const o=window.getSelection();o.removeAllRanges(),o.addRange(n);try{document.execCommand("copy"),s()}catch{}o.removeRange(n)}),n.classList.contains("highlight")?n.appendChild(t):n.parentNode.firstChild==n||(e.parentNode.parentNode.parentNode.parentNode.parentNode.nodeName=="TABLE"?e.parentNode.parentNode.parentNode.parentNode.parentNode.appendChild(t):e.parentNode.appendChild(t))})</script></body></html>
