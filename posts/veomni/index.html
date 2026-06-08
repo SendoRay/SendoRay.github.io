@@ -1,0 +1,879 @@
+<!doctype html><html lang=en dir=auto data-theme=auto><head><meta charset=utf-8><meta http-equiv=X-UA-Compatible content="IE=edge"><meta name=viewport content="width=device-width,initial-scale=1,shrink-to-fit=no"><meta name=robots content="index, follow"><title>chengzhy's blog</title>
+<meta name=keywords content><meta name=description content="VeRL-Omni 全面解析
+一、项目是什么
+VeRL-Omni 是字节跳动 Seed MLSys 团队开源的多模态生成模型的 RL 后训练框架。它不像 Stable Diffusion
+那样做图像生成，而是用强化学习（RL）来微调已经训好的生成模型，让它们生成更高质量的图像/视频/音频。
+简单说：你有一个 Qwen-Image 模型能文生图，但生成质量不够好。VeRL-Omni 用 RL 的方式（比如
+FlowGRPO）来继续训练它，根据 reward（OCR 准确率、人类偏好评分等）来优化模型，让它生成更好的图片。
+二、为什么要做 VeRL-Omni（不用 verl 或 vllm）
+README 里说的很清楚：
+▎ Multimodal generative RL training differs from text-only LLM RL not only in model structure, but also in I/O patterns, compute characteristics, and runtime bottlenecks.
+具体来说有这些关键差异：
+
+模型结构不同：LLM 是自回归的（逐 token 生成），而扩散模型是迭代去噪的（逐 step 去噪）。verl 的训练循环是为
+LLM 设计的（token-level log-probs、PPO 在 token 维度做），不能直接用于扩散模型。
+数据 I/O 模式不同：LLM 产生 token 序列，扩散模型产生高维 latent tensor（图片 latent 是 (B, C, H, W) 甚至
+(B, C, T, H, W) 的视频）。带宽和存储需求完全不同。
+计算瓶颈不同：LLM rollout 的瓶颈在 KV cache 和 attention；扩散模型 rollout 的瓶颈在 VAE 编解码、多步
+UNet/DiT 推理。
+log-prob 计算方式完全不同：LLM 的 log-prob 直接从 softmax 输出拿到；扩散模型需要 SDE 逆过程 计算每步
+transition 的 log-prob。这是扩散 RL 核心的数学创新。
+vLLM 是为 LLM 推理优化的，它不懂扩散模型。因此需要 vLLM-Omni 来做扩散 rollout，提供高吞吐的扩散推理。
+吞吐优势：README 说比 flow_grpo 实现快 ~25%，来自 vLLM-Omni rollout + FSDP 训练 + 异步 reward 计算的重叠。
+
+三、模型结构和支持情况"><meta name=author content="cheng zhiyuan"><link rel=canonical href=https://sendoray.github.io/posts/veomni/><meta name=google-site-verification content="XYZabc"><meta name=yandex-verification content="XYZabc"><meta name=msvalidate.01 content="XYZabc"><link crossorigin=anonymous href=/assets/css/stylesheet.6ff46447b1fa3f8a5cc0bcae48088decc3ae37f5fbc99406a3aefc3bf0e6044a.css integrity="sha256-b/RkR7H6P4pcwLyuSAiN7MOuN/X7yZQGo678O/DmBEo=" rel="preload stylesheet" as=style><link rel=icon href=https://sendoray.github.io/%3Clink%20/%20abs%20url%3E><link rel=icon type=image/png sizes=16x16 href=https://sendoray.github.io/%3Clink%20/%20abs%20url%3E><link rel=icon type=image/png sizes=32x32 href=https://sendoray.github.io/%3Clink%20/%20abs%20url%3E><link rel=apple-touch-icon href=https://sendoray.github.io/%3Clink%20/%20abs%20url%3E><link rel=mask-icon href=https://sendoray.github.io/%3Clink%20/%20abs%20url%3E><meta name=theme-color content="#2e2e33"><meta name=msapplication-TileColor content="#2e2e33"><link rel=alternate hreflang=en href=https://sendoray.github.io/posts/veomni/><noscript><style>#theme-toggle,.top-link{display:none}</style><style>@media(prefers-color-scheme:dark){:root{--theme:rgb(29, 30, 32);--entry:rgb(46, 46, 51);--primary:rgb(218, 218, 219);--secondary:rgb(155, 156, 157);--tertiary:rgb(65, 66, 68);--content:rgb(196, 196, 197);--code-block-bg:rgb(46, 46, 51);--code-bg:rgb(55, 56, 62);--border:rgb(51, 51, 51);color-scheme:dark}.list{background:var(--theme)}.toc{background:var(--entry)}}</style></noscript><script>localStorage.getItem("pref-theme")==="dark"?document.querySelector("html").dataset.theme="dark":localStorage.getItem("pref-theme")==="light"?document.querySelector("html").dataset.theme="light":window.matchMedia("(prefers-color-scheme: dark)").matches?document.querySelector("html").dataset.theme="dark":document.querySelector("html").dataset.theme="light"</script><link rel=stylesheet href=https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css integrity=sha384-nB0miv6/jRmo5UMMR1wu3Gz6NLsoTkbqJghGIsx//Rlm+ZU03BU6SQNC66uf4l5+ crossorigin=anonymous><script defer src=https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js integrity=sha384-7zkQWkzuo3B5mTepMUcHkMB5jZaolc2xDwL6VFqjFALcbeS9Ggm/Yr2r3Dy4lfFg crossorigin=anonymous></script><script defer src=https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js integrity=sha384-43gviWU0YVjaDtb/GhzOouOXtZMP/7XUzwPTstBeZFe/+rCMvRwr4yROQP43s0Xk crossorigin=anonymous></script><script>document.addEventListener("DOMContentLoaded",function(){renderMathInElement(document.body,{delimiters:[{left:"\\[",right:"\\]",display:!0},{left:"$$",right:"$$",display:!0},{left:"\\(",right:"\\)",display:!1},{left:"$",right:"$",display:!1}],throwOnError:!1})})</script><meta property="og:url" content="https://sendoray.github.io/posts/veomni/"><meta property="og:site_name" content="chengzhy's blog"><meta property="og:title" content="chengzhy's blog"><meta property="og:description" content="VeRL-Omni 全面解析
+一、项目是什么
+VeRL-Omni 是字节跳动 Seed MLSys 团队开源的多模态生成模型的 RL 后训练框架。它不像 Stable Diffusion 那样做图像生成，而是用强化学习（RL）来微调已经训好的生成模型，让它们生成更高质量的图像/视频/音频。
+简单说：你有一个 Qwen-Image 模型能文生图，但生成质量不够好。VeRL-Omni 用 RL 的方式（比如 FlowGRPO）来继续训练它，根据 reward（OCR 准确率、人类偏好评分等）来优化模型，让它生成更好的图片。
+二、为什么要做 VeRL-Omni（不用 verl 或 vllm）
+README 里说的很清楚：
+▎ Multimodal generative RL training differs from text-only LLM RL not only in model structure, but also in I/O patterns, compute characteristics, and runtime bottlenecks.
+具体来说有这些关键差异：
+模型结构不同：LLM 是自回归的（逐 token 生成），而扩散模型是迭代去噪的（逐 step 去噪）。verl 的训练循环是为 LLM 设计的（token-level log-probs、PPO 在 token 维度做），不能直接用于扩散模型。 数据 I/O 模式不同：LLM 产生 token 序列，扩散模型产生高维 latent tensor（图片 latent 是 (B, C, H, W) 甚至 (B, C, T, H, W) 的视频）。带宽和存储需求完全不同。 计算瓶颈不同：LLM rollout 的瓶颈在 KV cache 和 attention；扩散模型 rollout 的瓶颈在 VAE 编解码、多步 UNet/DiT 推理。 log-prob 计算方式完全不同：LLM 的 log-prob 直接从 softmax 输出拿到；扩散模型需要 SDE 逆过程 计算每步 transition 的 log-prob。这是扩散 RL 核心的数学创新。 vLLM 是为 LLM 推理优化的，它不懂扩散模型。因此需要 vLLM-Omni 来做扩散 rollout，提供高吞吐的扩散推理。 吞吐优势：README 说比 flow_grpo 实现快 ~25%，来自 vLLM-Omni rollout + FSDP 训练 + 异步 reward 计算的重叠。 三、模型结构和支持情况"><meta property="og:locale" content="en"><meta property="og:type" content="article"><meta property="article:section" content="posts"><meta name=twitter:card content="summary"><meta name=twitter:title content="chengzhy's blog"><meta name=twitter:description content="VeRL-Omni 全面解析
+一、项目是什么
+VeRL-Omni 是字节跳动 Seed MLSys 团队开源的多模态生成模型的 RL 后训练框架。它不像 Stable Diffusion 那样做图像生成，而是用强化学习（RL）来微调已经训好的生成模型，让它们生成更高质量的图像/视频/音频。
+简单说：你有一个 Qwen-Image 模型能文生图，但生成质量不够好。VeRL-Omni 用 RL 的方式（比如 FlowGRPO）来继续训练它，根据 reward（OCR 准确率、人类偏好评分等）来优化模型，让它生成更好的图片。
+二、为什么要做 VeRL-Omni（不用 verl 或 vllm）
+README 里说的很清楚：
+▎ Multimodal generative RL training differs from text-only LLM RL not only in model structure, but also in I/O patterns, compute characteristics, and runtime bottlenecks.
+具体来说有这些关键差异：
+模型结构不同：LLM 是自回归的（逐 token 生成），而扩散模型是迭代去噪的（逐 step 去噪）。verl 的训练循环是为 LLM 设计的（token-level log-probs、PPO 在 token 维度做），不能直接用于扩散模型。 数据 I/O 模式不同：LLM 产生 token 序列，扩散模型产生高维 latent tensor（图片 latent 是 (B, C, H, W) 甚至 (B, C, T, H, W) 的视频）。带宽和存储需求完全不同。 计算瓶颈不同：LLM rollout 的瓶颈在 KV cache 和 attention；扩散模型 rollout 的瓶颈在 VAE 编解码、多步 UNet/DiT 推理。 log-prob 计算方式完全不同：LLM 的 log-prob 直接从 softmax 输出拿到；扩散模型需要 SDE 逆过程 计算每步 transition 的 log-prob。这是扩散 RL 核心的数学创新。 vLLM 是为 LLM 推理优化的，它不懂扩散模型。因此需要 vLLM-Omni 来做扩散 rollout，提供高吞吐的扩散推理。 吞吐优势：README 说比 flow_grpo 实现快 ~25%，来自 vLLM-Omni rollout + FSDP 训练 + 异步 reward 计算的重叠。 三、模型结构和支持情况"><script type=application/ld+json>{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Posts","item":"https://sendoray.github.io/posts/"},{"@type":"ListItem","position":2,"name":"","item":"https://sendoray.github.io/posts/veomni/"}]}</script><script type=application/ld+json>{"@context":"https://schema.org","@type":"BlogPosting","headline":"","name":"","description":"VeRL-Omni 全面解析\n一、项目是什么\nVeRL-Omni 是字节跳动 Seed MLSys 团队开源的多模态生成模型的 RL 后训练框架。它不像 Stable Diffusion 那样做图像生成，而是用强化学习（RL）来微调已经训好的生成模型，让它们生成更高质量的图像/视频/音频。\n简单说：你有一个 Qwen-Image 模型能文生图，但生成质量不够好。VeRL-Omni 用 RL 的方式（比如 FlowGRPO）来继续训练它，根据 reward（OCR 准确率、人类偏好评分等）来优化模型，让它生成更好的图片。\n二、为什么要做 VeRL-Omni（不用 verl 或 vllm）\nREADME 里说的很清楚：\n▎ Multimodal generative RL training differs from text-only LLM RL not only in model structure, but also in I/O patterns, compute characteristics, and runtime bottlenecks.\n具体来说有这些关键差异：\n模型结构不同：LLM 是自回归的（逐 token 生成），而扩散模型是迭代去噪的（逐 step 去噪）。verl 的训练循环是为 LLM 设计的（token-level log-probs、PPO 在 token 维度做），不能直接用于扩散模型。 数据 I/O 模式不同：LLM 产生 token 序列，扩散模型产生高维 latent tensor（图片 latent 是 (B, C, H, W) 甚至 (B, C, T, H, W) 的视频）。带宽和存储需求完全不同。 计算瓶颈不同：LLM rollout 的瓶颈在 KV cache 和 attention；扩散模型 rollout 的瓶颈在 VAE 编解码、多步 UNet/DiT 推理。 log-prob 计算方式完全不同：LLM 的 log-prob 直接从 softmax 输出拿到；扩散模型需要 SDE 逆过程 计算每步 transition 的 log-prob。这是扩散 RL 核心的数学创新。 vLLM 是为 LLM 推理优化的，它不懂扩散模型。因此需要 vLLM-Omni 来做扩散 rollout，提供高吞吐的扩散推理。 吞吐优势：README 说比 flow_grpo 实现快 ~25%，来自 vLLM-Omni rollout + FSDP 训练 + 异步 reward 计算的重叠。 三、模型结构和支持情况\n","keywords":[],"articleBody":"VeRL-Omni 全面解析\n一、项目是什么\nVeRL-Omni 是字节跳动 Seed MLSys 团队开源的多模态生成模型的 RL 后训练框架。它不像 Stable Diffusion 那样做图像生成，而是用强化学习（RL）来微调已经训好的生成模型，让它们生成更高质量的图像/视频/音频。\n简单说：你有一个 Qwen-Image 模型能文生图，但生成质量不够好。VeRL-Omni 用 RL 的方式（比如 FlowGRPO）来继续训练它，根据 reward（OCR 准确率、人类偏好评分等）来优化模型，让它生成更好的图片。\n二、为什么要做 VeRL-Omni（不用 verl 或 vllm）\nREADME 里说的很清楚：\n▎ Multimodal generative RL training differs from text-only LLM RL not only in model structure, but also in I/O patterns, compute characteristics, and runtime bottlenecks.\n具体来说有这些关键差异：\n模型结构不同：LLM 是自回归的（逐 token 生成），而扩散模型是迭代去噪的（逐 step 去噪）。verl 的训练循环是为 LLM 设计的（token-level log-probs、PPO 在 token 维度做），不能直接用于扩散模型。 数据 I/O 模式不同：LLM 产生 token 序列，扩散模型产生高维 latent tensor（图片 latent 是 (B, C, H, W) 甚至 (B, C, T, H, W) 的视频）。带宽和存储需求完全不同。 计算瓶颈不同：LLM rollout 的瓶颈在 KV cache 和 attention；扩散模型 rollout 的瓶颈在 VAE 编解码、多步 UNet/DiT 推理。 log-prob 计算方式完全不同：LLM 的 log-prob 直接从 softmax 输出拿到；扩散模型需要 SDE 逆过程 计算每步 transition 的 log-prob。这是扩散 RL 核心的数学创新。 vLLM 是为 LLM 推理优化的，它不懂扩散模型。因此需要 vLLM-Omni 来做扩散 rollout，提供高吞吐的扩散推理。 吞吐优势：README 说比 flow_grpo 实现快 ~25%，来自 vLLM-Omni rollout + FSDP 训练 + 异步 reward 计算的重叠。 三、模型结构和支持情况\n支持的模型\n模型: Qwen-Image 架构: QwenImageTransformer2DModel（DiT） 模态: Text→Image 算法: FlowGRPO, MixGRPO, GRPO-Guard, DiffusionNFT, DPO ──────────────────────────────────────── 模型: Wan2.2 架构: WanTransformer3DModel（3D DiT） 模态: Text→Video 算法: DanceGRPO ──────────────────────────────────────── 模型: SD3.5 架构: MMDiT（双流 DiT） 模态: Text→Image 算法: DPO ──────────────────────────────────────── 模型: BAGEL（WIP） 架构: 统一理解+生成 模态: Text+Image 算法: FlowGRPO ──────────────────────────────────────── 模型: Qwen3-Omni（WIP） 架构: 全模态统一 模态: Text/Image/Video/Audio 算法: GSPO ──────────────────────────────────────── 模型: HunyuanImage-3.0（计划） 架构: 统一理解+生成 模态: Text+Image 算法: MixGRPO, SRPO ──────────────────────────────────────── 模型: LTX2.3（WIP） 架构: 扩散生成器 模态: Text→Video+Audio 算法: FlowGRPO\nQwen-Image 模型结构（核心支持模型）\nQwen-Image 是一个 Flow Matching DiT（Diffusion Transformer）：\nVAE Encoder：将图像 (B, 3, H, W) 压缩到 latent (B, C, H/8, W/8) Text Encoder（T5/ByT5）：将文本 prompt 编码为 prompt_embeds (B, L, D) QwenImageTransformer2DModel：核心 DiT，输入 noisy latent + timestep + text embeddings，输出 noise prediction（也叫 velocity/flow prediction） VAE Decoder：将去噪后的 latent 解码回像素空间 SDE 逆过程是 VeRL-Omni 的核心数学创新。标准扩散推理用 ODE（确定性），但 RL 训练需要随机性才能计算 log-prob。FlowMatchSDEDiscreteScheduler（verl_omni/pipelines/schedulers/flow_match_sde.py）实现了三种 SDE：\n“sde”（FlowGRPO）：std_dev_t = sqrt(sigma / (1-sigma)) * noise_level “cps”（Conservative Proposal Step）：std_dev_t = sigma_prev * sin(noise_level * pi/2) “dance_sde”（DanceGRPO）：基于 score-based SDE correction，数值更稳定 每一步的 log-prob 计算为高斯分布的对数密度： log_prob = -(prev_sample - mean)^2 / (2 * std^2) - log(std) - log(sqrt(2*pi))\n四、怎么做——完整架构\n整个系统架构分 7 个阶段：\n数据加载 StatefulDataLoader 从 parquet 文件读取 prompts（文本描述+ground truth） 支持断点续训（checkpoint 恢复 dataloader 状态） Rollout（生成）— vLLM-Omni vLLM-Omni Async Server 作为 Ray actor 部署 DiffusionAgentLoopWorker 把 prompt 发给 vLLM-Omni server vLLM-Omni 的 Custom Pipeline（如 QwenImagePipelineWithLogProb）跑完整 SDE 去噪循环 SDE Window：只在指定的 timestep 窗口内注入噪声+收集 log-prob（比如 start=0, end=5 步），其余步用 ODE（确定性）。这节省了计算和内存。 返回：生成的图片 + all_latents（每个步骤的 latent）+ all_log_probs + all_timesteps + prompt embeddings Reward 计算 VisualRewardManager / MultiVisualRewardManager 对生成的图片打分 支持多种 reward： 规则型：OCR 准确率、JPEG 压缩率 模型型：HPSv3（人类偏好评分）、UnifiedReward 2.0（Alignment + Coherence + Style） HTTP 远程：外部 reward server 异步计算：reward loop worker 和 rollout 可以重叠执行 Old Log-Prob 重算 用当前 actor 模型的权重，在 rollout 产生的 latent 轨迹上重新做 forward + SDE 逆过程 得到 old_log_probs（rollout 时的策略下的 log-prob） 这是 PPO 风格的 proximal optimization 必需的一步 Advantage 估计（GRPO 风格） Group-relative：对同一个 prompt 生成的多个样本（如 n=8），以组为单位归一化 reward advantage = (reward - group_mean) / group_std（可配置是否除以 std） 这样做的好处是不需要单独的 value function（critic） Actor 更新（FSDP 训练引擎） DiffusersFSDPEngine：使用 PyTorch FSDP/FSDP2 做分布式训练 支持 Ulysses Sequence Parallelism（把序列维度切分到多 GPU） 支持 LoRA（lora_rank=64 等），大幅减少训练参数量 三种子引擎： PPODiffusersFSDPEngine：policy gradient 方法（FlowGRPO 等） DPODiffusersFSDPEngine：DPO 方法 NFTDiffusersFSDPEngine：DiffusionNFT 方法（需要三套预测：old + current + ref） 也支持 VeOmni 引擎（另一个训练后端，支持 FSDP2 风格 sharding） Weight Sync + Checkpointing 训练完的权重同步回 rollout replica（通过 CheckpointEngine 异步同步或内存直接同步） 定期保存 checkpoint（模型、优化器、dataloader 状态） 五、各算法原理\nFlowGRPO（diffusion_algos.py:270）\n最核心的算法。PPO-style clipped objective： ratio = exp(log_prob_current - log_prob_old) loss = max(-adv * ratio, -adv * clip(ratio, 1-eps, 1+eps)) 就是标准的 PPO clip，但 log_prob 来自 SDE 逆过程而非 token 采样。\nGRPO-Guard（diffusion_algos.py:362）\n在 FlowGRPO 基础上加一个 “ratio-mean bias” 项，惩罚当前策略的 reverse-SDE mean 偏离 rollout 策略的 mean： ratio_mean_bias = ||prev_sample_mean - old_prev_sample_mean||^2 / (2 * scale^2) scale = sqrt_dt * std_dev_t，这使得 loss 在不同 timestep 上的梯度量级一致。\nDPO（diffusion_algos.py:486）\n直接偏好优化，不需要显式的 reward model。比较 chosen vs rejected 样本的 noise prediction 误差： loss = -log_sigmoid(-0.5 * beta * (model_err_chosen - ref_err_chosen - model_err_rejected + ref_err_rejected))\nDiffusionNFT（diffusion_algos.py:677）\n前向过程的 DPO（Forward-process direct-preference）。在 forward noising 方向上做优化：x0 -\u003e xt 加噪后预测 x0，用 positive/negative 预测的加权组合。\n六、双注册机制——可扩展性\nVeRL-Omni 的可扩展性来自于两个注册表（verl_omni/pipelines/model_base.py）：\nDiffusionModelBase：训练侧适配器，(architecture, algorithm) → 具体的训练逻辑 VllmOmniPipelineBase：推理侧管道，(architecture, algorithm) → vLLM-Omni 自定义 pipeline 要支持一个新模型，你只需要：\n实现 DiffusionModelBase 子类（build_scheduler, set_timesteps, prepare_model_inputs, forward_and_sample_previous_step） 实现 vLLM-Omni 自定义 pipeline（diffuse 方法） 注册到对应 (architecture, algorithm) key 下 配置系统中只需指定 external_lib=your.module.path 即可触发自动注册。\n✻ Baked for 2m 43s\n※ recap: You asked me to explain the verl-omni project in detail — its purpose, architecture, model support, and design rationale. I delivered a comprehensive breakdown in Chinese covering all of it. No active task is in progress; let me know if you want to dive deeper into any specific part. (disable recaps in /config)\n好的，我来从零开始系统地给你讲。假设你精通 LLM 但完全不懂扩散模型。\n第一部分：扩散模型基础 —— 从 LLM 人的视角\n1.1 核心直觉：扩散模型是什么\nLLM 是自回归生成：给定 [我, 爱]，预测下一个 token [吃]，再预测 [苹果]…逐 token 串行。\n扩散模型是迭代去噪生成：先画一张纯噪声图，然后一步一步\"擦掉\"噪声，露出清晰的图像。\nLLM 推理: [BOS] → [我] → [爱] → [吃] → [苹] → [果] → [EOS] 每一步: 选下一个 token (discrete sampling from softmax)\n扩散模型推理 (去噪): 纯噪声 z_T → z_{T-1} → z_{T-2} → … → z_0 (清晰 latent) → VAE decode → 图像 每一步: 对 latent tensor 做连续数值的更新 (continuous denoising)\n关键对应：\n┌──────────────────────────────────────┬───────────────────────────────────────────────┐ │ LLM 概念 │ 扩散模型概念 │ ├──────────────────────────────────────┼───────────────────────────────────────────────┤ │ token │ latent pixel/tensor element │ ├──────────────────────────────────────┼───────────────────────────────────────────────┤ │ autoregressive sampling (逐个 token) │ iterative denoising (逐步去噪，通常 20-50 步) │ ├──────────────────────────────────────┼───────────────────────────────────────────────┤ │ vocabulary size V │ latent 是连续值 (R^d) │ ├──────────────────────────────────────┼───────────────────────────────────────────────┤ │ softmax → categorical sampling │ 高斯分布 → continuous sampling │ ├──────────────────────────────────────┼───────────────────────────────────────────────┤ │ KV cache │ 无（每步独立，但 latent 尺寸大） │ ├──────────────────────────────────────┼───────────────────────────────────────────────┤ │ next-token log-prob │ SDE transition log-prob │ └──────────────────────────────────────┴───────────────────────────────────────────────┘\n1.2 扩散模型的两大流派\nDDPM (Denoising Diffusion Probabilistic Models)\n2020 年 Ho et al. 提出 前向过程：逐步加高斯噪声 x_t = sqrt(1-β_t) * x_{t-1} + sqrt(β_t) * ε 反向过程：学习去预测噪声 ε_θ(x_t, t) 数学基础：离散时间步的马尔可夫链 Flow Matching / Continuous-time Diffusion\n2023 年 Lipman et al. (Flow Matching) 和 Song et al. (Score-based SDE) 统一 关键思想：扩散过程是连续时间的，由 ODE/SDE 描述 训练目标：预测 velocity field v_θ(x_t, t) 或 score function ∇log p_t(x) VeRL-Omni 主要使用 Flow Matching 框架 为什么要 Flow Matching？\nDDPM 把时间离散化了，步数少则质量差 Flow Matching 是连续时间框架，可以用任意步数采样（ODE solver），且数学上更\"干净\"——利于 RL 训练中计算 log-prob（这个后面重点讲） 1.3 Flow Matching 完整计算过程（带伪代码）\n阶段 A：训练（Pre-training，不是 RL）\nFlow Matching 的训练目标和扩散模型本质一样，只是参数化方式不同。\n直觉：你有一个清晰的图像 x_0（来自数据集），你随机挑一个时间 t ∈ [0,1] 和一个噪声水平 σ_t，然后： x_t = t * x_0 + (1-t) * ε # 线性插值：t=0 时是纯噪声，t=1 时是清晰图 模型要学习的是velocity（速度场） v = x_0 - ε，即\"从噪声到清晰图像的方向\"。\n============================================ Flow Matching 预训练伪代码 ============================================ x_0: 清晰图像的 latent，shape (B, C, H, W)，来自 VAE encode text_embedding: 文本 prompt 的 embedding，shape (B, L, D) model: DiT (Diffusion Transformer)，就是我们训的模型 for x_0, text_embedding in dataloader: B = x_0.shape[0]\n# 1. 随机采样时间 t ∈ [0, 1] t = torch.rand(B, device=device) # shape (B,) # 2. 采样噪声 epsilon = torch.randn_like(x_0) # 纯高斯噪声 # 3. 线性插值：从噪声到清晰图 # t=0 → 纯噪声 epsilon # t=1 → 清晰图 x_0 # 中间 → 噪声和信号的混合 x_t = (1 - t) * epsilon + t * x_0 # shape (B, C, H, W) # 注意：这里用 (1-t) 而不是 t，是 convention 差异，本质一样 # 4. 目标 velocity：x_0 和 ε 的差 target_velocity = x_0 - epsilon # shape (B, C, H, W) # 5. 模型预测 # 输入: x_t (噪声图) + t (时间) + text_embedding (文本条件) # 输出: predicted velocity v_θ(x_t, t, text) v_pred = model( hidden_states=x_t, timestep=t, # 时间条件 encoder_hidden_states=text_embedding, # 文本条件 ) # shape (B, C, H, W) # 6. 简单的 MSE Loss！ loss = F.mse_loss(v_pred, target_velocity) loss.backward() optimizer.step() 重点：Flow Matching 的预训练 loss 就是 MSE！跟 LLM 的 cross-entropy loss 一样简单。因为 target x_0 - ε 是已知的，模型只需要做回归。\n阶段 B：推理/采样（Inference/Sampling）\n训好模型后，怎么用？用 ODE solver 从噪声一步步去噪。\n============================================ Flow Matching 推理 (ODE sampling) ============================================ 输入: text_embedding (文本 prompt) 输出: 生成的 latent x_0 1. 从纯噪声开始 x_1 = torch.randn(B, C, H, W) # t=1 → 纯噪声（注意 convention: t=1 是噪声）\n2. 时间步长列表 (由 scheduler 决定) 例如 num_inference_steps=50, sigmas = [1.0, 0.98, 0.96, …, 0.02, 0.0] sigmas = scheduler.sigmas # len=51 (包含 0)，共 50 步\n3. 迭代去噪 for step in range(num_inference_steps): sigma = sigmas[step] # 当前噪声水平 sigma_next = sigmas[step + 1] # 下一噪声水平\n# 模型预测 velocity v_pred = model( hidden_states=x_t, timestep=sigma, # 用 sigma 而不是 t encoder_hidden_states=text_embedding, ) # Euler ODE step: x_{t-1} = x_t + (sigma_next - sigma) * v_pred # 因为 dσ \u003c 0 (从大到小), dt = sigma_next - sigma \u003c 0 # 所以 x 更新方向是 v_pred 的方向 x_t = x_t + (sigma_next - sigma) * v_pred 4. VAE decode latent → 像素空间 image = vae.decode(x_t) return image\n关键理解：Flow Matching 的采样（用 ODE）是确定性的！给定相同的初始噪声和 prompt，每次生成完全一样的图。这跟 LLM 采样（有 randomness from softmax）完全不同。\n第二部分：为什么 RL 训练需要 SDE —— VeRL-Omni 的核心创新\n2.1 LLM RL 中的 log-prob\n在 LLM RL 中，log-prob 非常直接：\nLLM: log_prob(y_t | x, y_{","wordCount":"5176","inLanguage":"en","datePublished":"0001-01-01T00:00:00Z","dateModified":"0001-01-01T00:00:00Z","author":{"@type":"Person","name":"cheng zhiyuan"},"mainEntityOfPage":{"@type":"WebPage","@id":"https://sendoray.github.io/posts/veomni/"},"publisher":{"@type":"Organization","name":"chengzhy's blog","logo":{"@type":"ImageObject","url":"https://sendoray.github.io/%3Clink%20/%20abs%20url%3E"}}}</script></head><body id=top><header class=header><nav class=header-nav><div class=logo><a href=https://sendoray.github.io/ accesskey=h title="Home (Alt + H)"><img src=https://sendoray.github.io/apple-touch-icon.png alt aria-label=logo height=35>Home</a><div class=logo-switches><button id=theme-toggle class=theme-toggle accesskey=t title="(Alt + T)" aria-label="Toggle theme"><svg class="moon" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentcolor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"/></svg><svg class="sun" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentcolor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg></button></div></div><ul id=menu class=menu><li><a href=https://sendoray.github.io/posts/ title=Posts><span>Posts</span></a></li><li><a href=https://sendoray.github.io/about/ title=About><span>About</span></a></li><li><a href=https://sendoray.github.io/tags/ title=Tags><span>Tags</span></a></li><li><a href=https://sendoray.github.io/recommended/ title=Recommended><span>Recommended</span></a></li></ul></nav></header><main class=main><article class=post-single><header class=post-header><nav class=breadcrumbs role=navigation aria-label=Breadcrumb><a href=/>Home</a>
+<svg viewBox="0 0 24 24" fill="none" stroke="currentcolor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-chevron-right"><polyline points="9 18 15 12 9 6"/></svg>
+<a href=/posts/>Posts</a><svg viewBox="0 0 24 24" fill="none" stroke="currentcolor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-chevron-right"><polyline points="9 18 15 12 9 6"/></svg></nav><h1 class="post-title entry-hint-parent"></h1><div class=post-meta><span>25 min</span>&nbsp;·&nbsp;<span>5176 words</span>&nbsp;·&nbsp;<span>cheng zhiyuan</span></div></header><div class="post-content md-content"><p>VeRL-Omni 全面解析</p><p>一、项目是什么</p><p>VeRL-Omni 是字节跳动 Seed MLSys 团队开源的多模态生成模型的 RL 后训练框架。它不像 Stable Diffusion
+那样做图像生成，而是用强化学习（RL）来微调已经训好的生成模型，让它们生成更高质量的图像/视频/音频。</p><p>简单说：你有一个 Qwen-Image 模型能文生图，但生成质量不够好。VeRL-Omni 用 RL 的方式（比如
+FlowGRPO）来继续训练它，根据 reward（OCR 准确率、人类偏好评分等）来优化模型，让它生成更好的图片。</p><p>二、为什么要做 VeRL-Omni（不用 verl 或 vllm）</p><p>README 里说的很清楚：</p><p>▎ Multimodal generative RL training differs from text-only LLM RL not only in model structure, but also in I/O patterns, compute characteristics, and runtime bottlenecks.</p><p>具体来说有这些关键差异：</p><ol><li>模型结构不同：LLM 是自回归的（逐 token 生成），而扩散模型是迭代去噪的（逐 step 去噪）。verl 的训练循环是为
+LLM 设计的（token-level log-probs、PPO 在 token 维度做），不能直接用于扩散模型。</li><li>数据 I/O 模式不同：LLM 产生 token 序列，扩散模型产生高维 latent tensor（图片 latent 是 (B, C, H, W) 甚至
+(B, C, T, H, W) 的视频）。带宽和存储需求完全不同。</li><li>计算瓶颈不同：LLM rollout 的瓶颈在 KV cache 和 attention；扩散模型 rollout 的瓶颈在 VAE 编解码、多步
+UNet/DiT 推理。</li><li>log-prob 计算方式完全不同：LLM 的 log-prob 直接从 softmax 输出拿到；扩散模型需要 SDE 逆过程 计算每步
+transition 的 log-prob。这是扩散 RL 核心的数学创新。</li><li>vLLM 是为 LLM 推理优化的，它不懂扩散模型。因此需要 vLLM-Omni 来做扩散 rollout，提供高吞吐的扩散推理。</li><li>吞吐优势：README 说比 flow_grpo 实现快 ~25%，来自 vLLM-Omni rollout + FSDP 训练 + 异步 reward 计算的重叠。</li></ol><p>三、模型结构和支持情况</p><p>支持的模型</p><p>模型: Qwen-Image
+架构: QwenImageTransformer2DModel（DiT）
+模态: Text→Image
+算法: FlowGRPO, MixGRPO, GRPO-Guard, DiffusionNFT, DPO
+────────────────────────────────────────
+模型: Wan2.2
+架构: WanTransformer3DModel（3D DiT）
+模态: Text→Video
+算法: DanceGRPO
+────────────────────────────────────────
+模型: SD3.5
+架构: MMDiT（双流 DiT）
+模态: Text→Image
+算法: DPO
+────────────────────────────────────────
+模型: BAGEL（WIP）
+架构: 统一理解+生成
+模态: Text+Image
+算法: FlowGRPO
+────────────────────────────────────────
+模型: Qwen3-Omni（WIP）
+架构: 全模态统一
+模态: Text/Image/Video/Audio
+算法: GSPO
+────────────────────────────────────────
+模型: HunyuanImage-3.0（计划）
+架构: 统一理解+生成
+模态: Text+Image
+算法: MixGRPO, SRPO
+────────────────────────────────────────
+模型: LTX2.3（WIP）
+架构: 扩散生成器
+模态: Text→Video+Audio
+算法: FlowGRPO</p><p>Qwen-Image 模型结构（核心支持模型）</p><p>Qwen-Image 是一个 Flow Matching DiT（Diffusion Transformer）：</p><ol><li>VAE Encoder：将图像 (B, 3, H, W) 压缩到 latent (B, C, H/8, W/8)</li><li>Text Encoder（T5/ByT5）：将文本 prompt 编码为 prompt_embeds (B, L, D)</li><li>QwenImageTransformer2DModel：核心 DiT，输入 noisy latent + timestep + text embeddings，输出 noise
+prediction（也叫 velocity/flow prediction）</li><li>VAE Decoder：将去噪后的 latent 解码回像素空间</li></ol><p>SDE 逆过程是 VeRL-Omni 的核心数学创新。标准扩散推理用 ODE（确定性），但 RL 训练需要随机性才能计算
+log-prob。FlowMatchSDEDiscreteScheduler（verl_omni/pipelines/schedulers/flow_match_sde.py）实现了三种 SDE：</p><ul><li>&ldquo;sde&rdquo;（FlowGRPO）：std_dev_t = sqrt(sigma / (1-sigma)) * noise_level</li><li>&ldquo;cps&rdquo;（Conservative Proposal Step）：std_dev_t = sigma_prev * sin(noise_level * pi/2)</li><li>&ldquo;dance_sde&rdquo;（DanceGRPO）：基于 score-based SDE correction，数值更稳定</li></ul><p>每一步的 log-prob 计算为高斯分布的对数密度：
+log_prob = -(prev_sample - mean)^2 / (2 * std^2) - log(std) - log(sqrt(2*pi))</p><p>四、怎么做——完整架构</p><p>整个系统架构分 7 个阶段：</p><ol><li>数据加载</li></ol><ul><li>StatefulDataLoader 从 parquet 文件读取 prompts（文本描述+ground truth）</li><li>支持断点续训（checkpoint 恢复 dataloader 状态）</li></ul><ol start=2><li>Rollout（生成）— vLLM-Omni</li></ol><ul><li>vLLM-Omni Async Server 作为 Ray actor 部署</li><li>DiffusionAgentLoopWorker 把 prompt 发给 vLLM-Omni server</li><li>vLLM-Omni 的 Custom Pipeline（如 QwenImagePipelineWithLogProb）跑完整 SDE 去噪循环</li><li>SDE Window：只在指定的 timestep 窗口内注入噪声+收集 log-prob（比如 start=0, end=5 步），其余步用
+ODE（确定性）。这节省了计算和内存。</li><li>返回：生成的图片 + all_latents（每个步骤的 latent）+ all_log_probs + all_timesteps + prompt embeddings</li></ul><ol start=3><li>Reward 计算</li></ol><ul><li>VisualRewardManager / MultiVisualRewardManager 对生成的图片打分</li><li>支持多种 reward：<ul><li>规则型：OCR 准确率、JPEG 压缩率</li><li>模型型：HPSv3（人类偏好评分）、UnifiedReward 2.0（Alignment + Coherence + Style）</li><li>HTTP 远程：外部 reward server</li></ul></li><li>异步计算：reward loop worker 和 rollout 可以重叠执行</li></ul><ol start=4><li>Old Log-Prob 重算</li></ol><ul><li>用当前 actor 模型的权重，在 rollout 产生的 latent 轨迹上重新做 forward + SDE 逆过程</li><li>得到 old_log_probs（rollout 时的策略下的 log-prob）</li><li>这是 PPO 风格的 proximal optimization 必需的一步</li></ul><ol start=5><li>Advantage 估计（GRPO 风格）</li></ol><ul><li>Group-relative：对同一个 prompt 生成的多个样本（如 n=8），以组为单位归一化 reward</li><li>advantage = (reward - group_mean) / group_std（可配置是否除以 std）</li><li>这样做的好处是不需要单独的 value function（critic）</li></ul><ol start=6><li>Actor 更新（FSDP 训练引擎）</li></ol><ul><li>DiffusersFSDPEngine：使用 PyTorch FSDP/FSDP2 做分布式训练</li><li>支持 Ulysses Sequence Parallelism（把序列维度切分到多 GPU）</li><li>支持 LoRA（lora_rank=64 等），大幅减少训练参数量</li><li>三种子引擎：<ul><li>PPODiffusersFSDPEngine：policy gradient 方法（FlowGRPO 等）</li><li>DPODiffusersFSDPEngine：DPO 方法</li><li>NFTDiffusersFSDPEngine：DiffusionNFT 方法（需要三套预测：old + current + ref）</li></ul></li><li>也支持 VeOmni 引擎（另一个训练后端，支持 FSDP2 风格 sharding）</li></ul><ol start=7><li>Weight Sync + Checkpointing</li></ol><ul><li>训练完的权重同步回 rollout replica（通过 CheckpointEngine 异步同步或内存直接同步）</li><li>定期保存 checkpoint（模型、优化器、dataloader 状态）</li></ul><p>五、各算法原理</p><p>FlowGRPO（diffusion_algos.py:270）</p><p>最核心的算法。PPO-style clipped objective：
+ratio = exp(log_prob_current - log_prob_old)
+loss = max(-adv * ratio, -adv * clip(ratio, 1-eps, 1+eps))
+就是标准的 PPO clip，但 log_prob 来自 SDE 逆过程而非 token 采样。</p><p>GRPO-Guard（diffusion_algos.py:362）</p><p>在 FlowGRPO 基础上加一个 &ldquo;ratio-mean bias&rdquo; 项，惩罚当前策略的 reverse-SDE mean 偏离 rollout 策略的 mean：
+ratio_mean_bias = ||prev_sample_mean - old_prev_sample_mean||^2 / (2 * scale^2)
+scale = sqrt_dt * std_dev_t，这使得 loss 在不同 timestep 上的梯度量级一致。</p><p>DPO（diffusion_algos.py:486）</p><p>直接偏好优化，不需要显式的 reward model。比较 chosen vs rejected 样本的 noise prediction 误差：
+loss = -log_sigmoid(-0.5 * beta * (model_err_chosen - ref_err_chosen - model_err_rejected +
+ref_err_rejected))</p><p>DiffusionNFT（diffusion_algos.py:677）</p><p>前向过程的 DPO（Forward-process direct-preference）。在 forward noising 方向上做优化：x0 -> xt 加噪后预测
+x0，用 positive/negative 预测的加权组合。</p><p>六、双注册机制——可扩展性</p><p>VeRL-Omni 的可扩展性来自于两个注册表（verl_omni/pipelines/model_base.py）：</p><ol><li>DiffusionModelBase：训练侧适配器，(architecture, algorithm) → 具体的训练逻辑</li><li>VllmOmniPipelineBase：推理侧管道，(architecture, algorithm) → vLLM-Omni 自定义 pipeline</li></ol><p>要支持一个新模型，你只需要：</p><ol><li>实现 DiffusionModelBase 子类（build_scheduler, set_timesteps, prepare_model_inputs,
+forward_and_sample_previous_step）</li><li>实现 vLLM-Omni 自定义 pipeline（diffuse 方法）</li><li>注册到对应 (architecture, algorithm) key 下</li></ol><p>配置系统中只需指定 external_lib=your.module.path 即可触发自动注册。</p><p>✻ Baked for 2m 43s</p><p>※ recap: You asked me to explain the verl-omni project in detail — its purpose, architecture, model support,
+and design rationale. I delivered a comprehensive breakdown in Chinese covering all of it. No active task is
+in progress; let me know if you want to dive deeper into any specific part. (disable recaps in /config)</p><p>好的，我来从零开始系统地给你讲。假设你精通 LLM 但完全不懂扩散模型。</p><hr><p>第一部分：扩散模型基础 —— 从 LLM 人的视角</p><p>1.1 核心直觉：扩散模型是什么</p><p>LLM 是自回归生成：给定 [我, 爱]，预测下一个 token [吃]，再预测 [苹果]&mldr;逐 token 串行。</p><p>扩散模型是迭代去噪生成：先画一张纯噪声图，然后一步一步"擦掉"噪声，露出清晰的图像。</p><p>LLM 推理:
+[BOS] → [我] → [爱] → [吃] → [苹] → [果] → [EOS]
+每一步: 选下一个 token (discrete sampling from softmax)</p><p>扩散模型推理 (去噪):
+纯噪声 z_T → z_{T-1} → z_{T-2} → &mldr; → z_0 (清晰 latent) → VAE decode → 图像
+每一步: 对 latent tensor 做连续数值的更新 (continuous denoising)</p><p>关键对应：</p><p>┌──────────────────────────────────────┬───────────────────────────────────────────────┐
+│ LLM 概念 │ 扩散模型概念 │
+├──────────────────────────────────────┼───────────────────────────────────────────────┤
+│ token │ latent pixel/tensor element │
+├──────────────────────────────────────┼───────────────────────────────────────────────┤
+│ autoregressive sampling (逐个 token) │ iterative denoising (逐步去噪，通常 20-50 步) │
+├──────────────────────────────────────┼───────────────────────────────────────────────┤
+│ vocabulary size V │ latent 是连续值 (R^d) │
+├──────────────────────────────────────┼───────────────────────────────────────────────┤
+│ softmax → categorical sampling │ 高斯分布 → continuous sampling │
+├──────────────────────────────────────┼───────────────────────────────────────────────┤
+│ KV cache │ 无（每步独立，但 latent 尺寸大） │
+├──────────────────────────────────────┼───────────────────────────────────────────────┤
+│ next-token log-prob │ SDE transition log-prob │
+└──────────────────────────────────────┴───────────────────────────────────────────────┘</p><hr><p>1.2 扩散模型的两大流派</p><p>DDPM (Denoising Diffusion Probabilistic Models)</p><ul><li>2020 年 Ho et al. 提出</li><li>前向过程：逐步加高斯噪声 x_t = sqrt(1-β_t) * x_{t-1} + sqrt(β_t) * ε</li><li>反向过程：学习去预测噪声 ε_θ(x_t, t)</li><li>数学基础：离散时间步的马尔可夫链</li></ul><p>Flow Matching / Continuous-time Diffusion</p><ul><li>2023 年 Lipman et al. (Flow Matching) 和 Song et al. (Score-based SDE) 统一</li><li>关键思想：扩散过程是连续时间的，由 ODE/SDE 描述</li><li>训练目标：预测 velocity field v_θ(x_t, t) 或 score function ∇log p_t(x)</li><li>VeRL-Omni 主要使用 Flow Matching 框架</li></ul><p>为什么要 Flow Matching？</p><ul><li>DDPM 把时间离散化了，步数少则质量差</li><li>Flow Matching 是连续时间框架，可以用任意步数采样（ODE solver），且数学上更"干净"——利于 RL 训练中计算
+log-prob（这个后面重点讲）</li></ul><hr><p>1.3 Flow Matching 完整计算过程（带伪代码）</p><p>阶段 A：训练（Pre-training，不是 RL）</p><p>Flow Matching 的训练目标和扩散模型本质一样，只是参数化方式不同。</p><p>直觉：你有一个清晰的图像 x_0（来自数据集），你随机挑一个时间 t ∈ [0,1] 和一个噪声水平 σ_t，然后：
+x_t = t * x_0 + (1-t) * ε # 线性插值：t=0 时是纯噪声，t=1 时是清晰图
+模型要学习的是velocity（速度场） v = x_0 - ε，即"从噪声到清晰图像的方向"。</p><h1 id=heading>============================================<a hidden class=anchor aria-hidden=true href=#heading>#</a></h1><h1 id=flow-matching-预训练伪代码>Flow Matching 预训练伪代码<a hidden class=anchor aria-hidden=true href=#flow-matching-预训练伪代码>#</a></h1><h1 id=heading-1>============================================<a hidden class=anchor aria-hidden=true href=#heading-1>#</a></h1><h1 id=x_0-清晰图像的-latentshape-b-c-h-w来自-vae-encode>x_0: 清晰图像的 latent，shape (B, C, H, W)，来自 VAE encode<a hidden class=anchor aria-hidden=true href=#x_0-清晰图像的-latentshape-b-c-h-w来自-vae-encode>#</a></h1><h1 id=text_embedding-文本-prompt-的-embeddingshape-b-l-d>text_embedding: 文本 prompt 的 embedding，shape (B, L, D)<a hidden class=anchor aria-hidden=true href=#text_embedding-文本-prompt-的-embeddingshape-b-l-d>#</a></h1><h1 id=model-dit-diffusion-transformer就是我们训的模型>model: DiT (Diffusion Transformer)，就是我们训的模型<a hidden class=anchor aria-hidden=true href=#model-dit-diffusion-transformer就是我们训的模型>#</a></h1><p>for x_0, text_embedding in dataloader:
+B = x_0.shape[0]</p><pre><code>  # 1. 随机采样时间 t ∈ [0, 1]
+  t = torch.rand(B, device=device)  # shape (B,)
+
+  # 2. 采样噪声
+  epsilon = torch.randn_like(x_0)   # 纯高斯噪声
+
+  # 3. 线性插值：从噪声到清晰图
+  #    t=0 → 纯噪声 epsilon
+  #    t=1 → 清晰图 x_0
+  #    中间 → 噪声和信号的混合
+  x_t = (1 - t) * epsilon + t * x_0   # shape (B, C, H, W)
+  # 注意：这里用 (1-t) 而不是 t，是 convention 差异，本质一样
+
+  # 4. 目标 velocity：x_0 和 ε 的差
+  target_velocity = x_0 - epsilon     # shape (B, C, H, W)
+
+  # 5. 模型预测
+  #    输入: x_t (噪声图) + t (时间) + text_embedding (文本条件)
+  #    输出: predicted velocity v_θ(x_t, t, text)
+  v_pred = model(
+      hidden_states=x_t,
+      timestep=t,                     # 时间条件
+      encoder_hidden_states=text_embedding,  # 文本条件
+  )  # shape (B, C, H, W)
+
+  # 6. 简单的 MSE Loss！
+  loss = F.mse_loss(v_pred, target_velocity)
+  loss.backward()
+  optimizer.step()
+</code></pre><p>重点：Flow Matching 的预训练 loss 就是 MSE！跟 LLM 的 cross-entropy loss 一样简单。因为 target x_0 - ε
+是已知的，模型只需要做回归。</p><p>阶段 B：推理/采样（Inference/Sampling）</p><p>训好模型后，怎么用？用 ODE solver 从噪声一步步去噪。</p><h1 id=heading-2>============================================<a hidden class=anchor aria-hidden=true href=#heading-2>#</a></h1><h1 id=flow-matching-推理-ode-sampling>Flow Matching 推理 (ODE sampling)<a hidden class=anchor aria-hidden=true href=#flow-matching-推理-ode-sampling>#</a></h1><h1 id=heading-3>============================================<a hidden class=anchor aria-hidden=true href=#heading-3>#</a></h1><h1 id=输入-text_embedding-文本-prompt>输入: text_embedding (文本 prompt)<a hidden class=anchor aria-hidden=true href=#输入-text_embedding-文本-prompt>#</a></h1><h1 id=输出-生成的-latent-x_0>输出: 生成的 latent x_0<a hidden class=anchor aria-hidden=true href=#输出-生成的-latent-x_0>#</a></h1><h1 id=1-从纯噪声开始>1. 从纯噪声开始<a hidden class=anchor aria-hidden=true href=#1-从纯噪声开始>#</a></h1><p>x_1 = torch.randn(B, C, H, W) # t=1 → 纯噪声（注意 convention: t=1 是噪声）</p><h1 id=2-时间步长列表-由-scheduler-决定>2. 时间步长列表 (由 scheduler 决定)<a hidden class=anchor aria-hidden=true href=#2-时间步长列表-由-scheduler-决定>#</a></h1><h1 id=例如-num_inference_steps50-sigmas--10-098-096--002-00>例如 num_inference_steps=50, sigmas = [1.0, 0.98, 0.96, &mldr;, 0.02, 0.0]<a hidden class=anchor aria-hidden=true href=#例如-num_inference_steps50-sigmas--10-098-096--002-00>#</a></h1><p>sigmas = scheduler.sigmas # len=51 (包含 0)，共 50 步</p><h1 id=3-迭代去噪>3. 迭代去噪<a hidden class=anchor aria-hidden=true href=#3-迭代去噪>#</a></h1><p>for step in range(num_inference_steps):
+sigma = sigmas[step] # 当前噪声水平
+sigma_next = sigmas[step + 1] # 下一噪声水平</p><pre><code>  # 模型预测 velocity
+  v_pred = model(
+      hidden_states=x_t,
+      timestep=sigma,              # 用 sigma 而不是 t
+      encoder_hidden_states=text_embedding,
+  )
+
+  # Euler ODE step: x_{t-1} = x_t + (sigma_next - sigma) * v_pred
+  # 因为 dσ &lt; 0 (从大到小), dt = sigma_next - sigma &lt; 0
+  # 所以 x 更新方向是 v_pred 的方向
+  x_t = x_t + (sigma_next - sigma) * v_pred
+</code></pre><h1 id=4-vae-decode-latent--像素空间>4. VAE decode latent → 像素空间<a hidden class=anchor aria-hidden=true href=#4-vae-decode-latent--像素空间>#</a></h1><p>image = vae.decode(x_t)
+return image</p><p>关键理解：Flow Matching 的采样（用 ODE）是确定性的！给定相同的初始噪声和 prompt，每次生成完全一样的图。这跟
+LLM 采样（有 randomness from softmax）完全不同。</p><hr><p>第二部分：为什么 RL 训练需要 SDE —— VeRL-Omni 的核心创新</p><p>2.1 LLM RL 中的 log-prob</p><p>在 LLM RL 中，log-prob 非常直接：</p><h1 id=llm-log_proby_t--x-y_t>LLM: log_prob(y_t | x, y_{&lt;t})<a hidden class=anchor aria-hidden=true href=#llm-log_proby_t--x-y_t>#</a></h1><p>logits = model(input_ids) # (B, seq_len, vocab_size)
+log_probs = F.log_softmax(logits, dim=-1)
+token_log_prob = log_probs[:, t, token_id] # 很简单！</p><p>2.2 扩散模型 RL 中的 log-prob</p><p>扩散模型没有 softmax 输出！每一步输出的是一个连续向量（velocity/noise prediction）。那 log-prob 怎么算？</p><p>答案：把扩散模型的去噪过程当作一个随机微分方程（SDE）的离散化，然后计算高斯转移概率。</p><p>这就是 VeRL-Omni 的 FlowMatchSDEDiscreteScheduler 做的事情。</p><p>2.3 ODE vs SDE</p><p>ODE (确定性): SDE (随机性):
+dx = v(x,t) dt dx = [v(x,t) + 噪声项] dt + 扩散项 dw</p><pre><code>固定输入 → 固定输出   固定输入 → 随机输出（可以算概率）
+</code></pre><p>FlowGRPO 的核心思想：</p><ol><li>预训练用 ODE（MSE loss，简单高效）</li><li>RL 训练用 SDE（需要随机性来定义 log-prob）</li><li>只在部分步（SDE Window）注入噪声，其余步用 ODE</li></ol><p>2.4 SDE 步的计算过程（完整数学+伪代码）</p><h1 id=heading-4>============================================<a hidden class=anchor aria-hidden=true href=#heading-4>#</a></h1><h1 id=sde-reverse-step-flowgrpo--sde-模式>SDE Reverse Step (FlowGRPO / &ldquo;sde&rdquo; 模式)<a hidden class=anchor aria-hidden=true href=#sde-reverse-step-flowgrpo--sde-模式>#</a></h1><h1 id=这是-verl-omni-最核心的计算>这是 VeRL-Omni 最核心的计算<a hidden class=anchor aria-hidden=true href=#这是-verl-omni-最核心的计算>#</a></h1><h1 id=heading-5>============================================<a hidden class=anchor aria-hidden=true href=#heading-5>#</a></h1><p>def sde_reverse_step(x_t, sigma, sigma_next, model_output, noise_level):
+"""
+单步 SDE 逆过程</p><pre><code>  输入:
+      x_t: 当前 noisy latent, shape (B, C, H, W)
+      sigma: 当前噪声水平 (float)
+      sigma_next: 下一步噪声水平 (float), sigma_next &lt; sigma
+      model_output: 模型预测的 velocity v_θ(x_t, sigma), shape (B, C, H, W)
+      noise_level: SDE 噪声强度 η ∈ [0, 1]
+  
+  输出:
+      x_next: 下一步 latent x_{t-1}
+      log_prob: 转移概率 log p(x_{t-1} | x_t), shape (B,)
+      mean: 转移分布的均值
+      std: 转移分布的标准差
+  &quot;&quot;&quot;
+
+  dt = sigma_next - sigma  # 负数（sigma 减小）
+
+  # ==========================================
+  # Step 1: SDE 噪声方差 (这是关键!)
+  # ==========================================
+  # std_dev_t 决定了注入多少随机性
+  sigma_max = scheduler.sigmas[1]  # 最大 sigma (~1.0)
+
+  # 公式: std_dev_t = sqrt(sigma/(1-sigma)) * noise_level
+  # 当 sigma→1: 分母→0，但 clamp 到 sigma_max
+  std_dev_t = torch.sqrt(sigma / (1 - torch.where(sigma==1, sigma_max, sigma))) * noise_level
+  # shape: 标量, broadcast 到 (B, 1, 1, 1)
+
+  # ==========================================
+  # Step 2: 计算转移分布的均值
+  # ==========================================
+  # mean = x_t * (1 + std²/(2σ) * dt) + v_pred * (1 + std²*(1-σ)/(2σ)) * dt
+  prev_sample_mean = (
+      x_t * (1 + std_dev_t**2 / (2 * sigma) * dt)
+      + model_output * (1 + std_dev_t**2 * (1 - sigma) / (2 * sigma)) * dt
+  )
+
+  # ==========================================
+  # Step 3: 采样下一步 latent
+  # ==========================================
+  # noise ~ N(0, I)
+  noise = torch.randn_like(x_t)
+
+  # 转移分布: p(x_{t-1} | x_t) = N(mean, (std * sqrt(-dt))²)
+  # 注意 sqrt(-dt) 因为 dt 是负数
+  x_next = prev_sample_mean + std_dev_t * torch.sqrt(-dt) * noise
+
+  # ==========================================
+  # Step 4: 计算 log-prob (高斯密度)
+  # ==========================================
+  # 这是 RL 训练需要的关键值！
+  # p(x_{t-1} | x_t) 服从高斯分布 N(mean, variance)
+  variance = (std_dev_t * torch.sqrt(-dt)) ** 2
+
+  # 对数高斯密度
+  log_prob = (
+      - (x_next.detach() - prev_sample_mean) ** 2 / (2 * variance)  # 二次项
+      - torch.log(std_dev_t * torch.sqrt(-dt))                       # log(std)
+      - torch.log(torch.sqrt(2 * torch.pi))                          # 归一化常数
+  )  # shape: (B, C, H, W)
+
+  # 对空间维度取平均 → (B,)
+  log_prob = log_prob.mean(dim=(1, 2, 3))
+
+  return x_next, log_prob, prev_sample_mean, std_dev_t
+</code></pre><p>2.5 SDE Window —— 为什么不全用 SDE？</p><p>Timestep: T ──────────────────────────────────────→ 0
+噪声 清晰</p><p>SDE Window: ████░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░
+只有这 4 步 其余都用 ODE (确定性的)
+注入噪声+收集 (快, 不需要 log-prob)
+log-prob</p><p>为什么要 window？</p><ol><li>计算开销：每步 SDE 需要存 latents + 额外计算，全部用 SDE 代价大</li><li>方差控制：只在噪声较大的步注入随机性（这些步方差大，梯度信号好），接近清晰的步用 ODE</li><li>经验发现：window_size=4-8 就够了，性能和全 SDE 几乎一样</li></ol><p>2.6 RL 训练中 log-prob 怎么用？</p><p>回到 diffusion_algos.py:270 的 FlowGRPO Loss：</p><h1 id=heading-6>============================================<a hidden class=anchor aria-hidden=true href=#heading-6>#</a></h1><h1 id=flowgrpo-rl-训练的完整流程>FlowGRPO RL 训练的完整流程<a hidden class=anchor aria-hidden=true href=#flowgrpo-rl-训练的完整流程>#</a></h1><h1 id=heading-7>============================================<a hidden class=anchor aria-hidden=true href=#heading-7>#</a></h1><h1 id=-phase-1-rollout-vllm-omni->&mdash; Phase 1: Rollout (vLLM-Omni) &mdash;<a hidden class=anchor aria-hidden=true href=#-phase-1-rollout-vllm-omni->#</a></h1><h1 id=输入-prompt>输入: prompt<a hidden class=anchor aria-hidden=true href=#输入-prompt>#</a></h1><h1 id=输出-image--rollout_log_probs-在-sde-window-内收集>输出: image + rollout_log_probs (在 SDE window 内收集)<a hidden class=anchor aria-hidden=true href=#输出-image--rollout_log_probs-在-sde-window-内收集>#</a></h1><h1 id=-phase-2-reward->&mdash; Phase 2: Reward &mdash;<a hidden class=anchor aria-hidden=true href=#-phase-2-reward->#</a></h1><p>reward = compute_reward(image, ground_truth) # e.g. OCR accuracy, HPSv3</p><h1 id=-phase-3-old-log-prob-recompute-用当前模型权重->&mdash; Phase 3: Old log-prob recompute (用当前模型权重) &mdash;<a hidden class=anchor aria-hidden=true href=#-phase-3-old-log-prob-recompute-用当前模型权重->#</a></h1><h1 id=遍历-sde-window-内的每一步>遍历 SDE window 内的每一步:<a hidden class=anchor aria-hidden=true href=#遍历-sde-window-内的每一步>#</a></h1><p>for step in sde_window:
+v_pred = model(x_t, sigma, prompt)
+x_next, old_log_prob_step, _, _ = sde_reverse_step(&mldr;)
+old_log_probs = sum over steps</p><h1 id=-phase-4-advantage-grpo->&mdash; Phase 4: Advantage (GRPO) &mdash;<a hidden class=anchor aria-hidden=true href=#-phase-4-advantage-grpo->#</a></h1><h1 id=同一-prompt-的多个样本-n8>同一 prompt 的多个样本 (n=8)<a hidden class=anchor aria-hidden=true href=#同一-prompt-的多个样本-n8>#</a></h1><p>group_rewards = rewards[group_mask]
+advantage[i] = (reward[i] - group_rewards.mean()) / group_rewards.std()</p><h1 id=-phase-5-actor-forward--loss->&mdash; Phase 5: Actor forward + Loss &mdash;<a hidden class=anchor aria-hidden=true href=#-phase-5-actor-forward--loss->#</a></h1><h1 id=再次遍历-sde-window>再次遍历 SDE window:<a hidden class=anchor aria-hidden=true href=#再次遍历-sde-window>#</a></h1><p>for step in sde_window:
+v_pred = model(x_t, sigma, prompt)
+x_next, log_prob_step, _, _ = sde_reverse_step(&mldr;)
+log_probs = sum over steps</p><h1 id=ppo-style-clipped-objective>PPO-style clipped objective<a hidden class=anchor aria-hidden=true href=#ppo-style-clipped-objective>#</a></h1><p>ratio = exp(log_probs - old_log_probs)
+loss = max(-adv * ratio, -adv * clip(ratio, 1-ε, 1+ε))
+loss.backward()</p><hr><p>第三部分：关键术语表（扩散模型 + VeRL-Omni）</p><p>术语: Latent
+解释: 图像在 VAE 压缩空间的表示，shape (B,C,H,W)<br>LLM 类比: token embedding (B,L,D)
+────────────────────────────────────────
+术语: Timestep / Sigma
+解释: 扩散过程的时间参数，σ 越大越"噪声"
+LLM 类比: 生成步骤 t
+────────────────────────────────────────
+术语: Velocity (v)
+解释: Flow Matching 中的预测目标 = x_0 - ε
+LLM 类比: 类似预测 &ldquo;下一个 token 的 logits&rdquo;
+────────────────────────────────────────
+术语: Score Function
+解释: ∇log p_t(x)，指向高概率密度区域的方向
+LLM 类比: 无直接类比
+────────────────────────────────────────
+术语: ODE / SDE
+解释: 常微分方程 / 随机微分方程
+LLM 类比: ODE=贪心解码, SDE=带温度采样
+────────────────────────────────────────
+术语: CFG (Classifier-Free Guidance)
+解释: 用 pred + scale * (pred_pos - pred_neg) 增强文本对齐
+LLM 类比: 类似 contrastive decoding
+────────────────────────────────────────
+术语: True-CFG
+解释: 需要明确的无条件 prompt 预测
+LLM 类比: 同上但需要两个 forward
+────────────────────────────────────────
+术语: DiT (Diffusion Transformer)
+解释: 用 Transformer 架构的扩散模型
+LLM 类比: Decoder-only Transformer
+────────────────────────────────────────
+术语: VAE
+解释: 图像→latent 的编解码器
+LLM 类比: Tokenizer (BPE)
+────────────────────────────────────────
+术语: SDE Window
+解释: 只在这几步注入随机性+收集 log-prob
+LLM 类比: N/A
+────────────────────────────────────────
+术语: noise_level (η)
+解释: 控制 SDE 噪声强度
+LLM 类比: 类似 temperature
+────────────────────────────────────────
+术语: num_inference_steps
+解释: 去噪步数（通常 20-50）
+LLM 类比: max_new_tokens
+────────────────────────────────────────
+术语: FlowGRPO
+解释: Flow Matching + Group Relative Policy Optimization
+LLM 类比: PPO / GRPO
+────────────────────────────────────────
+术语: DanceGRPO
+解释: Dance SDE 变体 + GRPO，数值更稳定
+LLM 类比: 同上
+────────────────────────────────────────
+术语: GRPO-Guard
+解释: FlowGRPO + reverse-SDE mean 漂移惩罚
+LLM 类比: PPO + KL penalty
+────────────────────────────────────────
+术语: DPO (diffusion)
+解释: 直接比较 chosen vs rejected 的 noise pred 误差
+LLM 类比: DPO for LLM
+────────────────────────────────────────
+术语: DiffusionNFT
+解释: 前向过程 DPO（noise 清晰图然后预测 x_0）
+LLM 类比: N/A
+────────────────────────────────────────
+术语: Ulysses SP
+解释: 序列并行（把 latent 的 spatial 维度切到不同 GPU）
+LLM 类比: Tensor Parallel 但切 seq 维度</p><hr><p>第四部分：VeRL-Omni 中两个不同 log-prob 的区分</p><p>这是最容易被搞混的地方：</p><p>┌────────────┬─────────────────────────┬───────────────────────────┬────────────────────────────┐
+│ │ rollout_log_prob │ old_log_prob │ log_prob │
+├────────────┼─────────────────────────┼───────────────────────────┼────────────────────────────┤
+│ 谁算的 │ vLLM-Omni (推理 server) │ Actor (训练 engine) │ Actor (训练 engine) │
+├────────────┼─────────────────────────┼───────────────────────────┼────────────────────────────┤
+│ 用的模型 │ 当前 rollout 权重 │ 当前 actor 权重（更新后） │ 当前 actor 权重 │
+├────────────┼─────────────────────────┼───────────────────────────┼────────────────────────────┤
+│ 用的轨迹 │ 随机采样 (SDE 有噪声) │ 同一轨迹（latent 复用） │ 同一轨迹（latent 复用） │
+├────────────┼─────────────────────────┼───────────────────────────┼────────────────────────────┤
+│ 什么时候算 │ Rollout 阶段 │ 更新前 │ 更新时（forward+backward） │
+├────────────┼─────────────────────────┼───────────────────────────┼────────────────────────────┤
+│ 作用 │ metadata，不用于 loss │ 用于 ratio 分母 │ 用于 ratio 分子 │
+└────────────┴─────────────────────────┴───────────────────────────┴────────────────────────────┘</p><h1 id=这三个-log_probs-的复用关系>这三个 log_probs 的复用关系<a hidden class=anchor aria-hidden=true href=#这三个-log_probs-的复用关系>#</a></h1><p>ratio = exp(log_prob - old_log_prob)</p><h1 id=old_log_prob-模型参数变了但-latent-轨迹不变重新算一遍>old_log_prob: 模型参数变了但 latent 轨迹不变，重新算一遍<a hidden class=anchor aria-hidden=true href=#old_log_prob-模型参数变了但-latent-轨迹不变重新算一遍>#</a></h1><h1 id=log_prob-当前-forward-的结果有-grad>log_prob: 当前 forward 的结果，有 grad<a hidden class=anchor aria-hidden=true href=#log_prob-当前-forward-的结果有-grad>#</a></h1><h1 id=rollout_log_prob-rollout-原始轨迹的-log-prob只用于-ref-计算或-debug>rollout_log_prob: rollout 原始轨迹的 log-prob（只用于 ref 计算或 debug）<a hidden class=anchor aria-hidden=true href=#rollout_log_prob-rollout-原始轨迹的-log-prob只用于-ref-计算或-debug>#</a></h1><hr><p>第五部分：模型架构 —— 从 LLM 人的视角看 DiT</p><p>Qwen-Image 的 Transformer（DiT）</p><p>输入:
+Noisy Latent: (B, C_latent, H, W)
+Timestep: (B,) → embedding → (B, D)
+Text Embedding: (B, L, D) ← 来自 T5/Byt5 text encoder</p><pre><code>             ↓
+┌─────────────────────────────────────────┐
+│  Patch Embed: 把 latent 切成 patch      │
+│  (B, C, H, W) → (B, H*W/p², D)         │
+│  类似 ViT 的 patch embedding            │
+└─────────────────────────────────────────┘
+             ↓
+┌─────────────────────────────────────────┐
+│  N × DiT Block (类似 Decoder Layer)      │
+│  ┌─────────────────────────────────┐    │
+│  │  AdaLN (Adaptive Layer Norm)     │    │  ← 跟 LLM 不同！
+│  │  用 timestep embedding 调控      │    │    不是 Pre-LN/Post-LN
+│  │  LN 的 scale 和 shift            │    │    而是 adaptive
+│  └─────────────────────────────────┘    │
+│  ┌─────────────────────────────────┐    │
+│  │  Self-Attention (标准 MHA)       │    │
+│  └─────────────────────────────────┘    │
+│  ┌─────────────────────────────────┐    │
+│  │  Cross-Attention (可选)          │    │  ← 有些模型用
+│  │  Query: image tokens             │    │    Qwen-Image 是
+│  │  Key/Value: text embeddings      │    │    MM-DiT，有 text path
+│  └─────────────────────────────────┘    │
+│  ┌─────────────────────────────────┐    │
+│  │  FFN (MLP)                      │    │
+│  └─────────────────────────────────┘    │
+└─────────────────────────────────────────┘
+             ↓
+┌─────────────────────────────────────────┐
+│  Unpatch: (B, H*W/p², D) → (B, C, H, W) │
+└─────────────────────────────────────────┘
+             ↓
+输出: velocity prediction v_θ (B, C_latent, H, W)
+</code></pre><p>与 LLM 的关键区别：</p><ol><li>AdaLN 代替 Pre-LN：LN 的参数由 timestep embedding 动态生成（scale(t), shift(t)），不是固定参数</li><li>Cross-Attention：image queries attend to text keys/values（Qwen-Image 中 text 也走相同的 transformer
+blocks）</li><li>没有 causal mask：latent patch 之间是全 attention（双向），不需要 mask</li><li>输入是连续 latent 不是离散 token：不需要 embedding lookup</li><li>输出维度 = 输入维度：预测 velocity（同尺寸 tensor），不是下一个 token 的概率分布</li></ol><hr><p>第六部分：推荐阅读资源</p><p>必读论文</p><ol><li>Flow Matching for Generative Modeling (Lipman et al., 2023)
+<a href=https://arxiv.org/abs/2210.02747>https://arxiv.org/abs/2210.02747</a>
+这是 Flow Matching 框架的奠基论文，写得很清晰</li><li>FlowGRPO: Training Diffusion Models with Reinforcement Learning (2025)
+<a href=https://arxiv.org/abs/2505.05470>https://arxiv.org/abs/2505.05470</a>
+这是 VeRL-Omni 核心算法的论文</li><li>Denoising Diffusion Probabilistic Models (Ho et al., 2020)
+<a href=https://arxiv.org/abs/2006.11239>https://arxiv.org/abs/2006.11239</a>
+DDPM 原始论文，虽然是离散框架但是非常好的入门</li><li>Score-Based Generative Modeling through Stochastic Differential Equations (Song et al., 2021)
+<a href=https://arxiv.org/abs/2011.13456>https://arxiv.org/abs/2011.13456</a>
+统一了 Score-based 和 Diffusion 模型，SDE 框架的数学基础</li><li>Scaling Rectified Flow Transformers for High-Resolution Image Synthesis (Stability AI, 2024)
+<a href=https://arxiv.org/abs/2403.03206>https://arxiv.org/abs/2403.03206</a>
+SD3 的论文，Rectified Flow = Flow Matching，实战视角</li></ol><p>博客 / 教程</p><ol start=6><li>What are Diffusion Models? (Lilian Weng, 2021)
+<a href=https://lilianweng.github.io/posts/2021-07-11-diffusion-models/>https://lilianweng.github.io/posts/2021-07-11-diffusion-models/</a>
+可能是最好的扩散模型入门博客，数学完整但易懂</li><li>Understanding Diffusion Models: A Unified Perspective (Calvin Luo, 2022)
+<a href=https://calvinyluo.com/2022/08/26/diffusion-tutorial.html>https://calvinyluo.com/2022/08/26/diffusion-tutorial.html</a>
+从 VAE 出发推导扩散模型，非常 pedagogic</li><li>Flow Matching: Matching Flows instead of Scores (Yang Song, 2023)
+<a href=https://yang-song.net/blog/2023/flow-matching/>https://yang-song.net/blog/2023/flow-matching/</a>
+Flow Matching 作者的博客，比论文更直观的讲解</li><li>Diffusion Models from Scratch (Hugging Face Diffusers tutorial)
+<a href=https://huggingface.co/docs/diffusers/tutorials/basic_training>https://huggingface.co/docs/diffusers/tutorials/basic_training</a>
+用 diffusers 库训练扩散模型的实战教程</li><li>Anime Keeps Making Diffusion Easier: GRPO for Image Generation (Lambda blog, 2025)
+<a href=https://lambdalabs.com/blog>https://lambdalabs.com/blog</a>
+实战视角讲 Diffusion RL，通俗易懂</li></ol><p>关键 GitHub 仓库</p><ol start=11><li>flow_grpo (原始 FlowGRPO 实现)
+<a href=https://github.com/yifan123/flow_grpo>https://github.com/yifan123/flow_grpo</a>
+VeRL-Omni 的灵感来源，单文件 SD3 训练代码，比 VeRL-Omni 简单得多</li><li>HuggingFace Diffusers
+<a href=https://github.com/huggingface/diffusers>https://github.com/huggingface/diffusers</a>
+扩散模型的标准库，pipeline 设计是 VeRL-Omni 适配层的基础</li></ol><hr><p>总结：你作为 LLM Infra 人的学习路线</p><p>第1步: 理解扩散模型基础
+→ Lilian Weng 博客 + DDPM 论文</p><p>第2步: 理解 Flow Matching
+→ Yang Song 博客 + Flow Matching 论文 (Lipman 2023)
+核心: Flow Matching = 用 MSE loss 直接回归 velocity = x_0 - ε</p><p>第3步: 理解 SDE 和 log-prob
+→ Score-based SDE 论文 (Song 2021)
+→ VeRL-Omni 的 flow_match_sde.py (308 行，精读)
+核心: SDE 给出转移分布 → 噪声注入 → 高斯密度 = log-prob</p><p>第4步: 理解 RL 训练流程
+→ FlowGRPO 论文
+→ flow_grpo GitHub (先看简单的，再回来看 VeRL-Omni)
+→ VeRL-Omni 的 diffusion_algos.py (核心 loss 函数)</p><p>第5步: 理解工程架构
+→ VeRL-Omni 的 ray_diffusion_trainer.py (训练循环)
+→ engine_workers.py (Actor + Rollout 的 colocated worker)
+→ vllm_omni_async_server.py (Rollout server)</p><p>最重要的一个 insight：扩散模型 RL 和 LLM RL 的本质是一样的——都是 PPO 的 ratio * advantage。唯一不同的是
+log-prob 的来源：LLM 来自 softmax 输出，扩散模型来自 SDE 高斯转移概率。理解了这个，其他都是工程细节。</p><p>✻ Worked for 1m 59s</p><p>───────────────────────────────────────────────────────────────────────────────────────────────────────────────
+❯<br>───────────────────────────────────────────────────────────────────────────────────────────────────────────────
+? for shortcuts</p><p>好，我现在有足够的信息来完整回答你的两个问题。</p><hr><p>一、DiT（Diffusion Transformer）模型结构 —— 拆开看</p><p>先要有全局观，然后逐层拆解。Qwen-Image 是一个 20B 参数的 MM-DiT（多模态扩散 Transformer），三层结构：</p><p>1.1 全局架构 ASCII 图</p><pre><code>                          ┌─────────────────────────────┐
+                          │      用户输入 Prompt          │
+                          │   &quot;一只猫坐在沙发上，旁边写着   │
+                          │       'Hello World'&quot;         │
+                          └─────────────┬───────────────┘
+                                        │
+                  ┌─────────────────────┴─────────────────────┐
+                  │                                           │
+                  ▼                                           ▼
+  ┌──────────────────────────────┐         ┌──────────────────────────────┐
+  │   Qwen2.5-VL (冻结，不做训练) │         │   纯噪声 ε ~ N(0, I)          │
+  │   语义编码器                   │         │   shape: (B, 64, H/8, W/8)    │
+  │                              │         │   比如 (1, 64, 128, 128)       │
+  │   文本 → tokenize → embed     │         └──────────────┬───────────────┘
+  │   output: text_emb            │                        │
+  │   shape: (B, L_text, 3584)    │                        │
+  │   例如 L_text=512 tokens      │                        │
+  └──────────────┬───────────────┘                        │
+                 │                                        │
+                 │  text_emb            初始噪声 latent     │
+                 │  (B, L_text, D)      (B, C, H_lat, W_lat)
+                 │                     也叫 x_T               │
+                 │                        │                   │
+                 └───────────┬────────────┘                   │
+                             │                                │
+                             ▼                                │
+            ┌────────────────────────────────────┐             │
+            │      Patch Embedding (图像侧)       │             │
+            │                                    │             │
+            │  latent (B,64,H,W) → 切 patch      │             │
+            │  patch_size = 2 → (B, 64, H/2, W/2)│             │
+            │  每个 patch 是 2×2×64 = 256 维      │             │
+            │  Linear(256 → hidden_dim=3584)       │             │
+            │  → image_tokens (B, N_img, 3584)     │             │
+            │  例如 H=128,W=128 → N_img = 64×64    │             │
+            │                    = 4096 tokens     │             │
+            └────────────────┬───────────────────┘             │
+                             │                                  │
+                             │  image_tokens                    │
+                             │  (B, 4096, 3584)                 │
+                             │                                  │
+                             ▼                                  │
+            ┌────────────────────────────────────┐             │
+            │   MSRoPE 位置编码 (Qwen-Image 独创)  │             │
+            │                                    │             │
+            │   图像 token: 2D RoPE (二维坐标)     │             │
+            │   文本 token: 沿对角线方向 1D RoPE   │             │
+            │                                    │             │
+            │   image_tokens += pos_emb_2d(i,j)   │             │
+            │   text_tokens  += pos_emb_1d(k)     │             │
+            └────────────────┬───────────────────┘             │
+                             │                                  │
+                             ▼                                  │
+  ┌──────────────────────────────────────────────────────────┐  │
+  │                                                          │  │
+  │              MMDiT Backbone (60层, 20B)                   │  │
+  │                                                          │  │
+  │   输入序列 = [image_tokens || text_tokens]                │  │
+  │             (B, 4096+512, 3584)                          │  │
+  │                                                          │  │
+  │   ┌─────────────────────────────────────────────────┐    │  │
+  │   │  MMDiT Block × 60 (每个 Block 内部见 1.2 节)    │    │  │
+  │   │                                                 │    │  │
+  │   │  关键：文本和图像 token 在同一个序列里做         │    │  │
+  │   │  full self-attention（双向，无 causal mask）     │    │  │
+  │   │                                                 │    │  │
+  │   │  Attention 矩阵: (4608 × 4608)                  │    │  │
+  │   │  ┌──────────────┬──────────────┐                │    │  │
+  │   │  │ img→img self │ img→text crs │ ← 图像 token   │    │  │
+  │   │  │   (4096²)    │  (4096×512)  │    作为 query   │    │  │
+  │   │  ├──────────────┼──────────────┤                │    │  │
+  │   │  │ text→img crs │ txt→txt self │ ← 文本 token   │    │  │
+  │   │  │  (512×4096)  │   (512²)     │    作为 query   │    │  │
+  │   │  └──────────────┴──────────────┘                │    │  │
+  │   └─────────────────────────────────────────────────┘    │  │
+  │                                                          │  │
+  │   + Timestep Embedding 注入到每个 Block                   │  │
+  │     t → sinusoidal → MLP → c (条件向量, dim=3584)         │  │
+  │     c 通过 AdaLN 控制每个 Block 的 scale/shift/gate       │  │
+  └──────────────────────────┬───────────────────────────────┘  │
+                             │                                  │
+                             ▼                                  │
+  ┌──────────────────────────────────────┐                      │
+  │  Final Layer (Unpatch)                │                      │
+  │                                      │                      │
+  │  只取 image_tokens 部分               │                      │
+  │  (B, 4096, 3584) → Linear →          │                      │
+  │  (B, 4096, patch_size² × C)          │                      │
+  │  = (B, 4096, 256) → reshape          │          ┌───────────┘
+  │  → (B, 64, 64, 64) velocity pred     │          │  x_T (初始噪声)
+  │                                      │          │  (B,64,64,64)
+  └──────────────────┬───────────────────┘          │
+                     │                              │
+                     │  velocity = x_0_pred - ε     │
+                     │  (模型预测的速度场)            │
+                     │                              │
+                     ▼                              │
+  ┌──────────────────────────────────────────────────────┐
+  │        SDE Scheduler (FlowMatchSDEDiscreteScheduler) │
+  │                                                      │
+  │  输入: x_t (当前 latent) + velocity_pred              │
+  │  输出: x_{t-1} (下一步 latent) + log_prob            │
+  │                                                      │
+  │  mean = x_t + ...  (公式)                            │
+  │  x_{t-1} = mean + noise_level * sqrt(dt) * ε'       │
+  │  log_prob = 高斯密度 (用于 RL 训练)                  │
+  └──────────────────┬───────────────────────────────────┘
+                     │
+                     ▼  (迭代 50 步后)
+            ┌────────────────────┐
+            │  Clean Latent x_0  │
+            │  (B, 64, 64, 64)   │
+            └────────┬───────────┘
+                     │
+                     ▼
+            ┌────────────────────┐
+            │  VAE Decoder (冻结) │
+            │  latent → 像素空间  │
+            │  (B,3,512,512)     │
+            └────────┬───────────┘
+                     │
+                     ▼
+            ┌────────────────────┐
+            │  生成的最终图像     │
+            │  一只猫+文字       │
+            └────────────────────┘
+</code></pre><hr><p>1.2 单个 MMDiT Block 的完整内部结构</p><p>这是最核心的模块，也是和标准 LLM Transformer Block 差异最大的地方。</p><h1 id=一层-mmdit-block-的完整前向过程>一层 MMDiT Block 的完整前向过程<a hidden class=anchor aria-hidden=true href=#一层-mmdit-block-的完整前向过程>#</a></h1><p>输入:
+image_tokens: (B, N_img, D) 例如 (1, 4096, 3584)
+text_tokens: (B, N_text, D) 例如 (1, 512, 3584)
+c: 条件向量 (B, D) 来自 timestep embedding</p><p>━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━</p><p>┌─────────────────────────────────────────────────────────┐
+│ Step 1: adaLN_modulation — 从条件向量回归出 6 组参数 │
+│ │
+│ adaLN_modulation = SiLU → Linear(D → 6*D) │
+│ │
+│ [shift_msa, scale_msa, gate_msa, │
+│ shift_mlp, scale_mlp, gate_mlp] = │
+│ adaLN_modulation(c).chunk(6, dim=-1) │
+│ │
+│ 每组 shape: (B, D) → 每个通道独立的 scale/shift/gate │
+└──────────────────────┬──────────────────────────────────┘
+│
+▼
+┌─────────────────────────────────────────────────────────┐
+│ Step 2: 文本-图像联合 Self-Attention (双流) │
+│ │
+│ 拼接: joint = [image_tokens || text_tokens] │
+│ shape: (B, N_img+N_text, D) │
+│ │
+│ 先做 AdaLN: │
+│ joint_normed = LayerNorm(joint) ← 无 affine 参数 │
+│ joint_modulated = joint_normed * (1+scale_msa) │
+│ + shift_msa │
+│ │
+│ 再做 Joint Self-Attention: │
+│ Q = joint_modulated @ W_Q (B, N_total, D) │
+│ K = joint_modulated @ W_K (B, N_total, D) │
+│ V = joint_modulated @ W_V (B, N_total, D) │
+│ │
+│ # 先加 MSRoPE 到 Q, K: │
+│ Q_img += RoPE_2D(Q_img, pos_x, pos_y) ← 图像用2D坐标│
+│ K_img += RoPE_2D(K_img, pos_x, pos_y) │
+│ Q_txt += RoPE_1D(Q_txt, pos_k) ← 文本用1D坐标 │
+│ K_txt += RoPE_1D(K_txt, pos_k) │
+│ │
+│ attn_out = softmax(Q @ K^T / sqrt(d)) @ V │
+│ │
+│ 完整 attention 矩阵包含 4 个区域: │
+│ ┌──────────────┬──────────────┐ │
+│ │ img→img self │ img→txt crs │ │
+│ │ (4096,4096) │ (4096,512) │ │
+│ ├──────────────┼──────────────┤ │
+│ │ txt→img crs │ txt→txt self │ │
+│ │ (512,4096) │ (512,512) │ │
+│ └──────────────┴──────────────┘ │
+│ │
+│ Gate 控制: │
+│ joint = joint + gate_msa * attn_out │
+│ │
+│ 拆分回双流: │
+│ image_tokens = joint[:, :N_img, :] │
+│ text_tokens = joint[:, N_img:, :] │
+└──────────────────────┬──────────────────────────────────┘
+│
+▼
+┌─────────────────────────────────────────────────────────┐
+│ Step 3: Feed-Forward Network (双流独立 MLP) │
+│ │
+│ Image 侧: │
+│ img_normed = LayerNorm(image_tokens) ← 无 affine │
+│ img_modulated = img_normed * (1+scale_mlp) │
+│ + shift_mlp │
+│ img_ffn = SiLU(img_modulated @ W_up) @ W_down │
+│ image_tokens = image_tokens + gate_mlp * img_ffn │
+│ │
+│ Text 侧: │
+│ txt_normed = LayerNorm(text_tokens) │
+│ txt_modulated = txt_normed * (1+scale_mlp) │
+│ + shift_mlp │
+│ txt_ffn = SiLU(txt_modulated @ W_up) @ W_down │
+│ text_tokens = text_tokens + gate_mlp * txt_ffn │
+│ │
+│ (image 和 text 共享同一套 shift/scale/gate 参数) │
+└──────────────────────┬──────────────────────────────────┘
+│
+▼
+输出: image_tokens (B, N_img, D) + text_tokens (B, N_text, D)
+↓ 进入下一层 Block (共 60 层)</p><p>与 LLM Transformer Block 的核心差异总结：</p><p>┌────────────────┬────────────────────────────────────┬──────────────────────────────────────────────────┐
+│ 组件 │ LLM Decoder Block │ MMDiT Block │
+├────────────────┼────────────────────────────────────┼──────────────────────────────────────────────────┤
+│ 归一化 │ Pre-LN 或 RMSNorm（固定参数） │ AdaLN（scale, shift 由 timestep 动态回归） │
+├────────────────┼────────────────────────────────────┼──────────────────────────────────────────────────┤
+│ 子层输出控制 │ 直接残差 x = x + attn(x) │ Gated 残差 x = x + gate * attn(x) │
+├────────────────┼────────────────────────────────────┼──────────────────────────────────────────────────┤
+│ Attention 类型 │ Causal Self-Attention（单向 mask） │ Full Bi-directional Attention（无 mask） │
+├────────────────┼────────────────────────────────────┼──────────────────────────────────────────────────┤
+│ 位置编码 │ 1D RoPE │ MSRoPE（图像 2D RoPE + 文本 1D RoPE 对角线对齐） │
+├────────────────┼────────────────────────────────────┼──────────────────────────────────────────────────┤
+│ 输入模态 │ 纯文本 token │ 图像 latent token + 文本 token 拼接 │
+├────────────────┼────────────────────────────────────┼──────────────────────────────────────────────────┤
+│ 条件注入 │ 无（自回归） │ Timestep embedding 注入每一层 │
+├────────────────┼────────────────────────────────────┼──────────────────────────────────────────────────┤
+│ 初始化 │ 标准初始化 │ Zero 初始化（所有 gate=0，训练初期为恒等映射） │
+└────────────────┴────────────────────────────────────┴──────────────────────────────────────────────────┘</p><p>1.3 伪代码：完整模型定义</p><p>class QwenImageMMDiT(nn.Module):
+"""
+Qwen-Image 的完整 DiT 模型
+三层结构: Text Encoder (frozen) → MMDiT Backbone → VAE Decoder (frozen)
+"""
+def <strong>init</strong>(self):
+# ── 第一层: 编码器 (冻结，不做 RL 训练) ──
+self.text_encoder = FrozenQwen25VL() # 语义编码
+self.vae_encoder = FrozenVAE() # latent 压缩
+self.vae_decoder = FrozenVAE() # latent → 像素</p><pre><code>      # ── 第二层: Patch Embedding ──
+      self.patch_embed = nn.Linear(
+          patch_size**2 * in_channels,  # 2*2*64 = 256
+          hidden_dim                     # 3584
+      )
+
+      # ── 第三层: Timestep Embedding ──
+      self.time_embed = nn.Sequential(
+          SinusoidalEmbedding(hidden_dim),   # 频率编码
+          nn.Linear(hidden_dim, hidden_dim),
+          nn.SiLU(),
+          nn.Linear(hidden_dim, hidden_dim),
+      )
+
+      # ── 第四层: MMDiT Blocks × 60 ──
+      self.blocks = nn.ModuleList([
+          MMDiTBlock(hidden_dim=3584, num_heads=28)
+          for _ in range(60)
+      ])
+
+      # ── 第五层: Final Layer (unpatch + output projection) ──
+      self.final_norm = nn.LayerNorm(hidden_dim, elementwise_affine=False)
+      self.final_adaLN = nn.Sequential(
+          nn.SiLU(),
+          nn.Linear(hidden_dim, 2 * hidden_dim)  # 只需 shift, scale
+      )
+      self.final_proj = nn.Linear(
+          hidden_dim,
+          patch_size**2 * in_channels  # 2*2*64 = 256
+      )
+
+  def forward(self, latent, timestep, text_emb, text_mask):
+      &quot;&quot;&quot;
+      latent: (B, C, H, W)  noisy latent
+      timestep: (B,)  float in [0, 1]
+      text_emb: (B, L_text, D)  from frozen text encoder
+      &quot;&quot;&quot;
+      B = latent.shape[0]
+
+      # 1. 图像 patchify
+      image_tokens = patchify(latent, patch_size=2)  # → (B, N_img, 256)
+      image_tokens = self.patch_embed(image_tokens)   # → (B, N_img, 3584)
+
+      # 2. 时间条件
+      c = self.time_embed(timestep)  # → (B, 3584)
+
+      # 3. 位置编码 (MSRoPE 在 attention 里面加)
+
+      # 4. 60 层 MMDiT Block
+      for block in self.blocks:
+          image_tokens, text_tokens = block(
+              image_tokens, text_emb, c
+          )
+
+      # 5. Final Layer: 只取 image tokens 输出
+      shift, scale = self.final_adaLN(c).chunk(2, dim=-1)
+      x = self.final_norm(image_tokens)
+      x = x * (1 + scale.unsqueeze(1)) + shift.unsqueeze(1)
+      velocity = self.final_proj(x)  # → (B, N_img, 256)
+
+      # 6. Unpatchify
+      velocity = unpatchify(velocity, H, W)  # → (B, 64, H/2, W/2)
+      return velocity  # model_output, 也叫 v_pred 或 noise_pred
+</code></pre><p>class MMDiTBlock(nn.Module):
+&ldquo;&ldquo;&ldquo;单个 MMDiT Block&rdquo;&rdquo;&rdquo;
+def <strong>init</strong>(self, hidden_dim=3584, num_heads=28):
+# 无参数的 LayerNorm (affine 参数由 adaLN 动态提供)
+self.norm_attn = nn.LayerNorm(hidden_dim, elementwise_affine=False)
+self.attn = MultiHeadAttention(hidden_dim, num_heads)</p><pre><code>      self.norm_ffn_img = nn.LayerNorm(hidden_dim, elementwise_affine=False)
+      self.norm_ffn_txt = nn.LayerNorm(hidden_dim, elementwise_affine=False)
+      self.ffn_img = SwiGLU_MLP(hidden_dim, 4 * hidden_dim)
+      self.ffn_txt = SwiGLU_MLP(hidden_dim, 4 * hidden_dim)
+
+      # 关键：从条件向量 c 回归 6 组参数
+      self.adaLN = nn.Sequential(
+          nn.SiLU(),
+          nn.Linear(hidden_dim, 6 * hidden_dim)  # 初始化为 0
+      )
+
+  def forward(self, img_tokens, txt_tokens, c):
+      # 1. 回归 AdaLN 参数
+      shift_a, scale_a, gate_a, shift_f, scale_f, gate_f = \
+          self.adaLN(c).chunk(6, dim=-1)
+
+      # 2. Joint Attention (文本+图像拼接)
+      joint = torch.cat([img_tokens, txt_tokens], dim=1)
+      joint = self.norm_attn(joint) * (1 + scale_a) + shift_a
+      joint = joint + gate_a * self.attn(joint)
+      img_tokens, txt_tokens = joint.split([N_img, N_txt], dim=1)
+
+      # 3. FFN (双流独立)
+      img_tokens = img_tokens + gate_f * self.ffn_img(
+          self.norm_ffn_img(img_tokens) * (1 + scale_f) + shift_f
+      )
+      txt_tokens = txt_tokens + gate_f * self.ffn_txt(
+          self.norm_ffn_txt(txt_tokens) * (1 + scale_f) + shift_f
+      )
+
+      return img_tokens, txt_tokens
+</code></pre><hr><p>二、迭代去噪 —— 复用了什么？</p><p>这是你作为 LLM Infra 人最容易困惑的地方，因为和 LLM 推理的复用模式完全不同。</p><p>2.1 核心结论：扩散模型去噪不复用 KV cache</p><p>LLM 自回归推理:
+step 1: [BOS] → &ldquo;我&rdquo; ── KV cache[t=1]
+step 2: [BOS, 我] → &ldquo;爱&rdquo; ── 复用 KV cache[t=1], 只算新增 token
+step 3: [BOS,我,爱] → &ldquo;吃&rdquo; ── 复用 KV cache[t=1,2]
+每一步输入变长，但前面的 token 不变！</p><p>扩散模型迭代去噪:
+step 1: latent x_1 (纯噪声) → x_0.98 ── 整个 latent 变了
+step 2: latent x_0.98 (少一点噪声) → x_0.96 ── 整个 latent 又变了
+step 3: latent x_0.96 → x_0.94 ── &mldr;
+每一步输入是上一步的完整输出，尺寸相同，数值全变！</p><p>2.2 每一步之间：复用什么，不复用什么</p><p>Step t (sigma = 0.98) Step t-1 (sigma = 0.96)
+┌──────────────────────┐ ┌──────────────────────┐
+│ 输入: │ │ 输入: │
+│ x_t (B,C,H,W) ───────── 变了！────→ │ x_{t-1} (B,C,H,W) │
+│ sigma_t = 0.98 │ ← 不同值 │ sigma_{t-1} = 0.96 │
+│ │ │ │
+│ 复用 (不变): │ │ 复用 (不变): │
+│ ✓ prompt_embeds │ ─── 相同 ──→ │ ✓ prompt_embeds │
+│ ✓ prompt_mask │ ─── 相同 ──→ │ ✓ prompt_mask │
+│ ✓ img_shapes │ ─── 相同 ──→ │ ✓ img_shapes │
+│ ✓ 模型权重 θ │ ─── 相同 ──→ │ ✓ 模型权重 θ │
+│ ✓ guidance (CFG) │ ─── 相同 ──→ │ ✓ guidance │
+│ ✓ negative_prompt │ ─── 相同 ──→ │ ✓ negative_prompt │
+│ │ │ │
+│ 不复用 (全变了): │ │ 不复用: │
+│ ✗ latent x_t 的 KV │ 无法复用 │ 需要重新算 attention │
+│ 因为输入 latent 的 │ ← 因为 → │ 整个 QKV 从头计算 │
+│ 所有数值都变了 │ ！！！！！ │ │
+└──────────────────────┘ └──────────────────────┘</p><p>2.3 详细列出每一步的计算过程</p><p>def denoising_loop(noise_latent, text_embedding, text_mask, model, scheduler):
+"""
+完整去噪循环，标明每一步什么变了什么没变
+"""
+# ═══ 这些只算一次，所有步复用 ═══
+prompt_embeds = text_embedding # (B, L, D) — 来自 frozen text encoder
+prompt_mask = text_mask # (B, L)
+img_shapes = compute_img_shapes(H, W) # [(H_lat, W_lat), &mldr;]
+negative_embeds = encode_negative_prompt() # CFG 用的无条件 prompt
+guidance_emb = torch.tensor([4.0]) # CFG scale</p><pre><code>  # ═══ 初始状态 ═══
+  x_t = noise_latent                    # (B, C, H, W) 纯噪声
+  sigmas = scheduler.sigmas             # [1.0, 0.98, 0.96, ..., 0.0]
+
+  all_latents = []
+  all_log_probs = []
+
+  # ═══ 迭代开始：每一步只改变 x_t 和 sigma ═══
+  for step_idx, sigma in enumerate(sigmas[:-1]):
+      sigma_next = sigmas[step_idx + 1]
+
+      # ── 模型 forward ──
+      # 这个 forward 和上一步的 forward 完全没有因果关系
+      # 无法复用任何 KV cache！
+      # 因为 x_t 的所有元素都变了
+
+      model_inputs = {
+          &quot;hidden_states&quot;: x_t,                           # ← 每步不同
+          &quot;timestep&quot;: sigma.expand(B),                    # ← 每步不同
+          &quot;encoder_hidden_states&quot;: prompt_embeds,         # ← 复用!
+          &quot;encoder_hidden_states_mask&quot;: prompt_mask,      # ← 复用!
+          &quot;img_shapes&quot;: img_shapes,                       # ← 复用!
+          &quot;guidance&quot;: guidance_emb,                       # ← 复用!
+      }
+
+      # 如果有 True-CFG（需要条件+无条件两个 forward）
+      if do_cfg:
+          neg_inputs = {**model_inputs,
+              &quot;encoder_hidden_states&quot;: negative_embeds}   # ← 复用!
+          neg_pred = model(**neg_inputs)
+          pos_pred = model(**model_inputs)
+          velocity = pos_pred + cfg_scale * (pos_pred - neg_pred)
+      else:
+          velocity = model(**model_inputs)
+
+      # ── SDE step ──
+      # 计算均值、采样下一步、计算 log-prob
+      x_next, log_prob, mean, std = scheduler.step(
+          model_output=velocity,
+          timestep=sigma,
+          sample=x_t,
+          noise_level=0.7,
+          sde_type=&quot;sde&quot;,
+      )
+
+      # 存储（只在 SDE window 内）
+      if in_sde_window(step_idx):
+          all_latents.append(x_t)
+          all_log_probs.append(log_prob)
+
+      x_t = x_next  # 唯一传递到下一步的东西
+
+  return x_t, all_latents, all_log_probs
+</code></pre><p>2.4 对比图：LLM vs Diffusion 迭代复用</p><p>LLM 自回归 (可以复用 KV cache):
+══════════════════════════════════════════════════════
+Step 1: [BOS] ──→ attention(Q1,K1,V1) ──→ &ldquo;我&rdquo;
+│ │
+├── KV cache[1] = (K1,V1) ────────┤
+│ │
+Step 2: [BOS, &ldquo;我&rdquo;] ──→ attention(Q2,[K1,K2],[V1,V2])
+│ 只算 Q2,K2,V2！ 复用 K1,V1
+├── KV cache[2] = (K2,V2) ────────┤
+│ │
+Step 3: [BOS,&ldquo;我&rdquo;,&ldquo;爱&rdquo;] ──→ 只算新增的 KV
+&mldr;
+KV cache 增长: O(T²) 内存, O(T²) 计算 → O(T²) 内存, O(T) 计算</p><p>━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━</p><p>扩散模型去噪 (无法复用 KV cache):
+══════════════════════════════════════════════════════
+Step 1: x₁ ──→ attention(Q₁,K₁,V₁) wrt text ──→ x₀.₉₈
+完全独立的 forward pass</p><pre><code>Step 2: x₀.₉₈ ──→ attention(Q₂,K₂,V₂) wrt text ──→ x₀.₉₆
+        完全独立的 forward pass
+        所有 latent token 都变了，Q₂ ≠ Q₁ 因为输入变了
+        text K,V 理论可以复用（text 不变）但...
+
+Step 3: x₀.₉₆ ──→ ...
+
+每次 forward 都是全量计算: O(T) 次独立 forward
+但是！每步 latent 尺寸相同 → 可以用 CUDA Graph 加速！
+
+text K,V 理论上可以缓存（text 不变），但实际上：
+- Qwen-Image 是 joint attention，text K,V 和 image K,V 在同一个
+  attention op 里，框架不支持只缓存一半
+- text 只占 512/(4096+512) ≈ 11% 的序列长度，缓存收益有限
+- 反而增加了显存碎片和调度复杂度
+</code></pre><p>2.5 扩散模型实际可做的优化（不同于 LLM 的 KV cache）</p><p>优化手段: Text embedding 一次编码
+说明: text encoder 只跑一次，输出复用全部步
+与 LLM 的对比: 类似 prompt encoding 只做一次
+────────────────────────────────────────
+优化手段: CUDA Graph capture
+说明: 因为每步计算图完全相同（只是输入数值不同），可以 capture 整个 denoising step 的 CUDA graph
+与 LLM 的对比: LLM 不行因为每步 seq_len 变长
+────────────────────────────────────────
+优化手段: VAE tiling
+说明: VAE decode 用 tiling 减少峰值显存
+与 LLM 的对比: 无类比
+────────────────────────────────────────
+优化手段: Batch 并行去噪
+说明: 多个 prompt 的 latent 一起处理，矩阵乘法的 batch 维度
+与 LLM 的对比: LLM continuous batching
+────────────────────────────────────────
+优化手段: LoRA
+说明: 只训练低秩适配器，全量模型权重冻结
+与 LLM 的对比: 跟 LLM LoRA 完全一样
+────────────────────────────────────────
+优化手段: CFG 时的 batch 合并
+说明: pos 和 neg 的 latent 拼成 2B 一起算
+与 LLM 的对比: 无类比</p><p>关键 insight：扩散模型的性能瓶颈不是 KV cache 和 decode 延迟，而是每一步都需要完整的 model
+forward。优化方向是减少步数（fewer denoising steps）、提高单步吞吐（larger batch、CUDA
+Graph）、异步流水线（overlap rollout 和 reward compute）。</p><hr><p>推荐阅读</p><ul><li>Flow Matching 论文: Flow Matching for Generative Modeling (Lipman et al., 2023)</li><li>FlowGRPO 论文: Training Diffusion Models with RL (VeRL-Omni 核心算法)</li><li>Qwen-Image 技术报告: arXiv:2508.02324</li><li>DiT 论文: Scalable Diffusion Models with Transformers (Peebles & Xie, 2023)</li><li>Score-based SDE: Score-Based Generative Modeling through SDEs (Song et al., 2021)</li><li>Lilian Weng 博客: What are Diffusion Models?</li><li>Yang Song 博客: Flow Matching Explained</li></ul><p>Sources:</p><ul><li>Qwen‑Image 如何实现 95%+ 多语种文本渲染准确率</li><li>详解Qwen-Image的MMDiT架构优势与工程优化</li><li>DiT详解</li><li>MMDiT Block for Multimodal Diffusion</li></ul></div><footer class=post-footer><ul class=post-tags></ul><nav class=paginav><a class=prev href=https://sendoray.github.io/posts/lifesdiscipline/><span class=title>« Prev</span>
+<span></span></a></nav></footer></article></main><footer class=footer><span>&copy; 2026 <a href=https://sendoray.github.io/>chengzhy's blog</a></span> ·
+<span>Powered by
+<a href="https://gohugo.io/?utm_source=papermod" rel=noopener target=_blank>Hugo</a> &
+        <a href=https://github.com/adityatelange/hugo-PaperMod/ rel=noopener target=_blank>PaperMod</a></span></footer><a href=#top id=top-link class="top-link hidden" aria-label="go to top" title="Go to Top (Alt + G)" accesskey=g><svg viewBox="0 0 24 24" fill="none" stroke="currentcolor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-chevrons-up"><polyline points="17 11 12 6 7 11"/><polyline points="17 18 12 13 7 18"/></svg>
+</a><script>let menu=document.getElementById("menu");if(menu){const e=localStorage.getItem("menu-scroll-position");e&&(menu.scrollLeft=parseInt(e,10)),menu.onscroll=function(){localStorage.setItem("menu-scroll-position",menu.scrollLeft)}}document.querySelectorAll('a[href^="#"]').forEach(e=>{e.addEventListener("click",function(e){e.preventDefault();var t=this.getAttribute("href").substr(1);window.matchMedia("(prefers-reduced-motion: reduce)").matches?document.querySelector(`[id='${decodeURIComponent(t)}']`).scrollIntoView():document.querySelector(`[id='${decodeURIComponent(t)}']`).scrollIntoView({behavior:"smooth"}),t==="top"?history.replaceState(null,null," "):history.pushState(null,null,`#${t}`)})})</script><script>var toplink=document.getElementById("top-link");window.onscroll=function(){const e=window.innerHeight;document.body.scrollTop>e||document.documentElement.scrollTop>e?toplink.classList.remove("hidden"):toplink.classList.add("hidden")}</script><script>document.getElementById("theme-toggle").addEventListener("click",()=>{const e=document.querySelector("html");e.dataset.theme==="dark"?(e.dataset.theme="light",localStorage.setItem("pref-theme","light")):(e.dataset.theme="dark",localStorage.setItem("pref-theme","dark"))})</script><script>document.querySelectorAll("pre > code").forEach(e=>{const n=e.parentNode.parentNode,t=document.createElement("button");t.classList.add("copy-code"),t.innerHTML="copy";function s(){t.innerHTML="copied!",setTimeout(()=>{t.innerHTML="copy"},2e3)}t.addEventListener("click",t=>{if("clipboard"in navigator){navigator.clipboard.writeText(e.textContent),s();return}const n=document.createRange();n.selectNodeContents(e);const o=window.getSelection();o.removeAllRanges(),o.addRange(n);try{document.execCommand("copy"),s()}catch{}o.removeRange(n)}),n.classList.contains("highlight")?n.appendChild(t):n.parentNode.firstChild==n||(e.parentNode.parentNode.parentNode.parentNode.parentNode.nodeName=="TABLE"?e.parentNode.parentNode.parentNode.parentNode.parentNode.appendChild(t):e.parentNode.appendChild(t))})</script></body></html>

@@ -10,9 +10,9 @@
     <atom:link href="https://sendoray.github.io/tags/engineering/index.xml" rel="self" type="application/rss+xml" />
     <item>
       <title>AI 基础设施通信技术全景：从 DMA 原理到分布式推理</title>
-      <link>https://sendoray.github.io/posts/communicate/</link>
+      <link>https://sendoray.github.io/posts/2026-06-03-communicate/</link>
       <pubDate>Wed, 03 Jun 2026 00:00:00 +0000</pubDate>
-      <guid>https://sendoray.github.io/posts/communicate/</guid>
+      <guid>https://sendoray.github.io/posts/2026-06-03-communicate/</guid>
       <description>&lt;blockquote&gt;
 &lt;p&gt;从一台机器的硬件结构出发，逐步讲清 DMA、Pinned Memory、Zero-Copy 等底层原理，再纵览 AI 基础设施通信的五层架构：硬件互连 → 节点间网络 → 通信库 → 底层框架 → 上层应用。&lt;/p&gt;&lt;/blockquote&gt;
 &lt;hr&gt;
