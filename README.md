@@ -36,3 +36,7 @@ https://stock-sdk.linkdiary.cn/guide/getting-started
 
 传输时间 = 要传输的 kvcache 大小 / kvcache 传输带宽 B = min(B_h2d, B_nic) 比如 到底带宽。吞吐等等
 
+
+
+我记得要看知乎的一个文章 说magatron-fsdp的
+
