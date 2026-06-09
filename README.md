@@ -29,3 +29,10 @@ https://stock-sdk.linkdiary.cn/guide/getting-started
 来源：知乎
 著作权归作者所有。商业转载请联系作者获得授权，非商业转载请注明出处。
 
+
+
+
+应该写一个全景计算和说明的。省掉的计算时间 = 计算量 / GPU 计算吞吐
+
+传输时间 = 要传输的 kvcache 大小 / kvcache 传输带宽 B = min(B_h2d, B_nic) 比如 到底带宽。吞吐等等
+
