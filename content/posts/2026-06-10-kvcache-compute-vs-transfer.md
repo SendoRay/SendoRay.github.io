@@ -16,7 +16,144 @@ ShowBreadCrumbs: true
 ShowPostNavLinks: true
 ---
 
-## 一、问题的起点
+# 一、先把 LLM 推理这张计算图摆在桌上
+
+聊任何"算 vs 传"的故事之前，得先有一张**所有 decoder-only LLM 通用的计算图**。Llama / Qwen / Mistral / DeepSeek 这些模型的推理路径在这一层抽象上几乎是一模一样的，区别只在每个算子的具体超参。
+
+### 1.1 全景 ASCII 图
+
+```text
+            input tokens [B, N]
+                    │
+                    ▼
+            ┌───────────────┐
+            │   Embedding   │   lookup: [V, d] → [B, N, d]
+            └───────┬───────┘
+                    │  hidden x : [B, N, d]
+                    ▼
+  ╔════════════  × L  Decoder Layers  ════════════╗
+  ║   x ─┬──────────────────────┐                  ║
+  ║      │                      │ residual         ║
+  ║      ▼                      │                  ║
+  ║  ┌─────────┐                │                  ║
+  ║  │ RMSNorm │                │                  ║
+  ║  └────┬────┘                │                  ║
+  ║       ▼                     │                  ║
+  ║  ┌──────────┐    GEMM       │                  ║
+  ║  │ QKV Proj │  x · W_qkv    │                  ║
+  ║  └────┬─────┘                │                  ║
+  ║       │ Q:[B,N,d]  K,V:[B,N,d_kv]              ║
+  ║       ▼                     │                  ║
+  ║  ┌─────────┐                │                  ║
+  ║  │  RoPE   │                │                  ║
+  ║  └────┬────┘                │     ┌──────────┐ ║
+  ║       ├──────────────────────────▶│ KV Cache │─║─ write
+  ║       │                     │     │   pool   │ ║
+  ║       ▼                     │     └────┬─────┘ ║
+  ║  ┌────────────────┐         │          │       ║
+  ║  │   Attention    │◀────────┼──────────┘       ║─ read past K,V
+  ║  │ softmax(QKᵀ)·V │         │                  ║
+  ║  └────────┬───────┘         │                  ║
+  ║           ▼                 │                  ║
+  ║  ┌──────────┐    GEMM       │                  ║
+  ║  │  O Proj  │  · W_o        │                  ║
+  ║  └────┬─────┘                │                  ║
+  ║       ▼                     │                  ║
+  ║      (+)◀───────────────────┘                  ║
+  ║       │ y                                       ║
+  ║       ├──────────────────────┐                  ║
+  ║       ▼                      │ residual         ║
+  ║  ┌─────────┐                 │                  ║
+  ║  │ RMSNorm │                 │                  ║
+  ║  └────┬────┘                 │                  ║
+  ║       ▼                      │                  ║
+  ║  ┌──────────────────┐ 3× GEMM│                  ║
+  ║  │  FFN (SwiGLU)    │        │                  ║
+  ║  │  d → d_ff → d    │        │                  ║
+  ║  └────┬─────────────┘        │                  ║
+  ║       ▼                      │                  ║
+  ║      (+)◀────────────────────┘                  ║
+  ║       │                                         ║
+  ╚═══════╪═════════════════════════════════════════╝
+          ▼
+  ┌────────────────┐
+  │  Final RMSNorm │
+  └────────┬───────┘
+           ▼
+  ┌────────────────┐    GEMM
+  │    LM Head     │  [B,N,d] · [d, V]
+  └────────┬───────┘
+           ▼
+        Logits
+```
+
+这张图里值得记住的几件事：
+
+- **整张图被堆 $L$ 次**，每一层结构完全相同；
+- **GEMM 一共 5 个**：QKV、O、FFN 的 gate / up / down；
+- **唯一带"状态"的算子是 Attention**——它要读历史 token 的 K、V；
+- **KV Cache 是这张图里唯一可以跨 request、跨调用复用的中间结果**。这一点是后面所有讨论的钩子。
+
+### 1.2 每个算子在花什么钱
+
+用 $d$ 表示 hidden size，$h$ 是 query head 数，$h_{kv}$ 是 KV head 数（GQA 时 $h_{kv}<h$），$d_h$ 是 head dim（$d = h \cdot d_h$，记 $d_{kv} = h_{kv} \cdot d_h$），$d_{ff}$ 是 FFN 中间维度，$N_q$ 是当前 batch 里要处理的 query token 数，$N_{kv}$ 是 KV cache 中已有 token 数。一层之内，每个 query token 的开销大致如下：
+
+| 算子 | FLOPs / token | 主要 memory traffic | bound（prefill / decode） |
+|---|---|---|---|
+| RMSNorm × 2 | $\sim 10\,d$ | 读写 hidden $\sim 4d$ | mem / mem |
+| QKV Proj | $2d(d+2d_{kv})$ | 读权重 $d(d+2d_{kv})$ | **comp** / mem |
+| RoPE | $\sim 6(d+d_{kv})$ | element-wise | mem / mem |
+| Attention（QKᵀ + softmax + ·V） | $\sim 4d \cdot N_{kv}$ | 读 KV cache $2 \cdot N_{kv} \cdot d_{kv} \cdot \text{bytes}$ | comp / **mem** |
+| Output Proj | $2d^2$ | 读权重 $d^2$ | **comp** / mem |
+| FFN（SwiGLU 3 GEMM） | $6 \cdot d \cdot d_{ff}$ | 读权重 $3 \cdot d \cdot d_{ff}$ | **comp** / mem |
+
+把整层加起来，每个 token 在一层的非 attention 部分 FLOPs 大约是：
+
+$$
+f_{\text{layer}} \;\approx\; 2\bigl[\,d(d+2d_{kv}) + d^2 + 3 d \cdot d_{ff}\,\bigr] \;=\; 2 \cdot \Theta_{\text{layer}}
+$$
+
+这正是大家常说的 **"前向 ≈ 2Θ FLOPs / token"** 那条经验公式的来源——它就是把上表里所有 GEMM 的参数量乘 2 累加起来。
+
+以 Llama-3-70B（$d{=}8192$, $h_{kv}{=}8$, $d_h{=}128$, $d_{ff}{=}28672$, $L{=}80$）代入：
+
+- 每层非 attention 参数 $\approx 856\,\text{M}$
+- 全模型 $\approx 80 \times 856\,\text{M} \approx 68.5\,\text{B}$ ✓ 跟标称 70B 对得上
+- 每 token 前向 FLOPs $\approx 2 \times 70\,\text{B} \approx 140\,\text{GFLOPs}$
+
+### 1.3 同一张图，两种 roofline
+
+关键观察是：**同一张图，prefill 和 decode 落在 roofline 的两端**。
+
+**Prefill**（一次性吃 $N$ 个 token）：
+
+- 所有 GEMM 的形状是 $[N, d] \times [d, d']$，矩阵-矩阵乘，arithmetic intensity 高；
+- Attention 是 $[N, d] \cdot [d, N]$，FLOPs 随 $N^2$ 增长；
+- **整体 compute-bound**，瓶颈是 GPU 的 BF16/FP8 算力。
+
+**Decode**（每次只算 1 个 query token，但要看完所有历史 KV）：
+
+- GEMM 退化成 $[1, d] \times [d, d']$，本质是矩阵-向量乘，arithmetic intensity 极低；
+- Attention 每生成 1 个 token 就要把 $N_{kv}$ 个历史 token 的 K、V 全部读一遍；
+- **整体 memory-bound**，瓶颈是 HBM 带宽，KV cache 读取占大头。
+
+这就是为什么"省一次 prefill"和"省一次 decode"的工程意义完全不同：prefill 省的是**算力**，decode 省的是**带宽**。
+
+### 1.4 为什么 KV Cache 是这张图里"唯一值得搬"的东西
+
+回头看 1.1 那张图，几乎所有中间张量（hidden、Q、attention output、FFN activation）都是**算完就丢、不跨 request 共享**的——它们要么是当前 token 独有，要么会立刻被下一层覆盖。
+
+**只有 K 和 V 不一样**。它们：
+
+1. **只取决于历史 token**，跟 batch 里其它请求、跟未来要生成什么 token 都无关；
+2. **必须保留**——不存就得重算，存了就能复用；
+3. **跨请求可共享**——只要 prefix 一样，KV 就一样（这是 Prefix Caching / RadixAttention 的物理基础）。
+
+这三条性质让 KV Cache 成了整张计算图里**唯一一个值得花心思去存、去搬、去管理的中间结果**。
+
+而一旦它要被"搬"，下一个问题就来了——
+
+## 二、问题的起点：算还是传
 
 做 LLM 推理优化时，几乎所有"花活"都绕不开同一个问题：
 
@@ -35,9 +172,9 @@ $$
 \boxed{\,T_{\text{recompute}} \;>\; T_{\text{transfer}} \;\Longrightarrow\; \text{传比算划算}\,}
 $$
 
-这篇博客就把这条不等式拆开，写一份带数值的全景账。
+下面把这条不等式拆开，写一份带数值的全景账。
 
-## 二、两边各是什么
+## 三、两边各是什么
 
 ### 2.1 重算时间 $T_{\text{recompute}}$
 
@@ -103,7 +240,7 @@ $$
 
 总传输量：$S_{\text{kv}} = N \cdot s_{\text{kv}}$。
 
-## 三、把不等式两边都化成"每 token"
+## 四、把不等式两边都化成"每 token"
 
 把 $T_{\text{recompute}}$ 和 $T_{\text{transfer}}$ 都除以 $N$（先忽略 attention 二次项），得到非常干净的两个量：
 
@@ -124,7 +261,7 @@ $$
 
 这个比值的好处是：**它把模型结构、硬件参数、链路类型全部塞进了一个数**，做架构决策时一眼就能扫出来。
 
-## 四、几个真实场景的算账
+## 五、几个真实场景的算账
 
 下面以 **Llama-3-70B（GQA，8 KV heads，80 层，head_dim=128，BF16）** 为例。
 
@@ -198,7 +335,7 @@ $$
 
 **结论**：还是传划算，但比例从 ~50× 滑到 ~17×。**GQA 不仅省显存，也让"传 KV"这件事的性价比下降——重算变得相对没那么亏了**。这也是为什么有些 GQA-heavy 的新模型反而更倾向"重 prefill"路线。
 
-## 五、不等式之外的二阶因素
+## 六、不等式之外的二阶因素
 
 上面只是 roofline 的"主项"。真实工程里至少还要叠加几条修正：
 
@@ -238,7 +375,7 @@ KV Cache 量化（FP8 / INT8 / KIVI 之类）会**同时**改变两边：
 
 总体仍然是放大 $\rho$，所以 KV 量化在 PD 分离 / Offload 场景里几乎是默认开。
 
-## 六、一张总表
+## 七、一张总表
 
 把上面的场景汇总成一张可贴墙上的表（70B GQA，BF16，H100，MFU=0.4）：
 
@@ -250,7 +387,7 @@ KV Cache 量化（FP8 / INT8 / KIVI 之类）会**同时**改变两边：
 | SSD 持久化 KV | 5 GB/s | 64 μs | ~5.5 | 仅离线 / 命中率高时 |
 | MHA 175B + H2D | 50 GB/s | 52 μs | ~17 | 仍传，但优势缩水 |
 
-## 七、给工程决策的几句话
+## 八、给工程决策的几句话
 
 1. **先估 $\rho$，再谈架构**。不要凭感觉决定"是不是要做 prefix cache / PD 分离"，先用上面那个公式算一下，能不能拿到 5× 以上的潜在收益。
 2. **盯住链路上最窄那一段**。$B_{\text{eff}} = \min(\cdot)$ 不是修辞，决定一切的就是那一段。把 NIC 升到 400G、PCIe 升到 Gen5，往往比改任何 kernel 都管用。
@@ -258,7 +395,7 @@ KV Cache 量化（FP8 / INT8 / KIVI 之类）会**同时**改变两边：
 4. **Overlap 是二阶但能决定生死**。$\rho$ 算出来等于 2 的场景，做不到 overlap 就是收益归零；做到 overlap 就是端到端时延减半。
 5. **命中率比公式更难估**。线下 trace、线上灰度，是工程上唯一靠谱的办法。
 
-## 八、小结
+## 九、小结
 
 > 「算 vs 传」的本质是 GPU 算力 roofline 和链路带宽 roofline 的赛跑。
 

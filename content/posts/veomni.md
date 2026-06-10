@@ -3,7 +3,7 @@ title: VeRL-Omni 全面解析：多模态扩散模型的 RL 后训练框架
 date: '2026-06-09'
 tags:
 - LLM
-- RL
+-  AI-Infra
 - Diffusion
 - GPU
 

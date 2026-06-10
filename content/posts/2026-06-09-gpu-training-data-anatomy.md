@@ -4,7 +4,7 @@ date: '2026-06-09'
 tags:
 - LLM
 - GPU
-- AI-Infra
+- Training
 
 draft: false
 ShowToc: true
@@ -56,6 +56,26 @@ ShowPostNavLinks: true
 | 回归 | MSELoss |
 | 语言模型 | CrossEntropyLoss（预测下一个 token） |
 
+**CrossEntropyLoss（交叉熵）**——分类/语言模型的标配：
+
+\[L = -\sum_{i=1}^{C} y_i \log(\hat{y}_i)\]
+
+- \(C\)：类别数（语言模型中 = 词表大小）
+- \(y_i\)：真实标签的 one-hot 编码（正确类别为 1，其余为 0）
+- \(\hat{y}_i\)：模型经过 softmax 后对第 \(i\) 类的预测概率
+
+直觉：正确类别的预测概率越接近 1，\(\log(\hat{y}_i)\) 越接近 0，loss 越小；预测越离谱，loss 越大。
+
+**MSELoss（均方误差）**——回归任务的标配：
+
+\[L = \frac{1}{n}\sum_{i=1}^{n}(y_i - \hat{y}_i)^2\]
+
+- \(y_i\)：真实值
+- \(\hat{y}_i\)：预测值
+- \(n\)：样本数
+
+直觉：逐个算"预测值和真实值差了多少"，平方后取平均。差得越远，惩罚呈平方级增长。
+
 损失值是一个标量（单个数字），它汇总了"模型在这批数据上表现有多差"。
 
 ### 2.3 反向传播（Backward Pass / Backpropagation）
@@ -67,9 +87,43 @@ ShowPostNavLinks: true
 - 梯度为负 → 增大该参数会让损失变小（方向对了）
 - 梯度绝对值越大 → 该参数对损失影响越大
 
-通过**链式法则（Chain Rule）**，从输出层反向逐层传递梯度：
+通过**链式法则（Chain Rule）**，从输出层反向逐层传递梯度。用一个最简单的 2 层网络来完整展示：
 
-\[\frac{\partial L}{\partial W_1} = \frac{\partial L}{\partial h_2} \cdot \frac{\partial h_2}{\partial h_1} \cdot \frac{\partial h_1}{\partial W_1}\]
+**模型定义（前向传播）：**
+
+\[h = w_1 \cdot x + b_1 \quad \text{（第1层输出，即激活值）}\]
+\[y = w_2 \cdot h + b_2 \quad \text{（第2层输出，即模型预测值）}\]
+
+展开写：\(y = w_2(w_1 x + b_1) + b_2\)
+
+**损失函数（以 MSE 为例，假设真实标签为 \(t\)）：**
+
+\[L = (y - t)^2 = (w_2(w_1 x + b_1) + b_2 - t)^2\]
+
+**反向传播——逐步求梯度：**
+
+从最外层开始，一步步向里剥：
+
+\[\frac{\partial L}{\partial y} = 2(y - t) \quad \text{（loss 对预测值的梯度，反向传播的起点）}\]
+
+\[\frac{\partial L}{\partial w_2} = \frac{\partial L}{\partial y} \cdot \frac{\partial y}{\partial w_2} = 2(y - t) \cdot h \quad \text{（第2层权重的梯度）}\]
+
+\[\frac{\partial L}{\partial h} = \frac{\partial L}{\partial y} \cdot \frac{\partial y}{\partial h} = 2(y - t) \cdot w_2 \quad \text{（激活值 h 的梯度，传给第1层）}\]
+
+\[\frac{\partial L}{\partial w_1} = \frac{\partial L}{\partial h} \cdot \frac{\partial h}{\partial w_1} = 2(y - t) \cdot w_2 \cdot x \quad \text{（第1层权重的梯度）}\]
+
+**总结——每个量的角色：**
+
+| 符号 | 是什么 | 数值来自 |
+|---|---|---|
+| \(h = w_1 x + b_1\) | 第1层激活值 | 前向传播时算出 |
+| \(y = w_2 h + b_2\) | 模型预测值 | 前向传播时算出 |
+| \(\frac{\partial L}{\partial y} = 2(y-t)\) | 输出层梯度（起点） | 反向传播第一步 |
+| \(\frac{\partial L}{\partial w_2} = 2(y-t) \cdot h\) | 第2层权重梯度 | 上游梯度 × 本层激活值 |
+| \(\frac{\partial L}{\partial h} = 2(y-t) \cdot w_2\) | 传给第1层的梯度 | 上游梯度 × 本层权重 |
+| \(\frac{\partial L}{\partial w_1} = 2(y-t) \cdot w_2 \cdot x\) | 第1层权重梯度 | 上游梯度 × 输入 |
+
+注意规律：**求某层权重的梯度 = 上游传来的梯度 × 本层的输入（激活值）**。这就是为什么反向传播需要前向传播时保存的激活值。
 
 这就是为什么叫"反向"传播——梯度从损失出发，沿计算图逆向流动到每个参数。
 
@@ -80,7 +134,7 @@ ShowPostNavLinks: true
 \[\theta_{new} = \theta_{old} - \eta \cdot \nabla_\theta L\]
 
 - \(\eta\)：学习率（步长），控制每次更新的幅度
-- \(\nabla_\theta L\)：梯度
+- \(\nabla_\theta L\)：损失函数对参数 \(\theta\) 的梯度，指示当前参数应该往哪个方向调整才能让 loss 下降最快
 
 **为什么不直接用 SGD？** 因为它有很多问题：
 - 所有参数用同一个学习率，不够灵活
@@ -137,15 +191,34 @@ ShowPostNavLinks: true
 ### 4.2 bf16 混合精度训练的工作方式
 
 ```
-┌─────────────────────────────────────────────────────┐
-│  训练循环                                            │
-│                                                     │
-│  1. bf16 参数 → 前向传播 → bf16 激活值               │
-│  2. bf16 激活值 → 反向传播 → bf16/fp32 梯度         │
-│  3. 梯度 → 优化器 → 更新 fp32 主权重                │
-│  4. fp32 主权重 → cast 回 bf16 → 覆盖模型参数       │
-│                                                     │
-└─────────────────────────────────────────────────────┘
+┌─────────────────────────────────────────────────────────────────────────┐
+│  训练循环（每个 step 重复）                                              │
+│                                                                         │
+│  1. 前向传播                                                            │
+│     输入：bf16 模型参数 W + 本 batch 训练数据 X                         │
+│     计算：h = σ(W·X + b)，逐层向前直到输出 → 算出 loss                  │
+│     输出：① 每层的 bf16 激活值（反向传播要用）                       │
+│           ② 标量 loss（一个数，batch 内所有样本的误差已求平均）       │
+│                                                                         │
+│  2. 反向传播                                                            │
+│     输入：步骤 1 的 loss + 每层的 bf16 激活值                            │
+│     计算：从输出层开始，每层做两件事：                                │
+│           a) 用上游传来的梯度 × 本层激活值 → 得本层参数的梯度 ∂L/∂W │
+│           b) 用上游梯度 × 本层权重 → 得传给下一层的梯度 ∂L/∂h      │
+│           （这就是链式法则的实操：梯度逐层向回“接力”）                │
+│     输出：每个参数的梯度 g（bf16 或 fp32）                               │
+│                                                                         │
+│  3. 优化器更新                                                          │
+│     输入：步骤 2 的梯度 g + 优化器状态 (m_t, v_t) + fp32 主权重          │
+│     计算：Adam 公式 → θ_new = θ - η·m̂/(√v̂ + ε)                         │
+│     输出：更新后的 fp32 主权重                                          │
+│                                                                         │
+│  4. 精度回写                                                            │
+│     输入：步骤 3 输出的 fp32 主权重                                      │
+│     计算：cast fp32 → bf16                                              │
+│     输出：新的 bf16 模型参数 → 供下一个 step 的步骤 1 使用               │
+│                                                                         │
+└─────────────────────────────────────────────────────────────────────────┘
 ```
 
 **为什么需要 fp32 主权重（Master Weights）？**
@@ -378,4 +451,47 @@ Step 5: 进入下一个 step
 
 每一类数据都是训练算法不可或缺的一环。DistributedOptimizer 通过 shard 优化器状态来节省显存，混合精度通过低精度计算来提升速度——但这些优化都不会减少数据的"种类"，只是改变了它们的精度和存储位置。
 
-掌握了这张"GPU 显存地图"，就能理解后续所有训练优化技术（ZeRO、Pipeline Parallelism、Tensor Parallelism、Offload）的设计动机和原理。
+掌握了这张“GPU 显存地图”，就能理解后续所有训练优化技术（ZeRO、Pipeline Parallelism、Tensor Parallelism、Offload）的设计动机和原理。
+
+---
+
+## 附录：Offload 时哪些数据可以丢、哪些必须保留？
+
+在 RL Infra（如 RLHF 训练框架）中，训练和 rollout 阶段交替进行，GPU 显存需要在两个角色间切换。Offload 的核心思路是：训练结束后把暂时不用的数据搬到 CPU，rollout 结束后再搬回来。
+
+### 每种数据的 Offload 策略
+
+| 数据 | 大小（每参数） | 能不能丢？ | 原因 |
+|---|---|---|---|
+| FP32 主权重 | 4 bytes | 不能丢，必须备份 | 参数的“真值”，optimizer.step() 在上面累加更新，丢了 = 丢训练进度 |
+| 优化器状态 (m, v) | 8 bytes | 不能丢，必须备份 | 跨几千步累积的滑动平均，丢了等于 Adam 失忆，训练不稳定 |
+| BF16 模型参数 | 2 bytes | 理论上可以丢 | 可从 FP32 主权重 cast 回来，但省的内存有限且会让 reload 路径变复杂 |
+| 梯度 | 2~4 bytes | **可以直接丢掉** | 下次 backward() 会完全覆盖，备份旧梯度毫无意义 |
+
+### 为什么梯度可以直接丢而不是 offload？
+
+关键区别：
+
+- **备份再恢复（普通 offload）：** offload 时 GPU→CPU 拷贝，reload 时 CPU→GPU 拷贝——两次内存拷贝 + 占用 CPU 内存
+- **直接丢掉，reload 时分配零张量：** offload 时直接释放，reload 时 `torch.zeros(...)` 分配空 buffer
+
+两种方式的最终效果一样——下一次 `backward()` 都会用新算出的梯度覆盖 buffer 里的值。前者多花了 CPU 内存去存一堆注定要被覆盖的零/旧值，完全是浪费。
+
+> 所以不是“省掉了重算”，而是省掉了**无意义的 CPU 备份和恢复拷贝**。重算（backward）是怎么都要做的，跟备不备份无关。
+
+### BF16 参数为什么不值得丢？
+
+理论上可以从 FP32 主权重重建，但性价比不高：
+
+- rollout 阶段只需要 BF16 参数做推理，如果没备份，就得先加载 FP32 再 cast，多一步依赖
+- 省的只是 ~2 bytes/参数的存储，相比优化器状态的 8 bytes 不算大头
+- 会让 reload 路径变复杂（RDMA 读 FP32 + cast 的延迟可能比直接读 BF16 更高）
+
+### 小结
+
+| 操作 | 策略 | 理由 |
+|---|---|---|
+| FP32 主权重 | offload 到 CPU | 不可替代，是训练进度本身 |
+| 优化器状态 | offload 到 CPU | 不可替代，跨步累积信息 |
+| BF16 参数 | offload 到 CPU | 可重建但省的少、复杂度高，不值得丢 |
+| 梯度 | 直接释放，不备份 | 下次 backward 必然覆盖，备份是浪费 |

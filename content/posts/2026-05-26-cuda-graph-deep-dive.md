@@ -2,7 +2,7 @@
 title: CUDA Graph 深度解析：原理、机制与 vLLM/SGLang 中的工程实践
 date: '2026-05-26'
 tags:
-- LLM
+- Inference
 - GPU
 
 draft: false
@@ -590,3 +590,12 @@ vLLM 和 SGLang 的工程实现都围绕以下三个核心设计：
 1. **静态 Buffer**：启动时分配最大尺寸的 buffer，Graph 的内存地址永不改变
 2. **Capture Size 分档**：只录制有限个 batch size，推理时向上 padding 对齐
 3. **共享内存池**：多张 Graph 共享 pool，大尺寸 Graph 的内存可被小尺寸复用
+
+
+
+
+
+
+
+ques;
+可以在训练里面用吗

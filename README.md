@@ -10,6 +10,22 @@ https://zhuanlan.zhihu.com/p/2024601794567762221 dualpath
 写一个 费曼学习法 skill
 
 
+```bash
+
+# 进项目根目录
+cd /Users/chengzhy/SendoRay.github.io
+
+# 1.1) 普通本地预览（不显示 draft）
+hugo server
+
+# 1.2) 包含 draft / 未来日期文章（你这篇 06-11 用得上）
+hugo server -D -F
+
+# 2) 看当前的tags 不要乱加新的tags
+make tags
+
+```
+
 快速 bash 行首 行尾
 
 写一下 自己对于ai的分析 是作为consultant（it桔子 这种类似的 可以给人来带每日资讯的 不过真的有用吗？），或者一个管家
@@ -40,3 +56,14 @@ https://stock-sdk.linkdiary.cn/guide/getting-started
 
 我记得要看知乎的一个文章 说magatron-fsdp的
 
+
+
+
+
+快速序列化 和反序列化到底怎么说
+
+经典的数字
+比如 带宽什么的
+
+
+https://guanjiawei.ai/zh/blog/goal-two-personalities
