@@ -1,13 +1,13 @@
 <?xml version="1.0" encoding="utf-8" standalone="yes"?>
 <rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom" xmlns:content="http://purl.org/rss/1.0/modules/content/">
   <channel>
-    <title>GPU on chengzhy&#39;s blog</title>
-    <link>https://sendoray.github.io/tags/gpu/</link>
-    <description>Recent content in GPU on chengzhy&#39;s blog</description>
+    <title>Inference on chengzhy&#39;s blog</title>
+    <link>https://sendoray.github.io/tags/inference/</link>
+    <description>Recent content in Inference on chengzhy&#39;s blog</description>
     <generator>Hugo</generator>
     <language>en</language>
     <lastBuildDate>Thu, 11 Jun 2026 00:00:00 +0000</lastBuildDate>
-    <atom:link href="https://sendoray.github.io/tags/gpu/index.xml" rel="self" type="application/rss+xml" />
+    <atom:link href="https://sendoray.github.io/tags/inference/index.xml" rel="self" type="application/rss+xml" />
     <item>
       <title>LLM 训练与推理全景账本：一份带数字的工程决策手册</title>
       <link>https://sendoray.github.io/posts/2026-06-11-llm-train-infer-panorama/</link>
@@ -139,145 +139,6 @@ F_{\text{fwd}} \approx 2\,\Theta \quad \text{FLOPs/token}
 &lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;           ▼
 &lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;        Logits
 &lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;p&gt;这张图里值得记住的几件事：&lt;/p&gt;</description>
-    </item>
-    <item>
-      <title>VeRL-Omni 全面解析：多模态扩散模型的 RL 后训练框架</title>
-      <link>https://sendoray.github.io/posts/veomni/</link>
-      <pubDate>Tue, 09 Jun 2026 00:00:00 +0000</pubDate>
-      <guid>https://sendoray.github.io/posts/veomni/</guid>
-      <description>&lt;h2 id=&#34;一项目概述&#34;&gt;一、项目概述&lt;/h2&gt;
-&lt;p&gt;VeRL-Omni 是字节跳动 Seed MLSys 团队开源的&lt;strong&gt;多模态生成模型 RL 后训练框架&lt;/strong&gt;。它不像 Stable Diffusion 那样做图像生成，而是用强化学习（RL）来微调已经训好的生成模型，让它们生成更高质量的图像/视频/音频。&lt;/p&gt;
-&lt;p&gt;简单说：你有一个 Qwen-Image 模型能文生图，但生成质量不够好。VeRL-Omni 用 RL（比如 FlowGRPO）来继续训练它，根据 reward（OCR 准确率、人类偏好评分等）来优化模型，让它生成更好的图片。&lt;/p&gt;
-&lt;hr&gt;
-&lt;h2 id=&#34;二为什么需要-verl-omni&#34;&gt;二、为什么需要 VeRL-Omni&lt;/h2&gt;
-&lt;blockquote&gt;
-&lt;p&gt;Multimodal generative RL training differs from text-only LLM RL not only in model structure, but also in I/O patterns, compute characteristics, and runtime bottlenecks.&lt;/p&gt;&lt;/blockquote&gt;
-&lt;p&gt;多模态生成模型的 RL 训练与纯文本 LLM 的 RL 存在根本性差异，不能直接复用 verl 或 vLLM：&lt;/p&gt;
-&lt;table&gt;
-  &lt;thead&gt;
-      &lt;tr&gt;
-          &lt;th&gt;差异维度&lt;/th&gt;
-          &lt;th&gt;LLM&lt;/th&gt;
-          &lt;th&gt;扩散模型&lt;/th&gt;
-      &lt;/tr&gt;
-  &lt;/thead&gt;
-  &lt;tbody&gt;
-      &lt;tr&gt;
-          &lt;td&gt;生成方式&lt;/td&gt;
-          &lt;td&gt;自回归逐 token 生成&lt;/td&gt;
-          &lt;td&gt;迭代去噪（逐 step 去噪）&lt;/td&gt;
-      &lt;/tr&gt;
-      &lt;tr&gt;
-          &lt;td&gt;训练循环&lt;/td&gt;
-          &lt;td&gt;token-level log-probs，PPO 在 token 维度&lt;/td&gt;
-          &lt;td&gt;SDE 逆过程计算每步 transition 的 log-prob&lt;/td&gt;
-      &lt;/tr&gt;
-      &lt;tr&gt;
-          &lt;td&gt;数据 I/O&lt;/td&gt;
-          &lt;td&gt;token 序列&lt;/td&gt;
-          &lt;td&gt;高维 latent tensor &lt;code&gt;(B,C,H,W)&lt;/code&gt; 甚至 &lt;code&gt;(B,C,T,H,W)&lt;/code&gt;&lt;/td&gt;
-      &lt;/tr&gt;
-      &lt;tr&gt;
-          &lt;td&gt;计算瓶颈&lt;/td&gt;
-          &lt;td&gt;KV cache 和 attention&lt;/td&gt;
-          &lt;td&gt;VAE 编解码、多步 UNet/DiT 推理&lt;/td&gt;
-      &lt;/tr&gt;
-      &lt;tr&gt;
-          &lt;td&gt;log-prob 计算&lt;/td&gt;
-          &lt;td&gt;softmax 输出直接获取&lt;/td&gt;
-          &lt;td&gt;需要 SDE 逆过程的高斯转移概率&lt;/td&gt;
-      &lt;/tr&gt;
-      &lt;tr&gt;
-          &lt;td&gt;推理引擎&lt;/td&gt;
-          &lt;td&gt;vLLM 为 LLM 优化&lt;/td&gt;
-          &lt;td&gt;需要 vLLM-Omni 做扩散 rollout&lt;/td&gt;
-      &lt;/tr&gt;
-  &lt;/tbody&gt;
-&lt;/table&gt;
-&lt;p&gt;性能方面，VeRL-Omni 比原始 flow_grpo 实现快约 25%，得益于 vLLM-Omni rollout + FSDP 训练 + 异步 reward 计算的重叠。&lt;/p&gt;</description>
-    </item>
-    <item>
-      <title>深度学习训练全解：从零理解 GPU 上到底有哪些数据</title>
-      <link>https://sendoray.github.io/posts/2026-06-09-gpu-training-data-anatomy/</link>
-      <pubDate>Tue, 09 Jun 2026 00:00:00 +0000</pubDate>
-      <guid>https://sendoray.github.io/posts/2026-06-09-gpu-training-data-anatomy/</guid>
-      <description>&lt;h2 id=&#34;一训练到底是什么&#34;&gt;一、训练到底是什么？&lt;/h2&gt;
-&lt;p&gt;深度学习的&amp;quot;训练&amp;quot;本质是一个&lt;strong&gt;反复试错并改进&lt;/strong&gt;的过程。通俗讲：&lt;/p&gt;
-&lt;ol&gt;
-&lt;li&gt;模型拿到一批数据，做出预测&lt;/li&gt;
-&lt;li&gt;对比预测和真实答案，计算&amp;quot;错得有多离谱&amp;quot;（损失函数）&lt;/li&gt;
-&lt;li&gt;根据&amp;quot;哪里错了、错多少&amp;quot;来调整模型参数，让下次预测更准&lt;/li&gt;
-&lt;/ol&gt;
-&lt;p&gt;这三步循环往复数十万次，模型就从&amp;quot;瞎猜&amp;quot;变成&amp;quot;精通&amp;quot;。&lt;/p&gt;
-&lt;p&gt;用数学语言来说：&lt;/p&gt;
-&lt;ul&gt;
-&lt;li&gt;模型是一个参数化函数 &lt;span class=&#34;math inline&#34;&gt;\(f_\theta(x)\)&lt;/span&gt;
-，其中 &lt;span class=&#34;math inline&#34;&gt;\(\theta\)&lt;/span&gt;
- 是所有可调参数（权重）&lt;/li&gt;
-&lt;li&gt;给定训练样本 &lt;span class=&#34;math inline&#34;&gt;\((x, y)\)&lt;/span&gt;
-，计算损失 &lt;span class=&#34;math inline&#34;&gt;\(L = \text{loss}(f_\theta(x), y)\)&lt;/span&gt;
-&lt;/li&gt;
-&lt;li&gt;目标：找到一组 &lt;span class=&#34;math inline&#34;&gt;\(\theta^*\)&lt;/span&gt;
- 使得在所有训练数据上的平均损失最小&lt;/li&gt;
-&lt;/ul&gt;
-&lt;hr&gt;
-&lt;h2 id=&#34;二训练的核心流程前向传播--损失计算--反向传播--参数更新&#34;&gt;二、训练的核心流程：前向传播 → 损失计算 → 反向传播 → 参数更新&lt;/h2&gt;
-&lt;h3 id=&#34;21-前向传播forward-pass&#34;&gt;2.1 前向传播（Forward Pass）&lt;/h3&gt;
-&lt;p&gt;数据从输入层逐层流过网络，每层做矩阵乘法 + 激活函数，最终输出预测结果。&lt;/p&gt;
-&lt;pre tabindex=&#34;0&#34;&gt;&lt;code&gt;输入 x → [Linear层1] → [ReLU] → [Linear层2] → [Softmax] → 预测 ŷ
-&lt;/code&gt;&lt;/pre&gt;&lt;p&gt;每一层的计算：&lt;span class=&#34;math inline&#34;&gt;\(h = \sigma(Wx &amp;#43; b)\)&lt;/span&gt;
-&lt;/p&gt;
-&lt;ul&gt;
-&lt;li&gt;&lt;span class=&#34;math inline&#34;&gt;\(W\)&lt;/span&gt;
-：权重矩阵（可训练参数）&lt;/li&gt;
-&lt;li&gt;&lt;span class=&#34;math inline&#34;&gt;\(b\)&lt;/span&gt;
-：偏置（可训练参数）&lt;/li&gt;
-&lt;li&gt;&lt;span class=&#34;math inline&#34;&gt;\(\sigma\)&lt;/span&gt;
-：激活函数（ReLU、GELU 等）&lt;/li&gt;
-&lt;/ul&gt;
-&lt;h3 id=&#34;22-损失函数loss-function&#34;&gt;2.2 损失函数（Loss Function）&lt;/h3&gt;
-&lt;p&gt;衡量预测和真实标签之间的差距：&lt;/p&gt;
-&lt;table&gt;
-  &lt;thead&gt;
-      &lt;tr&gt;
-          &lt;th&gt;任务类型&lt;/th&gt;
-          &lt;th&gt;常用损失函数&lt;/th&gt;
-      &lt;/tr&gt;
-  &lt;/thead&gt;
-  &lt;tbody&gt;
-      &lt;tr&gt;
-          &lt;td&gt;分类&lt;/td&gt;
-          &lt;td&gt;CrossEntropyLoss&lt;/td&gt;
-      &lt;/tr&gt;
-      &lt;tr&gt;
-          &lt;td&gt;回归&lt;/td&gt;
-          &lt;td&gt;MSELoss&lt;/td&gt;
-      &lt;/tr&gt;
-      &lt;tr&gt;
-          &lt;td&gt;语言模型&lt;/td&gt;
-          &lt;td&gt;CrossEntropyLoss（预测下一个 token）&lt;/td&gt;
-      &lt;/tr&gt;
-  &lt;/tbody&gt;
-&lt;/table&gt;
-&lt;p&gt;&lt;strong&gt;CrossEntropyLoss（交叉熵）&lt;/strong&gt;——分类/语言模型的标配：&lt;/p&gt;</description>
-    </item>
-    <item>
-      <title>GPU 显存 Offload 技术：训练与推理中的工程实践</title>
-      <link>https://sendoray.github.io/posts/2026-05-28-gpu-memory-offload-techniques/</link>
-      <pubDate>Thu, 28 May 2026 00:00:00 +0000</pubDate>
-      <guid>https://sendoray.github.io/posts/2026-05-28-gpu-memory-offload-techniques/</guid>
-      <description>&lt;blockquote&gt;
-&lt;p&gt;作者：菽陌松囿&lt;/p&gt;
-&lt;p&gt;链接：https://www.zhihu.com/question/1989041714380416374/answer/1990864712833967977&lt;/p&gt;
-&lt;p&gt;来源：知乎&lt;/p&gt;&lt;/blockquote&gt;
-&lt;hr&gt;
-&lt;p&gt;有钱有卡的话（团队可操控千卡+左右，模型几百B），边际收益（做东西你要承担风险）有限，但是你如果只有 256/512 卡，单卡 80G-140G 显存，offload 还是有不少收益的，不是没事可做，只是大家还没玩溜，没有现成可抄的。&lt;/p&gt;
-&lt;hr&gt;
-&lt;h2 id=&#34;训练层面在有限的卡跑更大模型以及-context-length优化-mfu&#34;&gt;训练层面：在有限的卡跑更大模型以及 Context Length，优化 MFU&lt;/h2&gt;
-&lt;h3 id=&#34;1-激活-offload把训练激活显存收敛到可控-size&#34;&gt;1. 激活 Offload——把训练激活显存收敛到可控 Size&lt;/h3&gt;
-&lt;p&gt;做全量微调和预训练的时候，如果训练语料上下文很长比如 128k，显存开销大头在激活，单层 hidden states 为 2G 左右（&lt;code&gt;mb_size * seq * hidden_dim&lt;/code&gt;，全量 recompute）。即使用 PP，且这里是连续显存，其实显存剩余 20G 其实是申请不了的（显存碎片问题，另外计算图的显存可以估算下），大部分玩家要 CP，但是 CP 要把模型参数/梯度复制 CP 份。&lt;/p&gt;
-&lt;p&gt;结合 Ring Attention，其实你可以结合 recompute，把 hidden states 在前向 &lt;strong&gt;D2H&lt;/strong&gt; 到 CPU（和前向计算 overlap），反向把上一层 hidden states &lt;strong&gt;H2D&lt;/strong&gt; 到显存同当前层 backward 计算 overlap。D2H/H2D 用不同的 stream，这种情况下基本可以做到&lt;strong&gt;无损 overlap&lt;/strong&gt;，把显存开销收敛到单层计算图的激活。&lt;/p&gt;
-&lt;p&gt;进一步把单层从 attention 和 FFN 切两部分，可以把激活收敛到某个 block。通过以上的优化，训练的激活显存能优化到可控的 size。记得当时用 128 卡 80G 显存全量微调了 128k 的 DeepSeek-V2。&lt;/p&gt;</description>
     </item>
     <item>
       <title>CUDA Graph 深度解析：原理、机制与 vLLM/SGLang 中的工程实践</title>
