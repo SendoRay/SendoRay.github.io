@@ -1,13 +1,14 @@
 ---
-title: VeRL-Omni 全面解析：多模态扩散模型的 RL 后训练框架
+title: "VeRL-Omni 全面解析：多模态扩散模型的 RL 后训练框架"
 date: '2026-06-09'
 tags:
 - LLM
--  AI-Infra
+
 - Diffusion
-- GPU
+
 
 draft: false
+math: true
 ShowToc: true
 TocOpen: false
 ShowReadingTime: true
@@ -15,11 +16,21 @@ ShowBreadCrumbs: true
 ShowPostNavLinks: true
 ---
 
+> 一句话概括：VeRL-Omni 用强化学习把 Qwen-Image / Wan2.2 / SD3.5 这类**已经训好的扩散生成模型**继续 finetune，让生成的图像 / 视频更贴合人类偏好，或满足任意可定义的 reward 信号。
+>
+> 这篇文章面向有 LLM / Infra 背景的同学，回答三个问题：
+>
+> 1. 扩散模型 RL 训练和 LLM RL 在**数学**和**工程**上到底差在哪？
+> 2. 没有 softmax 的扩散模型，每一步的 log-prob 是怎么算出来的？为什么需要 SDE Window？
+> 3. 推理 / 预训练 / RL 后训练三个维度上，扩散模型的 infra 瓶颈和 LLM 有什么本质不同？
+
+---
+
 ## 一、项目概述
 
-VeRL-Omni 是字节跳动 Seed MLSys 团队开源的**多模态生成模型 RL 后训练框架**。它不像 Stable Diffusion 那样做图像生成，而是用强化学习（RL）来微调已经训好的生成模型，让它们生成更高质量的图像/视频/音频。
+VeRL-Omni 是字节跳动 Seed MLSys 团队开源的**多模态生成模型 RL 后训练框架**。它不做"从零训练"，而是用强化学习（RL）来微调**已经训好**的生成模型，让它们生成更高质量的图像 / 视频 / 音频。
 
-简单说：你有一个 Qwen-Image 模型能文生图，但生成质量不够好。VeRL-Omni 用 RL（比如 FlowGRPO）来继续训练它，根据 reward（OCR 准确率、人类偏好评分等）来优化模型，让它生成更好的图片。
+一个具体例子：你有一个 Qwen-Image 模型能文生图，但生成质量在 OCR 准确率、人类偏好上还不够好。VeRL-Omni 用 FlowGRPO 等算法继续训练它，根据 reward（OCR 准确率、HPSv3 人类偏好评分等）来优化模型权重，让它生成更好的图片。
 
 ---
 

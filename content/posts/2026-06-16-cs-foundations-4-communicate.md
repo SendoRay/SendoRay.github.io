@@ -1,8 +1,8 @@
 ---
-title: AI 基础设施通信技术全景：从 DMA 原理到分布式推理
-date: '2026-06-03'
+title: "程序员的硬核基础（四）：通信"
+date: '2026-06-15'
 tags:
-- Engineering
+- CS-Foundations
 
 draft: false
 ShowToc: true

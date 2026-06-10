@@ -67,3 +67,6 @@ https://stock-sdk.linkdiary.cn/guide/getting-started
 
 
 https://guanjiawei.ai/zh/blog/goal-two-personalities
+
+
+Kubernetes

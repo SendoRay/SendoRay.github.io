@@ -5,7 +5,7 @@ tags:
 - LLM
 - GPU
 - Inference
-- AI-Infra
+
 
 draft: false
 math: true

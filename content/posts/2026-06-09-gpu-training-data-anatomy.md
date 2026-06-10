@@ -1,5 +1,5 @@
 ---
-title: 深度学习训练全解：从零理解 GPU 上到底有哪些数据
+title: LLM训练全解
 date: '2026-06-09'
 tags:
 - LLM
