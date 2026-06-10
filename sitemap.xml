@@ -2,11 +2,38 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
   xmlns:xhtml="http://www.w3.org/1999/xhtml">
   <url>
-    <loc>https://sendoray.github.io/tags/ai-infra/</loc>
-    <lastmod>2026-06-11T00:00:00+00:00</lastmod>
-  </url><url>
     <loc>https://sendoray.github.io/</loc>
-    <lastmod>2026-06-11T00:00:00+00:00</lastmod>
+    <lastmod>2026-06-15T00:00:00+00:00</lastmod>
+  </url><url>
+    <loc>https://sendoray.github.io/tags/cs-foundations/</loc>
+    <lastmod>2026-06-15T00:00:00+00:00</lastmod>
+  </url><url>
+    <loc>https://sendoray.github.io/posts/</loc>
+    <lastmod>2026-06-15T00:00:00+00:00</lastmod>
+  </url><url>
+    <loc>https://sendoray.github.io/tags/</loc>
+    <lastmod>2026-06-15T00:00:00+00:00</lastmod>
+  </url><url>
+    <loc>https://sendoray.github.io/posts/2026-06-15-cs-foundations-3-network/</loc>
+    <lastmod>2026-06-15T00:00:00+00:00</lastmod>
+  </url><url>
+    <loc>https://sendoray.github.io/posts/2026-06-16-cs-foundations-4-communicate/</loc>
+    <lastmod>2026-06-15T00:00:00+00:00</lastmod>
+  </url><url>
+    <loc>https://sendoray.github.io/posts/2026-06-14-cs-foundations-2-os/</loc>
+    <lastmod>2026-06-14T00:00:00+00:00</lastmod>
+  </url><url>
+    <loc>https://sendoray.github.io/posts/2026-06-13-cs-foundations-1-architecture/</loc>
+    <lastmod>2026-06-13T00:00:00+00:00</lastmod>
+  </url><url>
+    <loc>https://sendoray.github.io/tags/engineering/</loc>
+    <lastmod>2026-06-12T00:00:00+00:00</lastmod>
+  </url><url>
+    <loc>https://sendoray.github.io/tags/kubernetes/</loc>
+    <lastmod>2026-06-12T00:00:00+00:00</lastmod>
+  </url><url>
+    <loc>https://sendoray.github.io/posts/2026-06-12-kubernetes-for-ai-infra/</loc>
+    <lastmod>2026-06-12T00:00:00+00:00</lastmod>
   </url><url>
     <loc>https://sendoray.github.io/tags/gpu/</loc>
     <lastmod>2026-06-11T00:00:00+00:00</lastmod>
@@ -17,13 +44,7 @@
     <loc>https://sendoray.github.io/tags/llm/</loc>
     <lastmod>2026-06-11T00:00:00+00:00</lastmod>
   </url><url>
-    <loc>https://sendoray.github.io/posts/2026-06-11-llm-train-infer-panorama/</loc>
-    <lastmod>2026-06-11T00:00:00+00:00</lastmod>
-  </url><url>
-    <loc>https://sendoray.github.io/posts/</loc>
-    <lastmod>2026-06-11T00:00:00+00:00</lastmod>
-  </url><url>
-    <loc>https://sendoray.github.io/tags/</loc>
+    <loc>https://sendoray.github.io/posts/2026-06-11-llm-panorama/</loc>
     <lastmod>2026-06-11T00:00:00+00:00</lastmod>
   </url><url>
     <loc>https://sendoray.github.io/tags/training/</loc>
@@ -35,17 +56,11 @@
     <loc>https://sendoray.github.io/tags/diffusion/</loc>
     <lastmod>2026-06-09T00:00:00+00:00</lastmod>
   </url><url>
-    <loc>https://sendoray.github.io/posts/veomni/</loc>
-    <lastmod>2026-06-09T00:00:00+00:00</lastmod>
-  </url><url>
     <loc>https://sendoray.github.io/posts/2026-06-09-gpu-training-data-anatomy/</loc>
     <lastmod>2026-06-09T00:00:00+00:00</lastmod>
   </url><url>
-    <loc>https://sendoray.github.io/posts/2026-06-03-communicate/</loc>
-    <lastmod>2026-06-03T00:00:00+00:00</lastmod>
-  </url><url>
-    <loc>https://sendoray.github.io/tags/engineering/</loc>
-    <lastmod>2026-06-03T00:00:00+00:00</lastmod>
+    <loc>https://sendoray.github.io/posts/2026-06-09-verl-omni-deep-dive/</loc>
+    <lastmod>2026-06-09T00:00:00+00:00</lastmod>
   </url><url>
     <loc>https://sendoray.github.io/posts/2026-05-28-gpu-memory-offload-techniques/</loc>
     <lastmod>2026-05-28T00:00:00+00:00</lastmod>
@@ -71,22 +86,19 @@
     <loc>https://sendoray.github.io/about/</loc>
     <lastmod>2026-05-17T00:00:00+00:00</lastmod>
   </url><url>
-    <loc>https://sendoray.github.io/tags/python/</loc>
-    <lastmod>2026-05-17T00:00:00+00:00</lastmod>
-  </url><url>
     <loc>https://sendoray.github.io/posts/2026-05-17-python-list-tutorial/</loc>
     <lastmod>2026-05-17T00:00:00+00:00</lastmod>
   </url><url>
     <loc>https://sendoray.github.io/posts/2026-05-10-llm-business-competition/</loc>
     <lastmod>2026-05-10T00:00:00+00:00</lastmod>
   </url><url>
-    <loc>https://sendoray.github.io/tags/rl/</loc>
+    <loc>https://sendoray.github.io/tags/rlalgo/</loc>
     <lastmod>2025-11-21T00:00:00+00:00</lastmod>
   </url><url>
     <loc>https://sendoray.github.io/posts/2025-11-17-reinforcement-learning-intro/</loc>
     <lastmod>2025-11-21T00:00:00+00:00</lastmod>
   </url><url>
-    <loc>https://sendoray.github.io/posts/lifesdiscipline/</loc>
+    <loc>https://sendoray.github.io/posts/mooncake_transfer_engine_guide/</loc>
   </url><url>
     <loc>https://sendoray.github.io/categories/</loc>
   </url>

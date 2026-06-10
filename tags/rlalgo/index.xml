@@ -1,13 +1,13 @@
 <?xml version="1.0" encoding="utf-8" standalone="yes"?>
 <rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom" xmlns:content="http://purl.org/rss/1.0/modules/content/">
   <channel>
-    <title>RL on chengzhy&#39;s blog</title>
-    <link>https://sendoray.github.io/tags/rl/</link>
-    <description>Recent content in RL on chengzhy&#39;s blog</description>
+    <title>RLAlgo on chengzhy&#39;s blog</title>
+    <link>https://sendoray.github.io/tags/rlalgo/</link>
+    <description>Recent content in RLAlgo on chengzhy&#39;s blog</description>
     <generator>Hugo</generator>
     <language>en</language>
     <lastBuildDate>Fri, 21 Nov 2025 00:00:00 +0000</lastBuildDate>
-    <atom:link href="https://sendoray.github.io/tags/rl/index.xml" rel="self" type="application/rss+xml" />
+    <atom:link href="https://sendoray.github.io/tags/rlalgo/index.xml" rel="self" type="application/rss+xml" />
     <item>
       <title>强化学习入门：从基础概念到PPO算法</title>
       <link>https://sendoray.github.io/posts/2025-11-17-reinforcement-learning-intro/</link>

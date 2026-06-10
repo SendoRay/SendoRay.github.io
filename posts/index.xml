@@ -6,18 +6,221 @@
     <description>Recent content in Posts on chengzhy&#39;s blog</description>
     <generator>Hugo</generator>
     <language>en</language>
-    <lastBuildDate>Thu, 11 Jun 2026 00:00:00 +0000</lastBuildDate>
+    <lastBuildDate>Mon, 15 Jun 2026 00:00:00 +0000</lastBuildDate>
     <atom:link href="https://sendoray.github.io/posts/index.xml" rel="self" type="application/rss+xml" />
     <item>
-      <title>LLM 训练与推理全景账本：一份带数字的工程决策手册</title>
-      <link>https://sendoray.github.io/posts/2026-06-11-llm-train-infer-panorama/</link>
+      <title>程序员的硬核基础（三）：计算机网络，从一根网线到 socket 编程</title>
+      <link>https://sendoray.github.io/posts/2026-06-15-cs-foundations-3-network/</link>
+      <pubDate>Mon, 15 Jun 2026 00:00:00 +0000</pubDate>
+      <guid>https://sendoray.github.io/posts/2026-06-15-cs-foundations-3-network/</guid>
+      <description>&lt;blockquote&gt;
+&lt;p&gt;这篇文章不写&amp;quot;七层模型背诵题&amp;quot;，只回答一个问题：&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;为什么 TCP 慢、UDP 不可靠、socket API 简单？这些设计决定背后的取舍是什么？&lt;/strong&gt;&lt;/p&gt;
+&lt;p&gt;这是《程序员的硬核基础三件套》的第三篇。前置阅读：&lt;a href=&#34;https://sendoray.github.io/posts/2026-06-13-cs-foundations-1-architecture/&#34;&gt;体系结构篇&lt;/a&gt;、&lt;a href=&#34;https://sendoray.github.io/posts/2026-06-14-cs-foundations-2-os/&#34;&gt;操作系统篇&lt;/a&gt;。读完本篇你应该能回答：为什么 RDMA 要绕开 TCP，又为什么不能绕开&amp;quot;地址解析&amp;quot;和&amp;quot;拥塞控制&amp;quot;——它们换了形态继续存在。&lt;/p&gt;&lt;/blockquote&gt;
+&lt;hr&gt;
+&lt;h2 id=&#34;一五层模型一页纸&#34;&gt;一、五层模型一页纸&lt;/h2&gt;
+&lt;p&gt;OSI 七层是教科书的，工业界实际只用 &lt;strong&gt;TCP/IP 五层模型&lt;/strong&gt;：&lt;/p&gt;
+&lt;table&gt;
+  &lt;thead&gt;
+      &lt;tr&gt;
+          &lt;th&gt;层&lt;/th&gt;
+          &lt;th&gt;职责一句话&lt;/th&gt;
+          &lt;th&gt;典型协议 / 实体&lt;/th&gt;
+          &lt;th&gt;地址&lt;/th&gt;
+      &lt;/tr&gt;
+  &lt;/thead&gt;
+  &lt;tbody&gt;
+      &lt;tr&gt;
+          &lt;td&gt;&lt;strong&gt;应用层&lt;/strong&gt;&lt;/td&gt;
+          &lt;td&gt;业务语义&lt;/td&gt;
+          &lt;td&gt;HTTP / gRPC / Redis / SQL&lt;/td&gt;
+          &lt;td&gt;URL / API&lt;/td&gt;
+      &lt;/tr&gt;
+      &lt;tr&gt;
+          &lt;td&gt;&lt;strong&gt;传输层&lt;/strong&gt;&lt;/td&gt;
+          &lt;td&gt;端到端可靠 / 端口区分&lt;/td&gt;
+          &lt;td&gt;TCP / UDP / QUIC&lt;/td&gt;
+          &lt;td&gt;端口号（16 bit）&lt;/td&gt;
+      &lt;/tr&gt;
+      &lt;tr&gt;
+          &lt;td&gt;&lt;strong&gt;网络层&lt;/strong&gt;&lt;/td&gt;
+          &lt;td&gt;跨网段寻路&lt;/td&gt;
+          &lt;td&gt;IP / ICMP / IPv6&lt;/td&gt;
+          &lt;td&gt;IP 地址（32/128 bit）&lt;/td&gt;
+      &lt;/tr&gt;
+      &lt;tr&gt;
+          &lt;td&gt;&lt;strong&gt;链路层&lt;/strong&gt;&lt;/td&gt;
+          &lt;td&gt;同一段物理链路上传一帧&lt;/td&gt;
+          &lt;td&gt;Ethernet / 802.11 / PCIe&lt;/td&gt;
+          &lt;td&gt;MAC 地址（48 bit）&lt;/td&gt;
+      &lt;/tr&gt;
+      &lt;tr&gt;
+          &lt;td&gt;&lt;strong&gt;物理层&lt;/strong&gt;&lt;/td&gt;
+          &lt;td&gt;比特怎么变成电/光信号&lt;/td&gt;
+          &lt;td&gt;光纤、双绞线&lt;/td&gt;
+          &lt;td&gt;—&lt;/td&gt;
+      &lt;/tr&gt;
+  &lt;/tbody&gt;
+&lt;/table&gt;
+&lt;p&gt;&lt;strong&gt;核心心智模型&lt;/strong&gt;：每一层只解决自己那一层的问题，并且&lt;strong&gt;只信任直接相邻层的服务&lt;/strong&gt;。下层抽象出&amp;quot;我能传一个 X 单位&amp;quot;，上层就把自己的东西塞进 X 里——这叫&lt;strong&gt;封装（encapsulation）&lt;/strong&gt;。一个 HTTP 请求发出去时，从上到下逐层加头、加完变成一串比特上线：&lt;/p&gt;</description>
+    </item>
+    <item>
+      <title>程序员的硬核基础（四）：通信</title>
+      <link>https://sendoray.github.io/posts/2026-06-16-cs-foundations-4-communicate/</link>
+      <pubDate>Mon, 15 Jun 2026 00:00:00 +0000</pubDate>
+      <guid>https://sendoray.github.io/posts/2026-06-16-cs-foundations-4-communicate/</guid>
+      <description>&lt;blockquote&gt;
+&lt;p&gt;从一台机器的硬件结构出发，逐步讲清 DMA、Pinned Memory、Zero-Copy 等底层原理，再纵览 AI 基础设施通信的五层架构：硬件互连 → 节点间网络 → 通信库 → 底层框架 → 上层应用。&lt;/p&gt;&lt;/blockquote&gt;
+&lt;hr&gt;
+&lt;h2 id=&#34;全局架构图&#34;&gt;全局架构图&lt;/h2&gt;
+&lt;pre tabindex=&#34;0&#34;&gt;&lt;code&gt;┌─────────────────────────────────────────────────────────────────────────┐
+│  第五层：上层框架与生态                                                   │
+│  ┌──────────┐  ┌──────────┐  ┌──────────┐  ┌──────────┐               │
+│  │  vLLM    │  │  SGLang  │  │ TRT-LLM  │  │  Dynamo  │  LMCache     │
+│  └────┬─────┘  └────┬─────┘  └────┬─────┘  └────┬─────┘               │
+├───────┼──────────────┼─────────────┼─────────────┼──────────────────────┤
+│  第四层：底层传输框架                                                     │
+│  ┌──────────┐  ┌──────────┐  ┌──────────┐                              │
+│  │   UCX    │  │   UCC    │  │ NVSHMEM  │  (MPI)                       │
+│  └────┬─────┘  └────┬─────┘  └────┬─────┘                              │
+├───────┼──────────────┼─────────────┼────────────────────────────────────┤
+│  第三层：通信库 (xCCL)                                                    │
+│  ┌────────┐ ┌────────┐ ┌────────┐ ┌────────┐ ┌────────┐               │
+│  │  NCCL  │ │ MSCCL++│ │  NIXL  │ │ DeepEP │ │  RCCL  │  oneCCL Gloo │
+│  │(训练)   │ │(可编程)│ │(推理)  │ │ (MoE)  │ │ (AMD)  │               │
+│  └────┬───┘ └────┬───┘ └────┬───┘ └────┬───┘ └────┬───┘               │
+├───────┼──────────┼──────────┼──────────┼──────────┼─────────────────────┤
+│  第二层：节点间网络                                                       │
+│  ┌────────────────┐  ┌────────────────┐  ┌────────────────┐            │
+│  │  InfiniBand    │  │    RoCEv2      │  │    iWARP       │            │
+│  │  (原生RDMA)    │  │  (以太网RDMA)  │  │  (TCP/IP RDMA) │            │
+│  └────────┬───────┘  └────────┬───────┘  └────────┬───────┘            │
+├───────────┼───────────────────┼───────────────────┼─────────────────────┤
+│  第一层：芯片与单机内部互连                                               │
+│  ┌──────┐  ┌────────────┐  ┌─────┐  ┌───────────────────┐             │
+│  │ PCIe │  │NVLink/NVSw │  │ CXL │  │ GPUDirect RDMA    │             │
+│  └──────┘  └────────────┘  └─────┘  └───────────────────┘             │
+└─────────────────────────────────────────────────────────────────────────┘
+&lt;/code&gt;&lt;/pre&gt;&lt;p&gt;&lt;strong&gt;一句话理解每一层的作用：&lt;/strong&gt; 硬件决定带宽上限，网络决定延迟下限，通信库决定可达性能，上层框架决定业务价值的兑现效率。&lt;/p&gt;</description>
+    </item>
+    <item>
+      <title>程序员的硬核基础（二）：操作系统，从用户态到内核旁路</title>
+      <link>https://sendoray.github.io/posts/2026-06-14-cs-foundations-2-os/</link>
+      <pubDate>Sun, 14 Jun 2026 00:00:00 +0000</pubDate>
+      <guid>https://sendoray.github.io/posts/2026-06-14-cs-foundations-2-os/</guid>
+      <description>&lt;blockquote&gt;
+&lt;p&gt;这篇文章不写&amp;quot;Linux 入门&amp;quot;，只回答一个问题：&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;操作系统内核到底在你和硬件之间做了什么？什么时候它是帮手，什么时候是路障？&lt;/strong&gt;&lt;/p&gt;
+&lt;p&gt;这是《程序员的硬核基础三件套》的第二篇。前置阅读：&lt;a href=&#34;https://sendoray.github.io/posts/2026-06-13-cs-foundations-1-architecture/&#34;&gt;体系结构篇&lt;/a&gt;（如果你还不知道页表、MMIO、IOMMU，请先读它）。读完本篇你应该能回答：为什么 RDMA 要&amp;quot;绕过内核&amp;quot;，又如何只绕过一部分？&lt;/p&gt;&lt;/blockquote&gt;
+&lt;hr&gt;
+&lt;h2 id=&#34;一用户态-vs-内核态cpu-自带的二分法&#34;&gt;一、用户态 vs 内核态：CPU 自带的&amp;quot;二分法&amp;quot;&lt;/h2&gt;
+&lt;h3 id=&#34;11-一颗-cpu两种身份&#34;&gt;1.1 一颗 CPU，两种身份&lt;/h3&gt;
+&lt;p&gt;x86-64 的 CPU 有四个特权环（Ring 0–3），但实际只用两个：&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;strong&gt;Ring 0 = 内核态（Kernel mode）&lt;/strong&gt;：可以执行任意指令，可以访问任意内存&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;Ring 3 = 用户态（User mode）&lt;/strong&gt;：只能访问自己进程的内存，只能执行非特权指令&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;&amp;ldquo;特权指令&amp;quot;是哪些？比如：&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;读写控制寄存器（CR3 = 当前页表指针）&lt;/li&gt;
+&lt;li&gt;操作 MMU / 关中断 / 设置 IDT&lt;/li&gt;
+&lt;li&gt;直接读写 I/O 端口&lt;/li&gt;
+&lt;li&gt;执行 &lt;code&gt;hlt&lt;/code&gt; 让 CPU 进入低功耗&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;CPU 里有一个标志位记录&amp;quot;我现在是 Ring 0 还是 Ring 3&amp;rdquo;。这个标志只能由硬件机制（中断、异常、&lt;code&gt;syscall&lt;/code&gt; 指令）来切换——用户态没办法自己把自己升权。这是整个操作系统安全模型的物理根基。&lt;/p&gt;
+&lt;h3 id=&#34;12-为什么要二分&#34;&gt;1.2 为什么要二分&lt;/h3&gt;
+&lt;p&gt;&lt;strong&gt;信任问题&lt;/strong&gt;。CPU 不能区分&amp;quot;这条 mov 指令是 Linux 内核写的、还是用户进程写的&amp;quot;——它只看权限位。如果让所有代码都跑在 Ring 0，那任何一段崩溃的应用都能把整台机器搞挂、读取别人的内存、操纵网卡发恶意包。&lt;/p&gt;
+&lt;p&gt;代价就是：&lt;strong&gt;用户态做不了任何 I/O，必须求内核帮忙&lt;/strong&gt;。这个&amp;quot;求&amp;quot;的动作叫&lt;strong&gt;系统调用（system call）&lt;/strong&gt;。&lt;/p&gt;
+&lt;h3 id=&#34;13-上下文切换不是免费的&#34;&gt;1.3 上下文切换不是免费的&lt;/h3&gt;
+&lt;p&gt;每次 user → kernel → user 的来回（一次 syscall）至少包括：&lt;/p&gt;</description>
+    </item>
+    <item>
+      <title>程序员的硬核基础（一）：体系结构，从晶体管到 PCIe 拓扑</title>
+      <link>https://sendoray.github.io/posts/2026-06-13-cs-foundations-1-architecture/</link>
+      <pubDate>Sat, 13 Jun 2026 00:00:00 +0000</pubDate>
+      <guid>https://sendoray.github.io/posts/2026-06-13-cs-foundations-1-architecture/</guid>
+      <description>&lt;blockquote&gt;
+&lt;p&gt;这篇文章不讲&amp;quot;CPU 怎么造出来的&amp;quot;，只回答一个问题：&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;当我们说&amp;quot;数据从内存搬到网卡&amp;quot;时，它到底走了哪条物理路径？&lt;/strong&gt;&lt;/p&gt;
+&lt;p&gt;这是《程序员的硬核基础三件套》的第一篇。读完它，你应该能在脑子里画出一台现代服务器的内部布线图，并且解释清楚：为什么 PCIe 拓扑会决定 RDMA 能跑多快。&lt;/p&gt;&lt;/blockquote&gt;
+&lt;hr&gt;
+&lt;h2 id=&#34;一冯诺依曼到现代-cpu你写的-a--b--c-究竟发生了什么&#34;&gt;一、冯诺依曼到现代 CPU：你写的 &lt;code&gt;a = b + c&lt;/code&gt; 究竟发生了什么&lt;/h2&gt;
+&lt;h3 id=&#34;11-冯诺依曼模型一页纸&#34;&gt;1.1 冯诺依曼模型一页纸&lt;/h3&gt;
+&lt;p&gt;冯诺依曼模型只有四个角色：&lt;strong&gt;CPU、内存、I/O 设备、连接它们的总线&lt;/strong&gt;。所有现代计算机都没逃出这个抽象：&lt;/p&gt;
+&lt;pre tabindex=&#34;0&#34;&gt;&lt;code&gt;   ┌──────────┐         ┌──────────┐
+   │   CPU    │◀───────▶│  内存     │
+   │ (寄存器+ │   总线  │  (DRAM)  │
+   │  ALU+    │◀──┐ ┌──▶│          │
+   │  控制器) │   │ │   └──────────┘
+   └────┬─────┘   │ │
+        │ 总线    │ │
+        ▼         │ │
+   ┌──────────────┴─┴──┐
+   │     I/O 设备       │  ← 网卡 / 磁盘 / GPU / ...
+   └────────────────────┘
+&lt;/code&gt;&lt;/pre&gt;&lt;p&gt;指令和数据共享同一段内存空间——这是冯诺依曼的核心约定。CPU 干的事则可以浓缩成一个循环：&lt;/p&gt;</description>
+    </item>
+    <item>
+      <title>Kubernetes：AI Infra 视角的最小够用版</title>
+      <link>https://sendoray.github.io/posts/2026-06-12-kubernetes-for-ai-infra/</link>
+      <pubDate>Fri, 12 Jun 2026 00:00:00 +0000</pubDate>
+      <guid>https://sendoray.github.io/posts/2026-06-12-kubernetes-for-ai-infra/</guid>
+      <description>&lt;blockquote&gt;
+&lt;p&gt;这篇文章不写 K8s 教程，只回答一个问题：&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;作为做训练 / 推理基础设施的人，对 K8s 知道到什么程度就够了？&lt;/strong&gt;&lt;/p&gt;
+&lt;p&gt;目标：能看懂 yaml、能 debug 卡住的训练任务、能跟 SRE 对齐资源需求，仅此而已。&lt;/p&gt;&lt;/blockquote&gt;
+&lt;hr&gt;
+&lt;h2 id=&#34;一为什么-ai-infra-绕不开-k8s&#34;&gt;一、为什么 AI Infra 绕不开 K8s&lt;/h2&gt;
+&lt;p&gt;GPU 集群的现实是：几十到几千张卡，几十个研究员同时抢资源，训练任务可能跑几小时也可能跑几周，推理服务要 7×24 在线。&lt;strong&gt;这本质就是一个&amp;quot;多租户 + 异构硬件 + 长任务 + 在线服务&amp;quot;的调度问题&lt;/strong&gt;，而 K8s 是目前业界事实标准的答案。&lt;/p&gt;
+&lt;p&gt;具体到 AI 场景，K8s 帮你解决：&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;strong&gt;资源抽象&lt;/strong&gt;：把&amp;quot;哪台机器、哪张卡、哪条 IB 网卡&amp;quot;抽象成 &lt;code&gt;resources.limits&lt;/code&gt;&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;任务编排&lt;/strong&gt;：分布式训练几十个进程要同时拉起来，要么全起要么全不起（gang scheduling）&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;故障恢复&lt;/strong&gt;：节点挂了 Pod 能自动重建，配合 checkpoint 实现训练续跑&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;服务上线&lt;/strong&gt;：推理服务要灰度、要 HPA、要负载均衡，K8s 原生支持&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;环境一致&lt;/strong&gt;：镜像 = 环境，再也不用调研究员的 conda&lt;/li&gt;
+&lt;/ul&gt;
+&lt;hr&gt;
+&lt;h2 id=&#34;二一张图看懂-k8s-架构&#34;&gt;二、一张图看懂 K8s 架构&lt;/h2&gt;
+&lt;pre tabindex=&#34;0&#34;&gt;&lt;code&gt;                      ┌──────────────────────────────────────────────┐
+                      │              Control Plane (master)          │
+                      │                                              │
+   kubectl apply ───► │   ┌──────────┐    ┌──────────┐   ┌────────┐  │
+   (yaml)             │   │ API      │◄──►│ etcd     │   │ sched  │  │
+                      │   │ Server   │    │ (KV 存储) │   │ uler   │  │
+                      │   └─────┬────┘    └──────────┘   └────┬───┘  │
+                      │         │                             │       │
+                      │   ┌─────▼────────────────────────────▼────┐  │
+                      │   │         Controller Manager             │  │
+                      │   │ (Deployment / Job / ReplicaSet ...)    │  │
+                      │   └────────────────────────────────────────┘  │
+                      └──────────────────┬───────────────────────────┘
+                                         │
+                ┌────────────────────────┼────────────────────────┐
+                │                        │                        │
+        ┌───────▼────────┐      ┌────────▼───────┐      ┌─────────▼──────┐
+        │   Node 1       │      │   Node 2       │      │   Node N       │
+        │  (8×H100)      │      │  (8×H100)      │      │  (8×H100)      │
+        │ ┌────────────┐ │      │ ┌────────────┐ │      │ ┌────────────┐ │
+        │ │  kubelet   │ │      │ │  kubelet   │ │      │ │  kubelet   │ │
+        │ ├────────────┤ │      │ ├────────────┤ │      │ ├────────────┤ │
+        │ │ container  │ │      │ │ container  │ │      │ │ container  │ │
+        │ │ runtime    │ │      │ │ runtime    │ │      │ │ runtime    │ │
+        │ ├────────────┤ │      │ ├────────────┤ │      │ ├────────────┤ │
+        │ │ Pod  Pod   │ │      │ │ Pod  Pod   │ │      │ │ Pod  Pod   │ │
+        │ └────────────┘ │      │ └────────────┘ │      │ └────────────┘ │
+        └────────────────┘      └────────────────┘      └────────────────┘
+&lt;/code&gt;&lt;/pre&gt;&lt;p&gt;记住三件事：&lt;/p&gt;</description>
+    </item>
+    <item>
+      <title>LLM 领域，你需要知道的数字</title>
+      <link>https://sendoray.github.io/posts/2026-06-11-llm-panorama/</link>
       <pubDate>Thu, 11 Jun 2026 00:00:00 +0000</pubDate>
-      <guid>https://sendoray.github.io/posts/2026-06-11-llm-train-infer-panorama/</guid>
+      <guid>https://sendoray.github.io/posts/2026-06-11-llm-panorama/</guid>
       <description>&lt;blockquote&gt;
 &lt;p&gt;这篇文章不讲&amp;quot;什么是 Transformer&amp;quot;，只回答一个问题：&lt;/p&gt;
-&lt;p&gt;&lt;strong&gt;当我们说&amp;quot;跑一个 70B 模型&amp;quot;时，到底在跟多少 FLOPs、多少 GB、多少 GB/s 打交道？&lt;/strong&gt;&lt;/p&gt;
-&lt;p&gt;全文所有数字要么是&lt;strong&gt;公式推导&lt;/strong&gt;（标记为 [理论]），要么是&lt;strong&gt;论文/产品手册的标称值&lt;/strong&gt;（标记为 [标称]），要么是&lt;strong&gt;公开 benchmark / 实测均值&lt;/strong&gt;（标记为 [实测]）。看到一个数字而没有这三个标签之一，请直接当成&amp;quot;我编的&amp;quot;——不要信。&lt;/p&gt;&lt;/blockquote&gt;
-&lt;p&gt;下面所有节都以 &lt;strong&gt;Llama-3-70B（dense, GQA, 80 层, hidden=8192, KV heads=8, head_dim=128, FFN=28672）&lt;/strong&gt; 作为参考模型，必要时会拓展到 7B / 405B / DeepSeek-V3 / GPT-4 量级做对比。&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;当我们说&amp;quot;跑一个 70B 模型&amp;quot;时，到底在跟多少 FLOPs、多少 GB、多少 GB/s 打交道？&lt;/strong&gt;&lt;/p&gt;&lt;/blockquote&gt;
+&lt;p&gt;下面所有节都以 &lt;strong&gt;Llama-3-70B（dense, GQA, 80 层, hidden=8192, KV heads=8, head_dim=128, FFN=28672）&lt;/strong&gt; 作为参考模型，必要时会拓展到 7B / 405B / DeepSeek-V3 / GPT-4 / moe 量级做对比。&lt;/p&gt;
 &lt;hr&gt;
 &lt;h2 id=&#34;一推理单-token-究竟值多少计算&#34;&gt;一、推理：单 token 究竟值多少计算&lt;/h2&gt;
 &lt;h3 id=&#34;11-一条公式打底前向---flops--token-理论&#34;&gt;1.1 一条公式打底：前向 ≈ &lt;span class=&#34;math inline&#34;&gt;\(2\Theta\)&lt;/span&gt;
@@ -141,63 +344,7 @@ F_{\text{fwd}} \approx 2\,\Theta \quad \text{FLOPs/token}
 &lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;p&gt;这张图里值得记住的几件事：&lt;/p&gt;</description>
     </item>
     <item>
-      <title>VeRL-Omni 全面解析：多模态扩散模型的 RL 后训练框架</title>
-      <link>https://sendoray.github.io/posts/veomni/</link>
-      <pubDate>Tue, 09 Jun 2026 00:00:00 +0000</pubDate>
-      <guid>https://sendoray.github.io/posts/veomni/</guid>
-      <description>&lt;h2 id=&#34;一项目概述&#34;&gt;一、项目概述&lt;/h2&gt;
-&lt;p&gt;VeRL-Omni 是字节跳动 Seed MLSys 团队开源的&lt;strong&gt;多模态生成模型 RL 后训练框架&lt;/strong&gt;。它不像 Stable Diffusion 那样做图像生成，而是用强化学习（RL）来微调已经训好的生成模型，让它们生成更高质量的图像/视频/音频。&lt;/p&gt;
-&lt;p&gt;简单说：你有一个 Qwen-Image 模型能文生图，但生成质量不够好。VeRL-Omni 用 RL（比如 FlowGRPO）来继续训练它，根据 reward（OCR 准确率、人类偏好评分等）来优化模型，让它生成更好的图片。&lt;/p&gt;
-&lt;hr&gt;
-&lt;h2 id=&#34;二为什么需要-verl-omni&#34;&gt;二、为什么需要 VeRL-Omni&lt;/h2&gt;
-&lt;blockquote&gt;
-&lt;p&gt;Multimodal generative RL training differs from text-only LLM RL not only in model structure, but also in I/O patterns, compute characteristics, and runtime bottlenecks.&lt;/p&gt;&lt;/blockquote&gt;
-&lt;p&gt;多模态生成模型的 RL 训练与纯文本 LLM 的 RL 存在根本性差异，不能直接复用 verl 或 vLLM：&lt;/p&gt;
-&lt;table&gt;
-  &lt;thead&gt;
-      &lt;tr&gt;
-          &lt;th&gt;差异维度&lt;/th&gt;
-          &lt;th&gt;LLM&lt;/th&gt;
-          &lt;th&gt;扩散模型&lt;/th&gt;
-      &lt;/tr&gt;
-  &lt;/thead&gt;
-  &lt;tbody&gt;
-      &lt;tr&gt;
-          &lt;td&gt;生成方式&lt;/td&gt;
-          &lt;td&gt;自回归逐 token 生成&lt;/td&gt;
-          &lt;td&gt;迭代去噪（逐 step 去噪）&lt;/td&gt;
-      &lt;/tr&gt;
-      &lt;tr&gt;
-          &lt;td&gt;训练循环&lt;/td&gt;
-          &lt;td&gt;token-level log-probs，PPO 在 token 维度&lt;/td&gt;
-          &lt;td&gt;SDE 逆过程计算每步 transition 的 log-prob&lt;/td&gt;
-      &lt;/tr&gt;
-      &lt;tr&gt;
-          &lt;td&gt;数据 I/O&lt;/td&gt;
-          &lt;td&gt;token 序列&lt;/td&gt;
-          &lt;td&gt;高维 latent tensor &lt;code&gt;(B,C,H,W)&lt;/code&gt; 甚至 &lt;code&gt;(B,C,T,H,W)&lt;/code&gt;&lt;/td&gt;
-      &lt;/tr&gt;
-      &lt;tr&gt;
-          &lt;td&gt;计算瓶颈&lt;/td&gt;
-          &lt;td&gt;KV cache 和 attention&lt;/td&gt;
-          &lt;td&gt;VAE 编解码、多步 UNet/DiT 推理&lt;/td&gt;
-      &lt;/tr&gt;
-      &lt;tr&gt;
-          &lt;td&gt;log-prob 计算&lt;/td&gt;
-          &lt;td&gt;softmax 输出直接获取&lt;/td&gt;
-          &lt;td&gt;需要 SDE 逆过程的高斯转移概率&lt;/td&gt;
-      &lt;/tr&gt;
-      &lt;tr&gt;
-          &lt;td&gt;推理引擎&lt;/td&gt;
-          &lt;td&gt;vLLM 为 LLM 优化&lt;/td&gt;
-          &lt;td&gt;需要 vLLM-Omni 做扩散 rollout&lt;/td&gt;
-      &lt;/tr&gt;
-  &lt;/tbody&gt;
-&lt;/table&gt;
-&lt;p&gt;性能方面，VeRL-Omni 比原始 flow_grpo 实现快约 25%，得益于 vLLM-Omni rollout + FSDP 训练 + 异步 reward 计算的重叠。&lt;/p&gt;</description>
-    </item>
-    <item>
-      <title>深度学习训练全解：从零理解 GPU 上到底有哪些数据</title>
+      <title>LLM训练全解</title>
       <link>https://sendoray.github.io/posts/2026-06-09-gpu-training-data-anatomy/</link>
       <pubDate>Tue, 09 Jun 2026 00:00:00 +0000</pubDate>
       <guid>https://sendoray.github.io/posts/2026-06-09-gpu-training-data-anatomy/</guid>
@@ -262,43 +409,26 @@ F_{\text{fwd}} \approx 2\,\Theta \quad \text{FLOPs/token}
 &lt;p&gt;&lt;strong&gt;CrossEntropyLoss（交叉熵）&lt;/strong&gt;——分类/语言模型的标配：&lt;/p&gt;</description>
     </item>
     <item>
-      <title>AI 基础设施通信技术全景：从 DMA 原理到分布式推理</title>
-      <link>https://sendoray.github.io/posts/2026-06-03-communicate/</link>
-      <pubDate>Wed, 03 Jun 2026 00:00:00 +0000</pubDate>
-      <guid>https://sendoray.github.io/posts/2026-06-03-communicate/</guid>
+      <title>VeRL-Omni 全面解析：多模态扩散模型的 RL 后训练框架</title>
+      <link>https://sendoray.github.io/posts/2026-06-09-verl-omni-deep-dive/</link>
+      <pubDate>Tue, 09 Jun 2026 00:00:00 +0000</pubDate>
+      <guid>https://sendoray.github.io/posts/2026-06-09-verl-omni-deep-dive/</guid>
       <description>&lt;blockquote&gt;
-&lt;p&gt;从一台机器的硬件结构出发，逐步讲清 DMA、Pinned Memory、Zero-Copy 等底层原理，再纵览 AI 基础设施通信的五层架构：硬件互连 → 节点间网络 → 通信库 → 底层框架 → 上层应用。&lt;/p&gt;&lt;/blockquote&gt;
+&lt;p&gt;一句话概括：VeRL-Omni 用强化学习把 Qwen-Image / Wan2.2 / SD3.5 这类&lt;strong&gt;已经训好的扩散生成模型&lt;/strong&gt;继续 finetune，让生成的图像 / 视频更贴合人类偏好，或满足任意可定义的 reward 信号。&lt;/p&gt;
+&lt;p&gt;这篇文章面向有 LLM / Infra 背景的同学，回答三个问题：&lt;/p&gt;
+&lt;ol&gt;
+&lt;li&gt;扩散模型 RL 训练和 LLM RL 在&lt;strong&gt;数学&lt;/strong&gt;和&lt;strong&gt;工程&lt;/strong&gt;上到底差在哪？&lt;/li&gt;
+&lt;li&gt;没有 softmax 的扩散模型，每一步的 log-prob 是怎么算出来的？为什么需要 SDE Window？&lt;/li&gt;
+&lt;li&gt;推理 / 预训练 / RL 后训练三个维度上，扩散模型的 infra 瓶颈和 LLM 有什么本质不同？&lt;/li&gt;
+&lt;/ol&gt;&lt;/blockquote&gt;
 &lt;hr&gt;
-&lt;h2 id=&#34;全局架构图&#34;&gt;全局架构图&lt;/h2&gt;
-&lt;pre tabindex=&#34;0&#34;&gt;&lt;code&gt;┌─────────────────────────────────────────────────────────────────────────┐
-│  第五层：上层框架与生态                                                   │
-│  ┌──────────┐  ┌──────────┐  ┌──────────┐  ┌──────────┐               │
-│  │  vLLM    │  │  SGLang  │  │ TRT-LLM  │  │  Dynamo  │  LMCache     │
-│  └────┬─────┘  └────┬─────┘  └────┬─────┘  └────┬─────┘               │
-├───────┼──────────────┼─────────────┼─────────────┼──────────────────────┤
-│  第四层：底层传输框架                                                     │
-│  ┌──────────┐  ┌──────────┐  ┌──────────┐                              │
-│  │   UCX    │  │   UCC    │  │ NVSHMEM  │  (MPI)                       │
-│  └────┬─────┘  └────┬─────┘  └────┬─────┘                              │
-├───────┼──────────────┼─────────────┼────────────────────────────────────┤
-│  第三层：通信库 (xCCL)                                                    │
-│  ┌────────┐ ┌────────┐ ┌────────┐ ┌────────┐ ┌────────┐               │
-│  │  NCCL  │ │ MSCCL++│ │  NIXL  │ │ DeepEP │ │  RCCL  │  oneCCL Gloo │
-│  │(训练)   │ │(可编程)│ │(推理)  │ │ (MoE)  │ │ (AMD)  │               │
-│  └────┬───┘ └────┬───┘ └────┬───┘ └────┬───┘ └────┬───┘               │
-├───────┼──────────┼──────────┼──────────┼──────────┼─────────────────────┤
-│  第二层：节点间网络                                                       │
-│  ┌────────────────┐  ┌────────────────┐  ┌────────────────┐            │
-│  │  InfiniBand    │  │    RoCEv2      │  │    iWARP       │            │
-│  │  (原生RDMA)    │  │  (以太网RDMA)  │  │  (TCP/IP RDMA) │            │
-│  └────────┬───────┘  └────────┬───────┘  └────────┬───────┘            │
-├───────────┼───────────────────┼───────────────────┼─────────────────────┤
-│  第一层：芯片与单机内部互连                                               │
-│  ┌──────┐  ┌────────────┐  ┌─────┐  ┌───────────────────┐             │
-│  │ PCIe │  │NVLink/NVSw │  │ CXL │  │ GPUDirect RDMA    │             │
-│  └──────┘  └────────────┘  └─────┘  └───────────────────┘             │
-└─────────────────────────────────────────────────────────────────────────┘
-&lt;/code&gt;&lt;/pre&gt;&lt;p&gt;&lt;strong&gt;一句话理解每一层的作用：&lt;/strong&gt; 硬件决定带宽上限，网络决定延迟下限，通信库决定可达性能，上层框架决定业务价值的兑现效率。&lt;/p&gt;</description>
+&lt;h2 id=&#34;一项目概述&#34;&gt;一、项目概述&lt;/h2&gt;
+&lt;p&gt;VeRL-Omni 是字节跳动 Seed MLSys 团队开源的&lt;strong&gt;多模态生成模型 RL 后训练框架&lt;/strong&gt;。它不做&amp;quot;从零训练&amp;quot;，而是用强化学习（RL）来微调&lt;strong&gt;已经训好&lt;/strong&gt;的生成模型，让它们生成更高质量的图像 / 视频 / 音频。&lt;/p&gt;
+&lt;p&gt;一个具体例子：你有一个 Qwen-Image 模型能文生图，但生成质量在 OCR 准确率、人类偏好上还不够好。VeRL-Omni 用 FlowGRPO 等算法继续训练它，根据 reward（OCR 准确率、HPSv3 人类偏好评分等）来优化模型权重，让它生成更好的图片。&lt;/p&gt;
+&lt;hr&gt;
+&lt;h2 id=&#34;二为什么需要-verl-omni&#34;&gt;二、为什么需要 VeRL-Omni&lt;/h2&gt;
+&lt;blockquote&gt;
+&lt;p&gt;Multimodal generative RL training differs from text-only LLM RL not only in model structure, but also in I/O patterns, compute characteristics, and runtime bottlenecks.&lt;/p&gt;</description>
     </item>
     <item>
       <title>GPU 显存 Offload 技术：训练与推理中的工程实践</title>
@@ -783,15 +913,78 @@ E(R(\tau))_{\tau \sim P_{\theta}(\tau)} = \sum_{\tau} R(\tau) P_{\theta}(\tau)
     </item>
     <item>
       <title></title>
-      <link>https://sendoray.github.io/posts/lifesdiscipline/</link>
+      <link>https://sendoray.github.io/posts/mooncake_transfer_engine_guide/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      <guid>https://sendoray.github.io/posts/lifesdiscipline/</guid>
-      <description>&lt;p&gt;一定要搞清楚
-第一性原理就是，你要解决什么问题，就找造成这个问题的原因。
-比如工作资源的问题，你应该直接去找这个人，而不是找一圈无关紧要的人。&lt;/p&gt;
-&lt;p&gt;情绪永远放在第二位，表达情绪有时候往往没有必要，还会造成一地鸡毛，有问题解决问题。&lt;/p&gt;
-&lt;p&gt;一个分支应该只完成一个东西，&lt;/p&gt;
-&lt;p&gt;你是什么样的人固然重要，你想成为什么样的人才更为重要&lt;/p&gt;</description>
+      <guid>https://sendoray.github.io/posts/mooncake_transfer_engine_guide/</guid>
+      <description>&lt;h1 id=&#34;mooncake-store--transfer-engine-网络架构指南&#34;&gt;Mooncake Store &amp;amp; Transfer Engine 网络架构指南&lt;/h1&gt;
+&lt;h2 id=&#34;概述&#34;&gt;概述&lt;/h2&gt;
+&lt;p&gt;Mooncake 是一个分布式键值存储系统，专为大规模 GPU 集群中的模型权重传输和参数离线存储设计。其核心组件 &lt;strong&gt;Transfer Engine&lt;/strong&gt; 提供了高效的跨节点数据传输能力，支持 RDMA 和 TCP 两种传输协议。&lt;/p&gt;
+&lt;p&gt;本文档重点阐述：&lt;/p&gt;
+&lt;ol&gt;
+&lt;li&gt;控制层 (Control Plane) 与传输层 (Data Plane) 的分离架构&lt;/li&gt;
+&lt;li&gt;RDMA 与 TCP 协议的适用场景与区别&lt;/li&gt;
+&lt;li&gt;MetaServer 与 Storage Client 的关键配置&lt;/li&gt;
+&lt;/ol&gt;
+&lt;hr&gt;
+&lt;h2 id=&#34;架构总览控制层-vs-传输层&#34;&gt;架构总览：控制层 vs 传输层&lt;/h2&gt;
+&lt;p&gt;Mooncake 采用经典的 &lt;strong&gt;控制层/传输层分离&lt;/strong&gt; 架构：&lt;/p&gt;
+&lt;pre tabindex=&#34;0&#34;&gt;&lt;code&gt;┌─────────────────────────────────────────────────────────────────┐
+│                        控制层 (Control Plane)                      │
+│                                                                   │
+│  ┌─────────────────────┐        ┌──────────────────────────┐    │
+│  │   mooncake_master    │        │  HTTP Metadata Server     │    │
+│  │   (gRPC :50051)      │◄──────►│  (REST :8083)             │    │
+│  │                       │        │                            │    │
+│  │  - 对象注册/发现       │        │  - Segment 元数据注册       │    │
+│  │  - 副本追踪            │        │  - 节点发现                 │    │
+│  │  - 租约管理            │        │  - 拓扑信息广播             │    │
+│  │  - 驱逐协调            │        │                            │    │
+│  └─────────────────────┘        └──────────────────────────┘    │
+│                                                                   │
+│          使用普通 TCP/IP 即可（带宽需求低，延迟不敏感）               │
+└─────────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────────┐
+│                        传输层 (Data Plane)                         │
+│                                                                   │
+│  ┌─────────────────────────────────────────────────────────┐    │
+│  │              Transfer Engine                               │    │
+│  │                                                           │    │
+│  │  - RDMA (InfiniBand/RoCE) ← 推荐，200Gbps+              │    │
+│  │  - TCP (fallback)                                         │    │
+│  │  - GPUDirect RDMA (GPU 显存直接传输)                       │    │
+│  │  - 多网卡带宽聚合                                          │    │
+│  │  - 拓扑感知路径选择                                        │    │
+│  │                                                           │    │
+│  │  动态端口: 12300-14300 (数据), 15000-17000 (RPC)          │    │
+│  └─────────────────────────────────────────────────────────┘    │
+│                                                                   │
+│          生产环境必须使用 RDMA 加速（海量数据，延迟敏感）             │
+└─────────────────────────────────────────────────────────────────┘
+&lt;/code&gt;&lt;/pre&gt;&lt;h3 id=&#34;关键设计原则&#34;&gt;关键设计原则&lt;/h3&gt;
+&lt;table&gt;
+  &lt;thead&gt;
+      &lt;tr&gt;
+          &lt;th&gt;层次&lt;/th&gt;
+          &lt;th&gt;协议要求&lt;/th&gt;
+          &lt;th&gt;原因&lt;/th&gt;
+      &lt;/tr&gt;
+  &lt;/thead&gt;
+  &lt;tbody&gt;
+      &lt;tr&gt;
+          &lt;td&gt;&lt;strong&gt;控制层&lt;/strong&gt;&lt;/td&gt;
+          &lt;td&gt;TCP/IP 即可&lt;/td&gt;
+          &lt;td&gt;仅传输元数据（对象位置、租约、拓扑），数据量小，对延迟不敏感&lt;/td&gt;
+      &lt;/tr&gt;
+      &lt;tr&gt;
+          &lt;td&gt;&lt;strong&gt;传输层&lt;/strong&gt;&lt;/td&gt;
+          &lt;td&gt;&lt;strong&gt;必须使用 RDMA&lt;/strong&gt;（生产环境）&lt;/td&gt;
+          &lt;td&gt;传输模型权重（数十 GB），需要极低延迟和极高带宽，CPU 零开销&lt;/td&gt;
+      &lt;/tr&gt;
+  &lt;/tbody&gt;
+&lt;/table&gt;
+&lt;blockquote&gt;
+&lt;p&gt;&lt;strong&gt;简单类比&lt;/strong&gt;：控制层就像&amp;quot;电话簿&amp;quot;——告诉你数据在哪里；传输层就像&amp;quot;搬运卡车&amp;quot;——实际搬运数十 GB 的模型权重。电话簿用普通网络就行，但搬运卡车必须走高速公路（RDMA）。&lt;/p&gt;</description>
     </item>
   </channel>
 </rss>

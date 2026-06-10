@@ -9,15 +9,14 @@
     <lastBuildDate>Thu, 11 Jun 2026 00:00:00 +0000</lastBuildDate>
     <atom:link href="https://sendoray.github.io/tags/gpu/index.xml" rel="self" type="application/rss+xml" />
     <item>
-      <title>LLM 训练与推理全景账本：一份带数字的工程决策手册</title>
-      <link>https://sendoray.github.io/posts/2026-06-11-llm-train-infer-panorama/</link>
+      <title>LLM 领域，你需要知道的数字</title>
+      <link>https://sendoray.github.io/posts/2026-06-11-llm-panorama/</link>
       <pubDate>Thu, 11 Jun 2026 00:00:00 +0000</pubDate>
-      <guid>https://sendoray.github.io/posts/2026-06-11-llm-train-infer-panorama/</guid>
+      <guid>https://sendoray.github.io/posts/2026-06-11-llm-panorama/</guid>
       <description>&lt;blockquote&gt;
 &lt;p&gt;这篇文章不讲&amp;quot;什么是 Transformer&amp;quot;，只回答一个问题：&lt;/p&gt;
-&lt;p&gt;&lt;strong&gt;当我们说&amp;quot;跑一个 70B 模型&amp;quot;时，到底在跟多少 FLOPs、多少 GB、多少 GB/s 打交道？&lt;/strong&gt;&lt;/p&gt;
-&lt;p&gt;全文所有数字要么是&lt;strong&gt;公式推导&lt;/strong&gt;（标记为 [理论]），要么是&lt;strong&gt;论文/产品手册的标称值&lt;/strong&gt;（标记为 [标称]），要么是&lt;strong&gt;公开 benchmark / 实测均值&lt;/strong&gt;（标记为 [实测]）。看到一个数字而没有这三个标签之一，请直接当成&amp;quot;我编的&amp;quot;——不要信。&lt;/p&gt;&lt;/blockquote&gt;
-&lt;p&gt;下面所有节都以 &lt;strong&gt;Llama-3-70B（dense, GQA, 80 层, hidden=8192, KV heads=8, head_dim=128, FFN=28672）&lt;/strong&gt; 作为参考模型，必要时会拓展到 7B / 405B / DeepSeek-V3 / GPT-4 量级做对比。&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;当我们说&amp;quot;跑一个 70B 模型&amp;quot;时，到底在跟多少 FLOPs、多少 GB、多少 GB/s 打交道？&lt;/strong&gt;&lt;/p&gt;&lt;/blockquote&gt;
+&lt;p&gt;下面所有节都以 &lt;strong&gt;Llama-3-70B（dense, GQA, 80 层, hidden=8192, KV heads=8, head_dim=128, FFN=28672）&lt;/strong&gt; 作为参考模型，必要时会拓展到 7B / 405B / DeepSeek-V3 / GPT-4 / moe 量级做对比。&lt;/p&gt;
 &lt;hr&gt;
 &lt;h2 id=&#34;一推理单-token-究竟值多少计算&#34;&gt;一、推理：单 token 究竟值多少计算&lt;/h2&gt;
 &lt;h3 id=&#34;11-一条公式打底前向---flops--token-理论&#34;&gt;1.1 一条公式打底：前向 ≈ &lt;span class=&#34;math inline&#34;&gt;\(2\Theta\)&lt;/span&gt;
@@ -141,63 +140,7 @@ F_{\text{fwd}} \approx 2\,\Theta \quad \text{FLOPs/token}
 &lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;p&gt;这张图里值得记住的几件事：&lt;/p&gt;</description>
     </item>
     <item>
-      <title>VeRL-Omni 全面解析：多模态扩散模型的 RL 后训练框架</title>
-      <link>https://sendoray.github.io/posts/veomni/</link>
-      <pubDate>Tue, 09 Jun 2026 00:00:00 +0000</pubDate>
-      <guid>https://sendoray.github.io/posts/veomni/</guid>
-      <description>&lt;h2 id=&#34;一项目概述&#34;&gt;一、项目概述&lt;/h2&gt;
-&lt;p&gt;VeRL-Omni 是字节跳动 Seed MLSys 团队开源的&lt;strong&gt;多模态生成模型 RL 后训练框架&lt;/strong&gt;。它不像 Stable Diffusion 那样做图像生成，而是用强化学习（RL）来微调已经训好的生成模型，让它们生成更高质量的图像/视频/音频。&lt;/p&gt;
-&lt;p&gt;简单说：你有一个 Qwen-Image 模型能文生图，但生成质量不够好。VeRL-Omni 用 RL（比如 FlowGRPO）来继续训练它，根据 reward（OCR 准确率、人类偏好评分等）来优化模型，让它生成更好的图片。&lt;/p&gt;
-&lt;hr&gt;
-&lt;h2 id=&#34;二为什么需要-verl-omni&#34;&gt;二、为什么需要 VeRL-Omni&lt;/h2&gt;
-&lt;blockquote&gt;
-&lt;p&gt;Multimodal generative RL training differs from text-only LLM RL not only in model structure, but also in I/O patterns, compute characteristics, and runtime bottlenecks.&lt;/p&gt;&lt;/blockquote&gt;
-&lt;p&gt;多模态生成模型的 RL 训练与纯文本 LLM 的 RL 存在根本性差异，不能直接复用 verl 或 vLLM：&lt;/p&gt;
-&lt;table&gt;
-  &lt;thead&gt;
-      &lt;tr&gt;
-          &lt;th&gt;差异维度&lt;/th&gt;
-          &lt;th&gt;LLM&lt;/th&gt;
-          &lt;th&gt;扩散模型&lt;/th&gt;
-      &lt;/tr&gt;
-  &lt;/thead&gt;
-  &lt;tbody&gt;
-      &lt;tr&gt;
-          &lt;td&gt;生成方式&lt;/td&gt;
-          &lt;td&gt;自回归逐 token 生成&lt;/td&gt;
-          &lt;td&gt;迭代去噪（逐 step 去噪）&lt;/td&gt;
-      &lt;/tr&gt;
-      &lt;tr&gt;
-          &lt;td&gt;训练循环&lt;/td&gt;
-          &lt;td&gt;token-level log-probs，PPO 在 token 维度&lt;/td&gt;
-          &lt;td&gt;SDE 逆过程计算每步 transition 的 log-prob&lt;/td&gt;
-      &lt;/tr&gt;
-      &lt;tr&gt;
-          &lt;td&gt;数据 I/O&lt;/td&gt;
-          &lt;td&gt;token 序列&lt;/td&gt;
-          &lt;td&gt;高维 latent tensor &lt;code&gt;(B,C,H,W)&lt;/code&gt; 甚至 &lt;code&gt;(B,C,T,H,W)&lt;/code&gt;&lt;/td&gt;
-      &lt;/tr&gt;
-      &lt;tr&gt;
-          &lt;td&gt;计算瓶颈&lt;/td&gt;
-          &lt;td&gt;KV cache 和 attention&lt;/td&gt;
-          &lt;td&gt;VAE 编解码、多步 UNet/DiT 推理&lt;/td&gt;
-      &lt;/tr&gt;
-      &lt;tr&gt;
-          &lt;td&gt;log-prob 计算&lt;/td&gt;
-          &lt;td&gt;softmax 输出直接获取&lt;/td&gt;
-          &lt;td&gt;需要 SDE 逆过程的高斯转移概率&lt;/td&gt;
-      &lt;/tr&gt;
-      &lt;tr&gt;
-          &lt;td&gt;推理引擎&lt;/td&gt;
-          &lt;td&gt;vLLM 为 LLM 优化&lt;/td&gt;
-          &lt;td&gt;需要 vLLM-Omni 做扩散 rollout&lt;/td&gt;
-      &lt;/tr&gt;
-  &lt;/tbody&gt;
-&lt;/table&gt;
-&lt;p&gt;性能方面，VeRL-Omni 比原始 flow_grpo 实现快约 25%，得益于 vLLM-Omni rollout + FSDP 训练 + 异步 reward 计算的重叠。&lt;/p&gt;</description>
-    </item>
-    <item>
-      <title>深度学习训练全解：从零理解 GPU 上到底有哪些数据</title>
+      <title>LLM训练全解</title>
       <link>https://sendoray.github.io/posts/2026-06-09-gpu-training-data-anatomy/</link>
       <pubDate>Tue, 09 Jun 2026 00:00:00 +0000</pubDate>
       <guid>https://sendoray.github.io/posts/2026-06-09-gpu-training-data-anatomy/</guid>
