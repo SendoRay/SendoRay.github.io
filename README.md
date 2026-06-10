@@ -70,3 +70,7 @@ https://guanjiawei.ai/zh/blog/goal-two-personalities
 
 
 Kubernetes
+
+
+看看别人的infra 怎么做的
+[cosmos ](https://github.com/NVIDIA/cosmos-framework/tree/main/cosmos_framework/model)
