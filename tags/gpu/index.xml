@@ -68,6 +68,18 @@ F_{\text{fwd}} \approx 2\,\Theta \quad \text{FLOPs/token}
 &lt;p&gt;&lt;strong&gt;认知误区一&lt;/strong&gt;：很多人把 &amp;ldquo;175B 比 7B 慢 25 倍&amp;rdquo; 直接套到 latency 上。错。decode 阶段是 memory-bound，慢的不是算力，是&lt;strong&gt;读权重的带宽&lt;/strong&gt;——下面会展开。&lt;/p&gt;</description>
     </item>
     <item>
+      <title>图解 MoE 并行训练：从原理到工程实践</title>
+      <link>https://sendoray.github.io/posts/2026-06-11-moe/</link>
+      <pubDate>Thu, 11 Jun 2026 00:00:00 +0000</pubDate>
+      <guid>https://sendoray.github.io/posts/2026-06-11-moe/</guid>
+      <description>&lt;blockquote&gt;
+&lt;p&gt;MoE（Mixture of Experts）如何用&amp;quot;稀疏激活&amp;quot;换取海量参数容量？Expert Parallelism 如何让数百个 Expert 分布在上百张 GPU 上协同训练？&lt;/p&gt;&lt;/blockquote&gt;
+&lt;h2 id=&#34;一开篇引入&#34;&gt;一、开篇引入&lt;/h2&gt;
+&lt;p&gt;2024 年以来，几乎所有头部大模型都不约而同地走向了同一条路线——&lt;strong&gt;MoE 架构&lt;/strong&gt;。从 Mixtral-8x7B、DeepSeek-V2/V3、Qwen2-MoE/Qwen3-235B，到 GPT-4 系列被广泛&amp;quot;猜测&amp;quot;采用的稀疏专家结构，业界正在用一种朴素的工程哲学回答一个根本问题：&lt;strong&gt;当稠密模型的训练成本随参数量平方级膨胀时，我们还能怎样把模型做得更大？&lt;/strong&gt;&lt;/p&gt;
+&lt;p&gt;回顾过去三年的稠密模型规模曲线，会看到一个非常残酷的现实：&lt;strong&gt;每多一倍参数，训练成本至少多出两倍&lt;/strong&gt;。GPT-3 175B 用 3640 PFlop/s-day 跑了几个月；Llama-2 70B 在 2T token 上要烧掉数千张 A100；如果再往上推到 500B 稠密模型，按当前算力预算几乎不可承受。换句话说，稠密路线在 2023 年底已经触到了&amp;quot;经济墙&amp;quot;——不是不能训练更大模型，而是再没人愿意为线性增长的能力付指数级增长的电费。&lt;/p&gt;
+&lt;p&gt;正是在这个背景下，&lt;strong&gt;2024 年被业内普遍称为&amp;quot;MoE 元年&amp;quot;&lt;/strong&gt;。这并不是说 MoE 这个想法在 2024 年才出现——它早在 1991 年就由 Jacobs 等人提出，2017 年 Shazeer 用 Sparsely-Gated MoE 把它带进 LSTM 时代，2020 年 GShard 把它工程化到 600B 翻译模型。但真正让 MoE 走出研究院、变成所有头部 lab 默认架构的，是 2024 年 Mixtral-8x7B 的开源、DeepSeek-V2 的横空出世以及 Qwen3 的全面 MoE 化这三件事的连续发生。从那一刻起，&amp;ldquo;做大模型&amp;quot;和&amp;quot;做 MoE&amp;quot;几乎就是同义词。&lt;/p&gt;</description>
+    </item>
+    <item>
       <title>KV Cache 是算还是传？一份 Roofline 视角的全景账</title>
       <link>https://sendoray.github.io/posts/2026-06-10-kvcache-compute-vs-transfer/</link>
       <pubDate>Wed, 10 Jun 2026 00:00:00 +0000</pubDate>
@@ -141,9 +153,9 @@ F_{\text{fwd}} \approx 2\,\Theta \quad \text{FLOPs/token}
     </item>
     <item>
       <title>LLM训练全解</title>
-      <link>https://sendoray.github.io/posts/2026-06-09-gpu-training-data-anatomy/</link>
+      <link>https://sendoray.github.io/posts/2026-06-09-training/</link>
       <pubDate>Tue, 09 Jun 2026 00:00:00 +0000</pubDate>
-      <guid>https://sendoray.github.io/posts/2026-06-09-gpu-training-data-anatomy/</guid>
+      <guid>https://sendoray.github.io/posts/2026-06-09-training/</guid>
       <description>&lt;h2 id=&#34;一训练到底是什么&#34;&gt;一、训练到底是什么？&lt;/h2&gt;
 &lt;p&gt;深度学习的&amp;quot;训练&amp;quot;本质是一个&lt;strong&gt;反复试错并改进&lt;/strong&gt;的过程。通俗讲：&lt;/p&gt;
 &lt;ol&gt;

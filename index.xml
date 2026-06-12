@@ -272,6 +272,18 @@ F_{\text{fwd}} \approx 2\,\Theta \quad \text{FLOPs/token}
 &lt;p&gt;&lt;strong&gt;认知误区一&lt;/strong&gt;：很多人把 &amp;ldquo;175B 比 7B 慢 25 倍&amp;rdquo; 直接套到 latency 上。错。decode 阶段是 memory-bound，慢的不是算力，是&lt;strong&gt;读权重的带宽&lt;/strong&gt;——下面会展开。&lt;/p&gt;</description>
     </item>
     <item>
+      <title>图解 MoE 并行训练：从原理到工程实践</title>
+      <link>https://sendoray.github.io/posts/2026-06-11-moe/</link>
+      <pubDate>Thu, 11 Jun 2026 00:00:00 +0000</pubDate>
+      <guid>https://sendoray.github.io/posts/2026-06-11-moe/</guid>
+      <description>&lt;blockquote&gt;
+&lt;p&gt;MoE（Mixture of Experts）如何用&amp;quot;稀疏激活&amp;quot;换取海量参数容量？Expert Parallelism 如何让数百个 Expert 分布在上百张 GPU 上协同训练？&lt;/p&gt;&lt;/blockquote&gt;
+&lt;h2 id=&#34;一开篇引入&#34;&gt;一、开篇引入&lt;/h2&gt;
+&lt;p&gt;2024 年以来，几乎所有头部大模型都不约而同地走向了同一条路线——&lt;strong&gt;MoE 架构&lt;/strong&gt;。从 Mixtral-8x7B、DeepSeek-V2/V3、Qwen2-MoE/Qwen3-235B，到 GPT-4 系列被广泛&amp;quot;猜测&amp;quot;采用的稀疏专家结构，业界正在用一种朴素的工程哲学回答一个根本问题：&lt;strong&gt;当稠密模型的训练成本随参数量平方级膨胀时，我们还能怎样把模型做得更大？&lt;/strong&gt;&lt;/p&gt;
+&lt;p&gt;回顾过去三年的稠密模型规模曲线，会看到一个非常残酷的现实：&lt;strong&gt;每多一倍参数，训练成本至少多出两倍&lt;/strong&gt;。GPT-3 175B 用 3640 PFlop/s-day 跑了几个月；Llama-2 70B 在 2T token 上要烧掉数千张 A100；如果再往上推到 500B 稠密模型，按当前算力预算几乎不可承受。换句话说，稠密路线在 2023 年底已经触到了&amp;quot;经济墙&amp;quot;——不是不能训练更大模型，而是再没人愿意为线性增长的能力付指数级增长的电费。&lt;/p&gt;
+&lt;p&gt;正是在这个背景下，&lt;strong&gt;2024 年被业内普遍称为&amp;quot;MoE 元年&amp;quot;&lt;/strong&gt;。这并不是说 MoE 这个想法在 2024 年才出现——它早在 1991 年就由 Jacobs 等人提出，2017 年 Shazeer 用 Sparsely-Gated MoE 把它带进 LSTM 时代，2020 年 GShard 把它工程化到 600B 翻译模型。但真正让 MoE 走出研究院、变成所有头部 lab 默认架构的，是 2024 年 Mixtral-8x7B 的开源、DeepSeek-V2 的横空出世以及 Qwen3 的全面 MoE 化这三件事的连续发生。从那一刻起，&amp;ldquo;做大模型&amp;quot;和&amp;quot;做 MoE&amp;quot;几乎就是同义词。&lt;/p&gt;</description>
+    </item>
+    <item>
       <title>KV Cache 是算还是传？一份 Roofline 视角的全景账</title>
       <link>https://sendoray.github.io/posts/2026-06-10-kvcache-compute-vs-transfer/</link>
       <pubDate>Wed, 10 Jun 2026 00:00:00 +0000</pubDate>
@@ -345,9 +357,9 @@ F_{\text{fwd}} \approx 2\,\Theta \quad \text{FLOPs/token}
     </item>
     <item>
       <title>LLM训练全解</title>
-      <link>https://sendoray.github.io/posts/2026-06-09-gpu-training-data-anatomy/</link>
+      <link>https://sendoray.github.io/posts/2026-06-09-training/</link>
       <pubDate>Tue, 09 Jun 2026 00:00:00 +0000</pubDate>
-      <guid>https://sendoray.github.io/posts/2026-06-09-gpu-training-data-anatomy/</guid>
+      <guid>https://sendoray.github.io/posts/2026-06-09-training/</guid>
       <description>&lt;h2 id=&#34;一训练到底是什么&#34;&gt;一、训练到底是什么？&lt;/h2&gt;
 &lt;p&gt;深度学习的&amp;quot;训练&amp;quot;本质是一个&lt;strong&gt;反复试错并改进&lt;/strong&gt;的过程。通俗讲：&lt;/p&gt;
 &lt;ol&gt;
@@ -930,6 +942,30 @@ E(R(\tau))_{\tau \sim P_{\theta}(\tau)} = \sum_{\tau} R(\tau) P_{\theta}(\tau)
     </item>
     <item>
       <title></title>
+      <link>https://sendoray.github.io/posts/blog_cosmos3_overview/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      <guid>https://sendoray.github.io/posts/blog_cosmos3_overview/</guid>
+      <description>&lt;h1 id=&#34;一文吃透-cosmos-framework从一次训练-run-看-nvidia-cosmos-3-全模态世界模型&#34;&gt;一文吃透 Cosmos-Framework：从一次训练 run 看 NVIDIA Cosmos 3 全模态世界模型&lt;/h1&gt;
+&lt;blockquote&gt;
+&lt;p&gt;本文基于开源仓库 &lt;code&gt;NVIDIA/cosmos-framework&lt;/code&gt; 的源码，目标是回答两个问题——
+&lt;strong&gt;① 项目从启动到完成一次完整 run 究竟跑了什么？&lt;/strong&gt;
+&lt;strong&gt;② Cosmos 3 这个&amp;quot;全模态世界模型&amp;quot;到底长什么样？&lt;/strong&gt;&lt;/p&gt;&lt;/blockquote&gt;
+&lt;hr&gt;
+&lt;h2 id=&#34;0-引子cosmos-framework-是什么&#34;&gt;0. 引子：Cosmos-Framework 是什么&lt;/h2&gt;
+&lt;p&gt;README 写得很清楚：&lt;/p&gt;
+&lt;blockquote&gt;
+&lt;p&gt;Part of the NVIDIA Cosmos project family — the &lt;strong&gt;training and serving framework&lt;/strong&gt; repository.&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;Cosmos 3&lt;/strong&gt; is a suite of &lt;strong&gt;omnimodal world models&lt;/strong&gt; designed to jointly process and generate &lt;strong&gt;language, images, video, audio, and action sequences&lt;/strong&gt; within a unified &lt;strong&gt;Mixture-of-Transformers&lt;/strong&gt; architecture.&lt;/p&gt;&lt;/blockquote&gt;
+&lt;p&gt;把这句话拆开看：&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;这是一个&lt;strong&gt;训练 + 推理一体&lt;/strong&gt;的框架（不是仅推理库）&lt;/li&gt;
+&lt;li&gt;它要训出来的模型 &lt;strong&gt;Cosmos 3&lt;/strong&gt; 一次吃下五种模态：文本、图像、视频、音频、动作&lt;/li&gt;
+&lt;li&gt;架构关键词：&lt;strong&gt;Mixture-of-Transformers (MoT)&lt;/strong&gt;&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;整个仓库的主体只有一个 Python 包 &lt;code&gt;cosmos_framework/&lt;/code&gt;，里面拆成两块：训练基础设施（trainer / data / model / checkpoint / callbacks &amp;hellip;）和推理基础设施（&lt;code&gt;inference/&lt;/code&gt; 子包）。&lt;/p&gt;</description>
+    </item>
+    <item>
+      <title></title>
       <link>https://sendoray.github.io/posts/mooncake_transfer_engine_guide/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       <guid>https://sendoray.github.io/posts/mooncake_transfer_engine_guide/</guid>
@@ -1002,6 +1038,50 @@ E(R(\tau))_{\tau \sim P_{\theta}(\tau)} = \sum_{\tau} R(\tau) P_{\theta}(\tau)
 &lt;/table&gt;
 &lt;blockquote&gt;
 &lt;p&gt;&lt;strong&gt;简单类比&lt;/strong&gt;：控制层就像&amp;quot;电话簿&amp;quot;——告诉你数据在哪里；传输层就像&amp;quot;搬运卡车&amp;quot;——实际搬运数十 GB 的模型权重。电话簿用普通网络就行，但搬运卡车必须走高速公路（RDMA）。&lt;/p&gt;</description>
+    </item>
+    <item>
+      <title></title>
+      <link>https://sendoray.github.io/posts/use_eng/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      <guid>https://sendoray.github.io/posts/use_eng/</guid>
+      <description>&lt;p&gt;看论文常看到的但是易忘的单词&lt;/p&gt;
+&lt;h1 id=&#34;动词&#34;&gt;动词&lt;/h1&gt;
+&lt;p&gt;alleviate         减少，减轻
+consolidates      合并，巩固
+mitigate          缓解，减轻
+leverage          利用，借助
+facilitate        促进，使便利
+elaborate         详细阐述
+encompass         包含，涵盖
+delegate          委派，下放（权限/任务）
+deprecate         弃用，不推荐使用&lt;/p&gt;
+&lt;p&gt;orchestrate       编排，协调
+augment           增强，扩充
+disseminate       传播，散布
+accommodate       容纳，适应
+substantiate      证实，证明
+demonstrate       演示，证明
+streamline        简化，精简
+amortize          摊销，分摊（开销）
+preempt           抢占，先发制人
+denote            表示，指代&lt;/p&gt;
+&lt;h1 id=&#34;形容词&#34;&gt;形容词&lt;/h1&gt;
+&lt;p&gt;ambiguous         模糊的，有歧义的
+deterministic     确定性的
+heterogeneous     异构的
+homogeneous       同构的，同质的
+concurrent        并发的
+asynchronous      异步的
+contiguous        相邻的，连续的
+ubiquitous        无处不在的
+robust            健壮的，鲁棒的
+agnostic          无关的，不依赖于…的
+verbose           冗长的，啰嗦的
+sparse            稀疏的
+redundant         冗余的
+implicit          隐式的
+explicit          显式的
+trivial           平凡的，琐碎的&lt;/p&gt;</description>
     </item>
   </channel>
 </rss>
