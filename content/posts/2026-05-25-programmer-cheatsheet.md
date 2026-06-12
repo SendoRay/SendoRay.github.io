@@ -451,6 +451,20 @@ cmd1 | cmd2                   # 管道
 cmd1 | tee file | cmd2        # 同时落盘 + 继续管道
 ```
 
+---
+bash example.sh 2>&1 | tee /tmp/example.log
+
+
+- `2` — 标准错误流（stderr）的文件描述符
+- `>` — 重定向操作符，将左侧输出导向右侧目标
+- `&1` — 表示标准输出流（stdout）的文件描述符，`&` 告诉 shell 后面是文件描述符而非文件名
+- `2>&1` — 将 stderr 合并到 stdout，使错误信息也能被后续管道接收
+- `|` — 管道，将左侧命令的 stdout 作为右侧命令的 stdin
+- `tee` — 从 stdin 读取数据，同时输出到 stdout 和指定文件（像字母 T 一样分流）
+
+整体效果：运行脚本，**同时**在屏幕上显示 stdout + stderr，并将它们保存到日志文件中。
+
+
 xargs 高频用法：
 
 ```bash

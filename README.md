@@ -73,4 +73,4 @@ Kubernetes
 
 
 看看别人的infra 怎么做的
-[cosmos ](https://github.com/NVIDIA/cosmos-framework/tree/main/cosmos_framework/model)
+[cosmos ](https://github.com/NVIDIA/cosmos-framework/tree/main/cosmos_framework/model) 里面有文档
