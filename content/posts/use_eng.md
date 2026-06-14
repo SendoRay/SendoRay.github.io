@@ -34,13 +34,9 @@ deterministic     确定性的
 heterogeneous     异构的
 homogeneous       同构的，同质的
 concurrent        并发的
-asynchronous      异步的
-contiguous        相邻的，连续的
 ubiquitous        无处不在的
-robust            健壮的，鲁棒的
 agnostic          无关的，不依赖于…的
 verbose           冗长的，啰嗦的
-sparse            稀疏的
 redundant         冗余的
 implicit          隐式的
 explicit          显式的
@@ -62,6 +58,8 @@ analogously       类似地
 # 名词
 
 overhead          开销，额外成本
+overlap           重叠
+
 granularity       粒度
 prerequisite      先决条件
 discrepancy       差异，不一致
