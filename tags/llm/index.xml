@@ -6,8 +6,71 @@
     <description>Recent content in LLM on chengzhy&#39;s blog</description>
     <generator>Hugo</generator>
     <language>en</language>
-    <lastBuildDate>Thu, 11 Jun 2026 00:00:00 +0000</lastBuildDate>
+    <lastBuildDate>Tue, 16 Jun 2026 00:00:00 +0000</lastBuildDate>
     <atom:link href="https://sendoray.github.io/tags/llm/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>大模型训练工具链地图：从 CUDA 到 verl，到底谁在哪一层？</title>
+      <link>https://sendoray.github.io/posts/2026-06-16-llm-training-toolchain-map/</link>
+      <pubDate>Tue, 16 Jun 2026 00:00:00 +0000</pubDate>
+      <guid>https://sendoray.github.io/posts/2026-06-16-llm-training-toolchain-map/</guid>
+      <description>&lt;blockquote&gt;
+&lt;p&gt;很多人刚接触大模型训练时，会同时看到一堆名字：CUDA / PCIe / NVLink / InfiniBand / NCCL，PyTorch / TensorFlow，Transformers / modelscope，Qwen / Llama / DeepSeek，FSDP / DeepSpeed / Megatron，Accelerate / Ray，Trainer / LLaMA-Factory / SWIFT / TRL / OpenRLHF / verl，vLLM / SGLang。&lt;/p&gt;
+&lt;p&gt;它们经常出现在同一个 README、同一份训练配置、同一套分布式启动命令里，所以初学者很容易产生一种错觉：&lt;strong&gt;它们好像都是&amp;quot;训练框架&amp;quot;。&lt;/strong&gt;&lt;/p&gt;
+&lt;p&gt;但它们不是同一层级的东西。这篇文章不讲安装命令，不推 loss 公式，也不展开 optimizer 细节。我们只做一件事：&lt;strong&gt;建立一张大模型训练工具链地图&lt;/strong&gt;。&lt;/p&gt;&lt;/blockquote&gt;
+&lt;p&gt;读的时候可以抓住三件事：&lt;/p&gt;
+&lt;ol&gt;
+&lt;li&gt;它在哪一层？&lt;/li&gt;
+&lt;li&gt;它解决什么问题？&lt;/li&gt;
+&lt;li&gt;它和上下游工具怎么配合？&lt;/li&gt;
+&lt;/ol&gt;
+&lt;p&gt;看完之后，你再看到 LLaMA-Factory 的多种启动命令、verl 的多 worker 配置、DeepSpeed ZeRO、FSDP、vLLM rollout，就不会再把它们揉成一团。&lt;/p&gt;
+&lt;hr&gt;
+&lt;h2 id=&#34;一先看总图&#34;&gt;一、先看总图&lt;/h2&gt;
+&lt;p&gt;可以先把大模型训练系统分成这几层：&lt;/p&gt;
+&lt;pre tabindex=&#34;0&#34;&gt;&lt;code&gt;大模型训练 / 后训练工具链
+│
+├── 0. GPU 计算、互联与通信基础
+│   ├── CUDA：让程序使用 NVIDIA GPU 做通用计算
+│   ├── PCIe：服务器内部连接 CPU、GPU、网卡、硬盘等设备的通用高速总线
+│   ├── NVLink：同一台机器内 GPU 和 GPU 之间的高速互联
+│   ├── InfiniBand / IB：多机训练中常见的高速网络
+│   └── NCCL：利用底层互联和网络做高效 GPU 通信
+│
+├── 1. 底层深度学习框架
+│   ├── PyTorch
+│   └── TensorFlow
+│
+├── 2. 模型结构接口 / 模型生态 SDK
+│   ├── Transformers：模型结构、权重加载、训练和推理接口
+│   └── modelscope：ModelScope 平台 SDK、模型下载和任务 pipeline
+│
+├── 3. 模型系列 / 具体 checkpoint
+│   ├── Qwen / Llama / DeepSeek / GLM 等模型系列
+│   └── Qwen2.5-7B-Instruct / DeepSeek-R1 等具体 checkpoint
+│
+├── 4. 分布式训练后端 / 并行与显存优化方案
+│   ├── FSDP：PyTorch 原生全分片数据并行方案
+│   ├── DeepSpeed：覆盖 DP / ZeRO / PP / TP / SP / EP / Offload 等能力
+│   └── Megatron：面向大模型的 TP / PP / SP / CP / EP 并行训练框架
+│
+├── 5. 启动、适配与任务调度
+│   ├── Accelerate：Hugging Face 生态里的训练启动与分布式适配工具
+│   └── Ray：多机多进程任务调度与资源管理框架
+│
+├── 6. 训练工具 / 训练库 / 后训练框架
+│   ├── Trainer：Transformers 里的通用训练器
+│   ├── PEFT：Hugging Face 参数高效微调库，常用于 LoRA / QLoRA
+│   ├── TRL：Hugging Face 生态里的后训练 trainer / 算法库
+│   ├── LLaMA-Factory：高层微调入口 / 微调工作台
+│   ├── SWIFT / ms-swift：训练、推理、评测、部署一体化工具
+│   ├── OpenRLHF：RLHF 工程框架
+│   └── verl：大模型 RL post-training 框架
+│
+└── 7. 推理 / rollout 引擎
+    ├── vLLM
+    └── SGLang
+&lt;/code&gt;&lt;/pre&gt;&lt;p&gt;先用一句话抓住主线：&lt;/p&gt;</description>
+    </item>
     <item>
       <title>LLM 领域，你需要知道的数字</title>
       <link>https://sendoray.github.io/posts/2026-06-11-llm-panorama/</link>

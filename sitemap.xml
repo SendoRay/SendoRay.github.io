@@ -3,15 +3,27 @@
   xmlns:xhtml="http://www.w3.org/1999/xhtml">
   <url>
     <loc>https://sendoray.github.io/</loc>
-    <lastmod>2026-06-15T00:00:00+00:00</lastmod>
+    <lastmod>2026-06-16T00:00:00+00:00</lastmod>
   </url><url>
-    <loc>https://sendoray.github.io/tags/cs-foundations/</loc>
-    <lastmod>2026-06-15T00:00:00+00:00</lastmod>
+    <loc>https://sendoray.github.io/tags/gpu/</loc>
+    <lastmod>2026-06-16T00:00:00+00:00</lastmod>
+  </url><url>
+    <loc>https://sendoray.github.io/tags/llm/</loc>
+    <lastmod>2026-06-16T00:00:00+00:00</lastmod>
   </url><url>
     <loc>https://sendoray.github.io/posts/</loc>
-    <lastmod>2026-06-15T00:00:00+00:00</lastmod>
+    <lastmod>2026-06-16T00:00:00+00:00</lastmod>
   </url><url>
     <loc>https://sendoray.github.io/tags/</loc>
+    <lastmod>2026-06-16T00:00:00+00:00</lastmod>
+  </url><url>
+    <loc>https://sendoray.github.io/tags/training/</loc>
+    <lastmod>2026-06-16T00:00:00+00:00</lastmod>
+  </url><url>
+    <loc>https://sendoray.github.io/posts/2026-06-16-llm-training-toolchain-map/</loc>
+    <lastmod>2026-06-16T00:00:00+00:00</lastmod>
+  </url><url>
+    <loc>https://sendoray.github.io/tags/cs-foundations/</loc>
     <lastmod>2026-06-15T00:00:00+00:00</lastmod>
   </url><url>
     <loc>https://sendoray.github.io/posts/2026-06-15-cs-foundations-3-network/</loc>
@@ -35,19 +47,10 @@
     <loc>https://sendoray.github.io/posts/2026-06-12-kubernetes-for-ai-infra/</loc>
     <lastmod>2026-06-12T00:00:00+00:00</lastmod>
   </url><url>
-    <loc>https://sendoray.github.io/tags/gpu/</loc>
-    <lastmod>2026-06-11T00:00:00+00:00</lastmod>
-  </url><url>
     <loc>https://sendoray.github.io/tags/inference/</loc>
     <lastmod>2026-06-11T00:00:00+00:00</lastmod>
   </url><url>
-    <loc>https://sendoray.github.io/tags/llm/</loc>
-    <lastmod>2026-06-11T00:00:00+00:00</lastmod>
-  </url><url>
     <loc>https://sendoray.github.io/posts/2026-06-11-llm-panorama/</loc>
-    <lastmod>2026-06-11T00:00:00+00:00</lastmod>
-  </url><url>
-    <loc>https://sendoray.github.io/tags/training/</loc>
     <lastmod>2026-06-11T00:00:00+00:00</lastmod>
   </url><url>
     <loc>https://sendoray.github.io/posts/2026-06-11-moe/</loc>
