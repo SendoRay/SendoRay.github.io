@@ -263,6 +263,123 @@ Transfer Engine 的一个关键特性是 **拓扑感知的多路径选择**：
 3. 传输请求 > 64KB 时，自动拆分成多个 slice，每个 slice 可能走不同 NIC
 4. NIC 按 NUMA 亲和性分为 preferred 和 secondary 列表
 
+### RDMA 网卡接口选择机制（单机 vs 多机）
+
+#### mlx5_X 是什么？
+
+`mlx5_0`、`mlx5_1`、`mlx5_2`... 是 **RDMA verbs 层的设备名**，每个对应一个物理或虚拟 HCA（Host Channel Adapter）端口。它们和 Linux 内核网络接口（如 `eth0`/`ens1f0`/`ib0`）一一对应，但命名体系不同：
+
+```text
+RDMA verbs 层:    mlx5_0      mlx5_1      mlx5_2
+                    │           │           │
+                    ▼           ▼           ▼
+Linux 内核层:     ens1f0      ens1f1      ens2f0
+                    │           │           │
+                    ▼           ▼           ▼
+物理层:          NIC Port0   NIC Port1   NIC Port2
+```
+
+查看对应关系：
+
+```bash
+# 查看 mlx5_0 对应的内核网络接口名
+ls /sys/class/infiniband/mlx5_0/device/net
+# 输出示例: ens1f0
+
+# 反向查找：已知内核接口，找 RDMA 设备
+rdma link show
+# 输出示例: link mlx5_0/1 state ACTIVE physical_state LINK_UP netdev ens1f0
+```
+
+#### 网卡选择的三级优先级
+
+Transfer Engine 的 Storage Service / Client 确定使用哪张网卡时，遵循以下决策逻辑：
+
+**控制层视角（决策逻辑）：**
+
+```text
+┌─────────────────────────────────────────────────────────────┐
+│              网卡选择优先级（从高到低）                        │
+├─────────────────────────────────────────────────────────────┤
+│ 优先级 1: 配置文件 device_name 字段显式指定                   │
+│           例: "device_name": "mlx5_0"                        │
+│                         │                                    │
+│                    [未指定?]                                  │
+│                         ▼                                    │
+│ 优先级 2: 环境变量 MOONCAKE_INTERFACE 或 MC_FORCE_HCA        │
+│           例: export MC_FORCE_HCA=mlx5_1                     │
+│                         │                                    │
+│                    [未指定?]                                  │
+│                         ▼                                    │
+│ 优先级 3: 自动检测                                            │
+│           遍历 /sys/class/infiniband/mlx5_*                  │
+│           选第一个 State=Active 的设备                        │
+└─────────────────────────────────────────────────────────────┘
+```
+
+多卡场景下，Transfer Engine 启动时扫描所有活跃 NIC，生成拓扑矩阵（NIC ↔ NUMA Node 亲和性），大传输自动拆分到多张卡做带宽聚合。
+
+**数据层视角（实际连接建立）：**
+
+- 选定设备后，通过该设备的 **GID**（Global Identifier）向对端发起 QP 连接
+- RoCEv2 场景下：GID 本质是 IPv6 地址（或 IPv4-mapped IPv6），对端通过这个"网络地址"路由到具体网卡
+- 连接是 QP-to-QP 的点对点通道，完全由 `(GID, QPN)` 标识，**不关心设备名是否相同**
+
+#### 跨机通信：mlx5_0 能否和对端的 mlx5_2 通信？
+
+**完全可以！** RDMA 连接由 `(GID, QPN)` 唯一标识，与本地设备名无任何关系：
+
+```text
+  Node A                                Node B
+  ┌───────────────────┐                ┌───────────────────┐
+  │  mlx5_0 (空闲)    │                │  mlx5_0 (空闲)    │
+  │                   │                │                   │
+  │  mlx5_1 ──────────│── QP ────────→ │  mlx5_2           │
+  │  GID: fe80::01    │                │  GID: fe80::02    │
+  │                   │                │                   │
+  │  mlx5_2 (空闲)    │                │  mlx5_1 (空闲)    │
+  └───────────────────┘                └───────────────────┘
+        ↑ 完全合法：只要二者网络可达、link_layer 一致即可
+```
+
+通信建立的关键条件：
+
+| 条件 | 说明 |
+|------|------|
+| **网络可达性** | 两端 GID 对应的 IP 在同一子网/VLAN，或有路由可达 |
+| **Link Layer 一致** | 两端必须都是 Ethernet（RoCE）或都是 InfiniBand，不能混搭 |
+| **GID Index 一致** | 两端必须选择同类型的 GID Index（如都用 Index 3 = RoCEv2 IPv4-mapped） |
+| **设备名无关** | `mlx5_0` ↔ `mlx5_2` 完全合法，RDMA 连接由 (GID, QPN) 唯一标识 |
+
+#### 单机场景
+
+- **Loopback（同设备自连）**：server/client 用同一个 `mlx5_X`，GID 也相同，QP 在同一 HCA 内部完成数据搬运
+- **同机异卡**：`mlx5_0` ↔ `mlx5_1` 可通信，前提是两张卡的 IP 互通（通常通过内核路由或同子网配置）
+- **Mooncake 单机多卡**：Transfer Engine 在同节点内也会利用 NUMA 亲和性选最优卡，避免跨 NUMA 内存访问带来的延迟
+
+```bash
+# 验证单机两张卡是否互通
+# 假设 mlx5_0 -> 192.168.1.10, mlx5_1 -> 192.168.1.11
+ping -I ens1f0 192.168.1.11   # 从 mlx5_0 对应接口 ping mlx5_1 的 IP
+```
+
+#### 配置实践建议
+
+| 场景 | 推荐配置方式 | 原因 |
+|------|-------------|------|
+| 单机单卡 | `device_name="mlx5_0"` 或留空自动检测 | 只有一张卡，无歧义 |
+| 单机多卡 | 留空，让 Transfer Engine 拓扑感知自动选 | 自动利用多卡带宽 + NUMA 亲和 |
+| 多机单卡/节点 | 显式指定 `device_name` + 确保 GID Index 两端一致 | 避免自动检测选错（如选到管理口） |
+| 多机多卡/节点 | 留空 + `MC_ENABLE_DEST_DEVICE_AFFINITY=1` | Rail-optimized: 对端自动选 NUMA 最优卡 |
+
+#### 常见误区澄清
+
+| 误区 | 真相 |
+|------|------|
+| "两端必须用同名设备才能通信" | 错误。设备名只是本地标识，RDMA 连接由 (GID, QPN) 标识 |
+| "device_name 留空就只能用一张卡" | 错误。留空时 Transfer Engine 会扫描所有活跃设备做多路径带宽聚合 |
+| "多机通信必须配置路由表" | 对于同子网 RoCE，二层交换即可到达；仅跨子网需要 DCQCN + 三层路由 |
+
 ### 关键环境变量
 
 #### RDMA 配置
