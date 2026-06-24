@@ -3,6 +3,7 @@
 
 # 动词
 
+```
 alleviate         减少，减轻
 consolidates      合并，巩固
 mitigate          缓解，减轻
@@ -23,12 +24,13 @@ streamline        简化，精简
 amortize          摊销，分摊（开销）
 preempt           抢占，先发制人
 denote            表示，指代
-
+```
 
 
 
 # 形容词
 
+```
 ambiguous         模糊的，有歧义的
 deterministic     确定性的
 heterogeneous     异构的
@@ -41,10 +43,11 @@ redundant         冗余的
 implicit          隐式的
 explicit          显式的
 trivial           平凡的，琐碎的
-
+```
 
 # 副词 / 连接词
 
+```
 respectively      分别地
 subsequently      随后
 consequently      因此，结果
@@ -53,10 +56,11 @@ arbitrarily       任意地
 empirically       经验性地
 inherently        本质上
 analogously       类似地
-
+```
 
 # 名词
 
+```
 overhead          开销，额外成本
 overlap           重叠
 
@@ -67,3 +71,4 @@ caveat            警告，注意事项
 rationale         理由，根本原因
 paradigm          范式
 perception        感知
+```
