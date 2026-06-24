@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom" xmlns:content="http://purl.org/rss/1.0/modules/content/">
+  <channel>
+    <title>Deep-Learning on chengzhy&#39;s blog</title>
+    <link>https://sendoray.github.io/tags/deep-learning/</link>
+    <description>Recent content in Deep-Learning on chengzhy&#39;s blog</description>
+    <generator>Hugo</generator>
+    <language>en</language>
+    <lastBuildDate>Mon, 22 Jun 2026 00:00:00 +0000</lastBuildDate>
+    <atom:link href="https://sendoray.github.io/tags/deep-learning/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>扩散模型优化技术全面综述：从采样加速到高效架构设计</title>
+      <link>https://sendoray.github.io/posts/2026-06-22-diffusion-model-optimization/</link>
+      <pubDate>Mon, 22 Jun 2026 00:00:00 +0000</pubDate>
+      <guid>https://sendoray.github.io/posts/2026-06-22-diffusion-model-optimization/</guid>
+      <description>系统梳理扩散模型全栈优化技术：采样加速、步数蒸馏、高效架构、训练优化、推理部署，涵盖DDIM到Consistency Models、U-Net到DiT的完整技术演进。</description>
+    </item>
+  </channel>
+</rss>
