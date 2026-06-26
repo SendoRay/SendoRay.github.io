@@ -56,6 +56,7 @@ arbitrarily       任意地
 empirically       经验性地
 inherently        本质上
 analogously       类似地
+excel at          擅长
 ```
 
 # 名词
