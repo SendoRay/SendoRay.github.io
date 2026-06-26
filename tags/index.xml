@@ -16,20 +16,6 @@
       <description></description>
     </item>
     <item>
-      <title>AI-Infra</title>
-      <link>https://sendoray.github.io/tags/ai-infra/</link>
-      <pubDate>Fri, 26 Jun 2026 00:00:00 +0000</pubDate>
-      <guid>https://sendoray.github.io/tags/ai-infra/</guid>
-      <description></description>
-    </item>
-    <item>
-      <title>Deep-Learning</title>
-      <link>https://sendoray.github.io/tags/deep-learning/</link>
-      <pubDate>Fri, 26 Jun 2026 00:00:00 +0000</pubDate>
-      <guid>https://sendoray.github.io/tags/deep-learning/</guid>
-      <description></description>
-    </item>
-    <item>
       <title>Engineering</title>
       <link>https://sendoray.github.io/tags/engineering/</link>
       <pubDate>Fri, 26 Jun 2026 00:00:00 +0000</pubDate>
@@ -44,10 +30,10 @@
       <description></description>
     </item>
     <item>
-      <title>Training</title>
-      <link>https://sendoray.github.io/tags/training/</link>
-      <pubDate>Fri, 26 Jun 2026 00:00:00 +0000</pubDate>
-      <guid>https://sendoray.github.io/tags/training/</guid>
+      <title>Deep-Learning</title>
+      <link>https://sendoray.github.io/tags/deep-learning/</link>
+      <pubDate>Mon, 22 Jun 2026 00:00:00 +0000</pubDate>
+      <guid>https://sendoray.github.io/tags/deep-learning/</guid>
       <description></description>
     </item>
     <item>
@@ -72,17 +58,17 @@
       <description></description>
     </item>
     <item>
+      <title>Training</title>
+      <link>https://sendoray.github.io/tags/training/</link>
+      <pubDate>Tue, 16 Jun 2026 00:00:00 +0000</pubDate>
+      <guid>https://sendoray.github.io/tags/training/</guid>
+      <description></description>
+    </item>
+    <item>
       <title>CS-Foundations</title>
       <link>https://sendoray.github.io/tags/cs-foundations/</link>
       <pubDate>Mon, 15 Jun 2026 00:00:00 +0000</pubDate>
       <guid>https://sendoray.github.io/tags/cs-foundations/</guid>
-      <description></description>
-    </item>
-    <item>
-      <title>Kubernetes</title>
-      <link>https://sendoray.github.io/tags/kubernetes/</link>
-      <pubDate>Fri, 12 Jun 2026 00:00:00 +0000</pubDate>
-      <guid>https://sendoray.github.io/tags/kubernetes/</guid>
       <description></description>
     </item>
     <item>
@@ -93,10 +79,10 @@
       <description></description>
     </item>
     <item>
-      <title>RLAlgo</title>
-      <link>https://sendoray.github.io/tags/rlalgo/</link>
+      <title>Algorithm</title>
+      <link>https://sendoray.github.io/tags/algorithm/</link>
       <pubDate>Fri, 21 Nov 2025 00:00:00 +0000</pubDate>
-      <guid>https://sendoray.github.io/tags/rlalgo/</guid>
+      <guid>https://sendoray.github.io/tags/algorithm/</guid>
       <description></description>
     </item>
   </channel>

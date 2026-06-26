@@ -6,72 +6,8 @@
     <description>Recent content in Training on chengzhy&#39;s blog</description>
     <generator>Hugo</generator>
     <language>en</language>
-    <lastBuildDate>Fri, 26 Jun 2026 00:00:00 +0000</lastBuildDate>
+    <lastBuildDate>Tue, 16 Jun 2026 00:00:00 +0000</lastBuildDate>
     <atom:link href="https://sendoray.github.io/tags/training/index.xml" rel="self" type="application/rss+xml" />
-    <item>
-      <title>训推工程师必备：超参设置与实验结果判断完全指南</title>
-      <link>https://sendoray.github.io/posts/2026-06-26-hyperparameter-tuning-guide/</link>
-      <pubDate>Fri, 26 Jun 2026 00:00:00 +0000</pubDate>
-      <guid>https://sendoray.github.io/posts/2026-06-26-hyperparameter-tuning-guide/</guid>
-      <description>&lt;p&gt;跑实验不是&amp;quot;随便调调参数看看效果&amp;quot;，而是一门有章法的工程实践。很多人把超参调优当玄学，本质上是因为没搞清楚每个超参的&lt;strong&gt;物理含义&lt;/strong&gt;和它们之间的&lt;strong&gt;耦合关系&lt;/strong&gt;。这篇文章从训推工程师的视角，系统梳理 LR、BS、WD 等核心超参的设置方法论，以及如何判断实验结果是否合理。&lt;/p&gt;
-&lt;blockquote&gt;
-&lt;p&gt;TL;DR：&lt;strong&gt;Learning Rate 决定步长、Batch Size 决定梯度噪声、两者必须联动调整&lt;/strong&gt;。合理的实验结果应该是：loss 平滑下降、eval 指标与 loss 方向一致、不出现 NaN/spike/plateau 三大异常。&lt;/p&gt;&lt;/blockquote&gt;
-&lt;hr&gt;
-&lt;h2 id=&#34;一超参的本质控制优化轨迹&#34;&gt;一、超参的本质：控制优化轨迹&lt;/h2&gt;
-&lt;p&gt;训练的核心循环：&lt;/p&gt;
-&lt;pre tabindex=&#34;0&#34;&gt;&lt;code&gt;for step in range(total_steps):
-    batch = sample(dataset, batch_size)        # ← BS 控制
-    loss = model(batch)
-    loss.backward()                            # 计算梯度
-    optimizer.step(lr=learning_rate)           # ← LR 控制
-    optimizer.zero_grad()
-&lt;/code&gt;&lt;/pre&gt;&lt;p&gt;每一步更新可以写成：&lt;/p&gt;
-&lt;div class=&#34;math display&#34;&gt;\[\theta_{t&amp;#43;1} = \theta_t - \eta \cdot \hat{g}_t\]&lt;/div&gt;
-&lt;p&gt;其中：&lt;/p&gt;
-&lt;ul&gt;
-&lt;li&gt;&lt;span class=&#34;math inline&#34;&gt;\(\eta\)&lt;/span&gt;
- = Learning Rate（LR），控制每步走多远&lt;/li&gt;
-&lt;li&gt;&lt;span class=&#34;math inline&#34;&gt;\(\hat{g}_t\)&lt;/span&gt;
- = 当前 mini-batch 计算出的梯度估计，由 Batch Size（BS）决定其方差&lt;/li&gt;
-&lt;/ul&gt;
-&lt;p&gt;&lt;strong&gt;核心直觉&lt;/strong&gt;：LR 决定步长大小，BS 决定方向的&amp;quot;噪声程度&amp;quot;。两者共同决定了优化轨迹在 loss landscape 上的行走方式。&lt;/p&gt;
-&lt;hr&gt;
-&lt;h2 id=&#34;二learning-rate最敏感的超参&#34;&gt;二、Learning Rate：最敏感的超参&lt;/h2&gt;
-&lt;h3 id=&#34;21-lr-过大-vs-过小的表现&#34;&gt;2.1 LR 过大 vs 过小的表现&lt;/h3&gt;
-&lt;table&gt;
-  &lt;thead&gt;
-      &lt;tr&gt;
-          &lt;th&gt;现象&lt;/th&gt;
-          &lt;th&gt;原因&lt;/th&gt;
-          &lt;th&gt;诊断方法&lt;/th&gt;
-      &lt;/tr&gt;
-  &lt;/thead&gt;
-  &lt;tbody&gt;
-      &lt;tr&gt;
-          &lt;td&gt;Loss 震荡/发散/出现 NaN&lt;/td&gt;
-          &lt;td&gt;LR 过大，更新步长超过了 loss 曲面的曲率半径&lt;/td&gt;
-          &lt;td&gt;观察 loss 曲线前 100 步&lt;/td&gt;
-      &lt;/tr&gt;
-      &lt;tr&gt;
-          &lt;td&gt;Loss 下降极慢，几乎不动&lt;/td&gt;
-          &lt;td&gt;LR 过小，步长微弱到每步几乎不改变参数&lt;/td&gt;
-          &lt;td&gt;对比不同 LR 的 loss 下降斜率&lt;/td&gt;
-      &lt;/tr&gt;
-      &lt;tr&gt;
-          &lt;td&gt;Loss 先降后突然 spike&lt;/td&gt;
-          &lt;td&gt;LR 在当前参数区域还行，但随训练推进 loss landscape 变化后 LR 偏大&lt;/td&gt;
-          &lt;td&gt;是否缺少 LR decay&lt;/td&gt;
-      &lt;/tr&gt;
-      &lt;tr&gt;
-          &lt;td&gt;Loss 平滑下降后 plateau&lt;/td&gt;
-          &lt;td&gt;可能 LR 已经小到跳不出当前局部最优&lt;/td&gt;
-          &lt;td&gt;尝试 warmup restart&lt;/td&gt;
-      &lt;/tr&gt;
-  &lt;/tbody&gt;
-&lt;/table&gt;
-&lt;h3 id=&#34;22-如何选择初始-lr&#34;&gt;2.2 如何选择初始 LR&lt;/h3&gt;
-&lt;p&gt;&lt;strong&gt;经验值速查表&lt;/strong&gt;（AdamW optimizer）：&lt;/p&gt;</description>
-    </item>
     <item>
       <title>大模型训练工具链地图：从 CUDA 到 verl，到底谁在哪一层？</title>
       <link>https://sendoray.github.io/posts/2026-06-16-llm-training-toolchain-map/</link>
@@ -193,83 +129,6 @@ F_{\text{fwd}} \approx 2\,\Theta \quad \text{FLOPs/token}
   &lt;/tbody&gt;
 &lt;/table&gt;
 &lt;p&gt;&lt;strong&gt;认知误区一&lt;/strong&gt;：很多人把 &amp;ldquo;175B 比 7B 慢 25 倍&amp;rdquo; 直接套到 latency 上。错。decode 阶段是 memory-bound，慢的不是算力，是&lt;strong&gt;读权重的带宽&lt;/strong&gt;——下面会展开。&lt;/p&gt;</description>
-    </item>
-    <item>
-      <title>图解 MoE 并行训练：从原理到工程实践</title>
-      <link>https://sendoray.github.io/posts/2026-06-11-moe/</link>
-      <pubDate>Thu, 11 Jun 2026 00:00:00 +0000</pubDate>
-      <guid>https://sendoray.github.io/posts/2026-06-11-moe/</guid>
-      <description>&lt;blockquote&gt;
-&lt;p&gt;MoE（Mixture of Experts）如何用&amp;quot;稀疏激活&amp;quot;换取海量参数容量？Expert Parallelism 如何让数百个 Expert 分布在上百张 GPU 上协同训练？&lt;/p&gt;&lt;/blockquote&gt;
-&lt;h2 id=&#34;一开篇引入&#34;&gt;一、开篇引入&lt;/h2&gt;
-&lt;p&gt;2024 年以来，几乎所有头部大模型都不约而同地走向了同一条路线——&lt;strong&gt;MoE 架构&lt;/strong&gt;。从 Mixtral-8x7B、DeepSeek-V2/V3、Qwen2-MoE/Qwen3-235B，到 GPT-4 系列被广泛&amp;quot;猜测&amp;quot;采用的稀疏专家结构，业界正在用一种朴素的工程哲学回答一个根本问题：&lt;strong&gt;当稠密模型的训练成本随参数量平方级膨胀时，我们还能怎样把模型做得更大？&lt;/strong&gt;&lt;/p&gt;
-&lt;p&gt;回顾过去三年的稠密模型规模曲线，会看到一个非常残酷的现实：&lt;strong&gt;每多一倍参数，训练成本至少多出两倍&lt;/strong&gt;。GPT-3 175B 用 3640 PFlop/s-day 跑了几个月；Llama-2 70B 在 2T token 上要烧掉数千张 A100；如果再往上推到 500B 稠密模型，按当前算力预算几乎不可承受。换句话说，稠密路线在 2023 年底已经触到了&amp;quot;经济墙&amp;quot;——不是不能训练更大模型，而是再没人愿意为线性增长的能力付指数级增长的电费。&lt;/p&gt;
-&lt;p&gt;正是在这个背景下，&lt;strong&gt;2024 年被业内普遍称为&amp;quot;MoE 元年&amp;quot;&lt;/strong&gt;。这并不是说 MoE 这个想法在 2024 年才出现——它早在 1991 年就由 Jacobs 等人提出，2017 年 Shazeer 用 Sparsely-Gated MoE 把它带进 LSTM 时代，2020 年 GShard 把它工程化到 600B 翻译模型。但真正让 MoE 走出研究院、变成所有头部 lab 默认架构的，是 2024 年 Mixtral-8x7B 的开源、DeepSeek-V2 的横空出世以及 Qwen3 的全面 MoE 化这三件事的连续发生。从那一刻起，&amp;ldquo;做大模型&amp;quot;和&amp;quot;做 MoE&amp;quot;几乎就是同义词。&lt;/p&gt;</description>
-    </item>
-    <item>
-      <title>LLM训练全解</title>
-      <link>https://sendoray.github.io/posts/2026-06-09-training/</link>
-      <pubDate>Tue, 09 Jun 2026 00:00:00 +0000</pubDate>
-      <guid>https://sendoray.github.io/posts/2026-06-09-training/</guid>
-      <description>&lt;h2 id=&#34;一训练到底是什么&#34;&gt;一、训练到底是什么？&lt;/h2&gt;
-&lt;p&gt;深度学习的&amp;quot;训练&amp;quot;本质是一个&lt;strong&gt;反复试错并改进&lt;/strong&gt;的过程。通俗讲：&lt;/p&gt;
-&lt;ol&gt;
-&lt;li&gt;模型拿到一批数据，做出预测&lt;/li&gt;
-&lt;li&gt;对比预测和真实答案，计算&amp;quot;错得有多离谱&amp;quot;（损失函数）&lt;/li&gt;
-&lt;li&gt;根据&amp;quot;哪里错了、错多少&amp;quot;来调整模型参数，让下次预测更准&lt;/li&gt;
-&lt;/ol&gt;
-&lt;p&gt;这三步循环往复数十万次，模型就从&amp;quot;瞎猜&amp;quot;变成&amp;quot;精通&amp;quot;。&lt;/p&gt;
-&lt;p&gt;用数学语言来说：&lt;/p&gt;
-&lt;ul&gt;
-&lt;li&gt;模型是一个参数化函数 &lt;span class=&#34;math inline&#34;&gt;\(f_\theta(x)\)&lt;/span&gt;
-，其中 &lt;span class=&#34;math inline&#34;&gt;\(\theta\)&lt;/span&gt;
- 是所有可调参数（权重）&lt;/li&gt;
-&lt;li&gt;给定训练样本 &lt;span class=&#34;math inline&#34;&gt;\((x, y)\)&lt;/span&gt;
-，计算损失 &lt;span class=&#34;math inline&#34;&gt;\(L = \text{loss}(f_\theta(x), y)\)&lt;/span&gt;
-&lt;/li&gt;
-&lt;li&gt;目标：找到一组 &lt;span class=&#34;math inline&#34;&gt;\(\theta^*\)&lt;/span&gt;
- 使得在所有训练数据上的平均损失最小&lt;/li&gt;
-&lt;/ul&gt;
-&lt;hr&gt;
-&lt;h2 id=&#34;二训练的核心流程前向传播--损失计算--反向传播--参数更新&#34;&gt;二、训练的核心流程：前向传播 → 损失计算 → 反向传播 → 参数更新&lt;/h2&gt;
-&lt;h3 id=&#34;21-前向传播forward-pass&#34;&gt;2.1 前向传播（Forward Pass）&lt;/h3&gt;
-&lt;p&gt;数据从输入层逐层流过网络，每层做矩阵乘法 + 激活函数，最终输出预测结果。&lt;/p&gt;
-&lt;pre tabindex=&#34;0&#34;&gt;&lt;code&gt;输入 x → [Linear层1] → [ReLU] → [Linear层2] → [Softmax] → 预测 ŷ
-&lt;/code&gt;&lt;/pre&gt;&lt;p&gt;每一层的计算：&lt;span class=&#34;math inline&#34;&gt;\(h = \sigma(Wx &amp;#43; b)\)&lt;/span&gt;
-&lt;/p&gt;
-&lt;ul&gt;
-&lt;li&gt;&lt;span class=&#34;math inline&#34;&gt;\(W\)&lt;/span&gt;
-：权重矩阵（可训练参数）&lt;/li&gt;
-&lt;li&gt;&lt;span class=&#34;math inline&#34;&gt;\(b\)&lt;/span&gt;
-：偏置（可训练参数）&lt;/li&gt;
-&lt;li&gt;&lt;span class=&#34;math inline&#34;&gt;\(\sigma\)&lt;/span&gt;
-：激活函数（ReLU、GELU 等）&lt;/li&gt;
-&lt;/ul&gt;
-&lt;h3 id=&#34;22-损失函数loss-function&#34;&gt;2.2 损失函数（Loss Function）&lt;/h3&gt;
-&lt;p&gt;衡量预测和真实标签之间的差距：&lt;/p&gt;
-&lt;table&gt;
-  &lt;thead&gt;
-      &lt;tr&gt;
-          &lt;th&gt;任务类型&lt;/th&gt;
-          &lt;th&gt;常用损失函数&lt;/th&gt;
-      &lt;/tr&gt;
-  &lt;/thead&gt;
-  &lt;tbody&gt;
-      &lt;tr&gt;
-          &lt;td&gt;分类&lt;/td&gt;
-          &lt;td&gt;CrossEntropyLoss&lt;/td&gt;
-      &lt;/tr&gt;
-      &lt;tr&gt;
-          &lt;td&gt;回归&lt;/td&gt;
-          &lt;td&gt;MSELoss&lt;/td&gt;
-      &lt;/tr&gt;
-      &lt;tr&gt;
-          &lt;td&gt;语言模型&lt;/td&gt;
-          &lt;td&gt;CrossEntropyLoss（预测下一个 token）&lt;/td&gt;
-      &lt;/tr&gt;
-  &lt;/tbody&gt;
-&lt;/table&gt;
-&lt;p&gt;&lt;strong&gt;CrossEntropyLoss（交叉熵）&lt;/strong&gt;——分类/语言模型的标配：&lt;/p&gt;</description>
     </item>
   </channel>
 </rss>
