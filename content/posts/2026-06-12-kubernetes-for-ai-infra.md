@@ -2,7 +2,6 @@
 title: "Kubernetes：AI Infra 视角的最小够用版"
 date: '2026-06-12'
 tags:
-- Kubernetes
 - Engineering
 
 draft: false

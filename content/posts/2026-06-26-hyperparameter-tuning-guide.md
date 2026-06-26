@@ -3,8 +3,6 @@ title: 训推工程师必备：超参设置与实验结果判断完全指南
 date: '2026-06-26'
 tags:
 - LLM
-- Training
-- Deep-Learning
 - Engineering
 draft: false
 math: true

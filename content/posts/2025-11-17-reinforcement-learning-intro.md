@@ -2,7 +2,7 @@
 title: 强化学习入门：从基础概念到PPO算法
 date: '2025-11-21'
 tags:
-- RLAlgo
+- Algorithm
 draft: false
 math: true
 ShowToc: true

@@ -2,7 +2,6 @@
 title: "Agentic Infra 前沿：多 Agent 通信、调度与工程实践"
 date: '2026-06-26'
 tags:
-- AI-Infra
 - LLM
 - Agent
 

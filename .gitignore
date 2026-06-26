@@ -17,6 +17,7 @@ package-lock.json
 # Ignore folders related to IDEs
 .vscode/
 .idea/
+.qoder/
 
 # OS files
 .DS_Store
