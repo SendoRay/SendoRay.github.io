@@ -6,8 +6,164 @@
     <description>Recent content on chengzhy&#39;s blog</description>
     <generator>Hugo</generator>
     <language>en</language>
-    <lastBuildDate>Mon, 22 Jun 2026 00:00:00 +0000</lastBuildDate>
+    <lastBuildDate>Fri, 26 Jun 2026 00:00:00 +0000</lastBuildDate>
     <atom:link href="https://sendoray.github.io/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>Agentic Infra 前沿：多 Agent 通信、调度与工程实践</title>
+      <link>https://sendoray.github.io/posts/2026-06-26-agentic-infra-frontier/</link>
+      <pubDate>Fri, 26 Jun 2026 00:00:00 +0000</pubDate>
+      <guid>https://sendoray.github.io/posts/2026-06-26-agentic-infra-frontier/</guid>
+      <description>&lt;blockquote&gt;
+&lt;p&gt;这篇文章不讲 &amp;ldquo;什么是 Agent&amp;rdquo;、也不讲 DP/TP/PP，只聚焦一个问题：&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;当你有 N 个 Agent 需要协作完成复杂任务时，底层 Infra 到底在解决什么问题？&lt;/strong&gt;&lt;/p&gt;&lt;/blockquote&gt;
+&lt;hr&gt;
+&lt;h2 id=&#34;一为什么需要-agentic-infra&#34;&gt;一、为什么需要 Agentic Infra&lt;/h2&gt;
+&lt;p&gt;单 Agent 的瓶颈在 2025 年已经很明显：&lt;/p&gt;
+&lt;table&gt;
+  &lt;thead&gt;
+      &lt;tr&gt;
+          &lt;th&gt;问题&lt;/th&gt;
+          &lt;th&gt;根因&lt;/th&gt;
+          &lt;th&gt;传统方案上限&lt;/th&gt;
+      &lt;/tr&gt;
+  &lt;/thead&gt;
+  &lt;tbody&gt;
+      &lt;tr&gt;
+          &lt;td&gt;上下文爆炸&lt;/td&gt;
+          &lt;td&gt;单 Agent 要塞进所有 tool/memory/context&lt;/td&gt;
+          &lt;td&gt;128k~1M 窗口仍然不够&lt;/td&gt;
+      &lt;/tr&gt;
+      &lt;tr&gt;
+          &lt;td&gt;延迟不可控&lt;/td&gt;
+          &lt;td&gt;串行 tool call → LLM → tool call&lt;/td&gt;
+          &lt;td&gt;用户等不起 10+ 轮&lt;/td&gt;
+      &lt;/tr&gt;
+      &lt;tr&gt;
+          &lt;td&gt;单点故障&lt;/td&gt;
+          &lt;td&gt;一个幻觉就全盘皆输&lt;/td&gt;
+          &lt;td&gt;retry 治标不治本&lt;/td&gt;
+      &lt;/tr&gt;
+      &lt;tr&gt;
+          &lt;td&gt;能力天花板&lt;/td&gt;
+          &lt;td&gt;一个 prompt 不可能精通所有子领域&lt;/td&gt;
+          &lt;td&gt;role prompt 难以 scale&lt;/td&gt;
+      &lt;/tr&gt;
+  &lt;/tbody&gt;
+&lt;/table&gt;
+&lt;p&gt;&lt;strong&gt;Agentic Infra 的核心命题：把&amp;quot;一个超人 Agent&amp;quot; 拆成 &amp;ldquo;一群专家 Agent 的协作网络&amp;rdquo;&lt;/strong&gt;，并为这个网络提供通信、发现、调度、容错、可观测等基础设施。&lt;/p&gt;
+&lt;hr&gt;
+&lt;h2 id=&#34;二agent-间通信拓扑&#34;&gt;二、Agent 间通信拓扑&lt;/h2&gt;
+&lt;h3 id=&#34;21-三种基本拓扑&#34;&gt;2.1 三种基本拓扑&lt;/h3&gt;
+&lt;pre tabindex=&#34;0&#34;&gt;&lt;code&gt;┌─────────────────────────────────────────────────────────────┐
+│  (A) Centralized Orchestrator                               │
+│                                                             │
+│              ┌───────────┐                                  │
+│              │ Orchestrator│                                 │
+│              └──┬──┬──┬──┘                                  │
+│                 │  │  │                                      │
+    │          ┌──┘  │  └──┐                                      │
+    │          ▼     ▼     ▼                                      │
+    │        Agent  Agent  Agent                                  │
+    │          A      B      C                                    │
+│                                                             │
+│  优点：简单、可控、易 debug                                    │
+│  缺点：瓶颈、单点故障、延迟累积                                │
+├─────────────────────────────────────────────────────────────┤
+│  (B) Peer-to-Peer (P2P)                                    │
+│                                                             │
+│        Agent A ◄──────► Agent B                             │
+│          ▲                 ▲                                │
+│          │                 │                                │
+│          └──► Agent C ◄───┘                                 │
+│                                                             │
+│  优点：无单点、低延迟、弹性扩展                                  │
+│  缺点：消息风暴、一致性难、调试困难                               │
+├─────────────────────────────────────────────────────────────┤
+│  (C) Hierarchical (层级式)                                   │
+│                                                             │
+│              ┌──────────┐                                   │
+│              │ Supervisor │                                 │
+│              └──┬─────┬──┘                                  │
+│                 │     │                                     │
+│          ┌─────┘     └─────┐                                │
+│          ▼                 ▼                                │
+│     ┌────────┐       ┌────────┐                             │
+│     │Team Lead│       │Team Lead│                           │
+│     └──┬──┬──┘       └──┬──┬──┘                             │
+│        │  │              │  │                               │
+│        ▼  ▼              ▼  ▼                               │
+│       A1  A2            B1  B2                              │
+│                                                             │
+│  优点：可控扩展、局部自治、适合复杂任务分解                        │
+│  缺点：层级延迟、Supervisor 是瓶颈                              │
+└─────────────────────────────────────────────────────────────┘
+&lt;/code&gt;&lt;/pre&gt;&lt;h3 id=&#34;22-p2p-通信的工程挑战&#34;&gt;2.2 P2P 通信的工程挑战&lt;/h3&gt;
+&lt;p&gt;真正做 Agent P2P 通信，你要解的不是&amp;quot;发个消息&amp;quot;，而是：&lt;/p&gt;</description>
+    </item>
+    <item>
+      <title>训推工程师必备：超参设置与实验结果判断完全指南</title>
+      <link>https://sendoray.github.io/posts/2026-06-26-hyperparameter-tuning-guide/</link>
+      <pubDate>Fri, 26 Jun 2026 00:00:00 +0000</pubDate>
+      <guid>https://sendoray.github.io/posts/2026-06-26-hyperparameter-tuning-guide/</guid>
+      <description>&lt;p&gt;跑实验不是&amp;quot;随便调调参数看看效果&amp;quot;，而是一门有章法的工程实践。很多人把超参调优当玄学，本质上是因为没搞清楚每个超参的&lt;strong&gt;物理含义&lt;/strong&gt;和它们之间的&lt;strong&gt;耦合关系&lt;/strong&gt;。这篇文章从训推工程师的视角，系统梳理 LR、BS、WD 等核心超参的设置方法论，以及如何判断实验结果是否合理。&lt;/p&gt;
+&lt;blockquote&gt;
+&lt;p&gt;TL;DR：&lt;strong&gt;Learning Rate 决定步长、Batch Size 决定梯度噪声、两者必须联动调整&lt;/strong&gt;。合理的实验结果应该是：loss 平滑下降、eval 指标与 loss 方向一致、不出现 NaN/spike/plateau 三大异常。&lt;/p&gt;&lt;/blockquote&gt;
+&lt;hr&gt;
+&lt;h2 id=&#34;一超参的本质控制优化轨迹&#34;&gt;一、超参的本质：控制优化轨迹&lt;/h2&gt;
+&lt;p&gt;训练的核心循环：&lt;/p&gt;
+&lt;pre tabindex=&#34;0&#34;&gt;&lt;code&gt;for step in range(total_steps):
+    batch = sample(dataset, batch_size)        # ← BS 控制
+    loss = model(batch)
+    loss.backward()                            # 计算梯度
+    optimizer.step(lr=learning_rate)           # ← LR 控制
+    optimizer.zero_grad()
+&lt;/code&gt;&lt;/pre&gt;&lt;p&gt;每一步更新可以写成：&lt;/p&gt;
+&lt;div class=&#34;math display&#34;&gt;\[\theta_{t&amp;#43;1} = \theta_t - \eta \cdot \hat{g}_t\]&lt;/div&gt;
+&lt;p&gt;其中：&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;span class=&#34;math inline&#34;&gt;\(\eta\)&lt;/span&gt;
+ = Learning Rate（LR），控制每步走多远&lt;/li&gt;
+&lt;li&gt;&lt;span class=&#34;math inline&#34;&gt;\(\hat{g}_t\)&lt;/span&gt;
+ = 当前 mini-batch 计算出的梯度估计，由 Batch Size（BS）决定其方差&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;&lt;strong&gt;核心直觉&lt;/strong&gt;：LR 决定步长大小，BS 决定方向的&amp;quot;噪声程度&amp;quot;。两者共同决定了优化轨迹在 loss landscape 上的行走方式。&lt;/p&gt;
+&lt;hr&gt;
+&lt;h2 id=&#34;二learning-rate最敏感的超参&#34;&gt;二、Learning Rate：最敏感的超参&lt;/h2&gt;
+&lt;h3 id=&#34;21-lr-过大-vs-过小的表现&#34;&gt;2.1 LR 过大 vs 过小的表现&lt;/h3&gt;
+&lt;table&gt;
+  &lt;thead&gt;
+      &lt;tr&gt;
+          &lt;th&gt;现象&lt;/th&gt;
+          &lt;th&gt;原因&lt;/th&gt;
+          &lt;th&gt;诊断方法&lt;/th&gt;
+      &lt;/tr&gt;
+  &lt;/thead&gt;
+  &lt;tbody&gt;
+      &lt;tr&gt;
+          &lt;td&gt;Loss 震荡/发散/出现 NaN&lt;/td&gt;
+          &lt;td&gt;LR 过大，更新步长超过了 loss 曲面的曲率半径&lt;/td&gt;
+          &lt;td&gt;观察 loss 曲线前 100 步&lt;/td&gt;
+      &lt;/tr&gt;
+      &lt;tr&gt;
+          &lt;td&gt;Loss 下降极慢，几乎不动&lt;/td&gt;
+          &lt;td&gt;LR 过小，步长微弱到每步几乎不改变参数&lt;/td&gt;
+          &lt;td&gt;对比不同 LR 的 loss 下降斜率&lt;/td&gt;
+      &lt;/tr&gt;
+      &lt;tr&gt;
+          &lt;td&gt;Loss 先降后突然 spike&lt;/td&gt;
+          &lt;td&gt;LR 在当前参数区域还行，但随训练推进 loss landscape 变化后 LR 偏大&lt;/td&gt;
+          &lt;td&gt;是否缺少 LR decay&lt;/td&gt;
+      &lt;/tr&gt;
+      &lt;tr&gt;
+          &lt;td&gt;Loss 平滑下降后 plateau&lt;/td&gt;
+          &lt;td&gt;可能 LR 已经小到跳不出当前局部最优&lt;/td&gt;
+          &lt;td&gt;尝试 warmup restart&lt;/td&gt;
+      &lt;/tr&gt;
+  &lt;/tbody&gt;
+&lt;/table&gt;
+&lt;h3 id=&#34;22-如何选择初始-lr&#34;&gt;2.2 如何选择初始 LR&lt;/h3&gt;
+&lt;p&gt;&lt;strong&gt;经验值速查表&lt;/strong&gt;（AdamW optimizer）：&lt;/p&gt;</description>
+    </item>
     <item>
       <title>扩散模型优化技术全面综述：从采样加速到高效架构设计</title>
       <link>https://sendoray.github.io/posts/2026-06-22-diffusion-model-optimization/</link>
@@ -1158,6 +1314,7 @@ arbitrarily       任意地
 empirically       经验性地
 inherently        本质上
 analogously       类似地
+excel at          擅长
 &lt;/code&gt;&lt;/pre&gt;&lt;h1 id=&#34;名词&#34;&gt;名词&lt;/h1&gt;
 &lt;pre tabindex=&#34;0&#34;&gt;&lt;code&gt;overhead          开销，额外成本
 overlap           重叠
