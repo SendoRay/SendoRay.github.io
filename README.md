@@ -47,6 +47,31 @@ https://stock-sdk.linkdiary.cn/guide/getting-started
 
 
 
+https://forceinjection.github.io/01_hardware_architecture/performance/04_pcie_domain_numa.html
+
+
+https://github.com/stonet-research/cheops25-IO-characterization-of-LLM-model-kv-cache-offloading-nvme/blob/main/figure5-6-kv-offloading-flexgen/flexgen-opt-6.7b-kv-trace.py   io 时间test
+
+
+https://www.feishu.cn/drive/home?from=jiancun
+
+
+https://github.com/fzyzcjy/torch_memory_saver
+写成实习项目
+
+我们支持使用原生 vLLM 卸载和Mooncake将 KV 缓存分层卸载到 CPU 和磁盘。更大的 KV 缓存空间可以提高并发性，从而分摊更多的训练器成本。
+
+这些方法之间主要有两点不同：
+
+vLLM 原生卸载——一种简单的方法，为每个工作进程（DP 进程）创建一个 CPU/磁盘池；只有该工作进程才能从该缓存加载数据。
+Mooncake Store则作为集中式存储运行，它将所有客户端（节点）的 RAM/磁盘汇集到一个大池中，然后任何节点上的任何推理工作进程都可以访问该池——这提供了显著的优势，尤其是在使用更复杂的路由策略时。
+
+
+看一下 原生的怎么做的 kvcahe 怎么做的  lmcache？ llmd？
+
+
+https://github.com/0voice/kernel_new_features/blob/main/cgroups/%E6%96%87%E7%AB%A0/Cgroup%20-%20Linux%E7%9A%84IO%E8%B5%84%E6%BA%90%E9%9A%94%E7%A6%BB.md
+Linux 内核
 
 应该写一个全景计算和说明的。省掉的计算时间 = 计算量 / GPU 计算吞吐
 

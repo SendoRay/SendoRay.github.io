@@ -115,6 +115,10 @@ menu:
       name: Posts
       url: /posts/
       weight: 10
+    - identifier: paperreading
+      name: Paper Reading
+      url: /paperreading/
+      weight: 15
     - identifier: about
       name: About
       url: /about/

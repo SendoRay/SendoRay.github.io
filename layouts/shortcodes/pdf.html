@@ -1,0 +1,15 @@
+{{- $src := .Get "src" -}}
+{{- $width := .Get "width" | default "100%" -}}
+{{- $height := .Get "height" | default "800px" -}}
+{{- $url := urls.Parse $src -}}
+{{- if $url.Host -}}
+  <iframe src="{{ $src }}#toolbar=1" width="{{ $width }}" height="{{ $height }}" style="border:1px solid var(--border); border-radius:8px;" allowfullscreen loading="lazy"></iframe>
+{{- else -}}
+  {{- $res := resources.Get $src -}}
+  {{- if $res -}}
+    <iframe src="{{ $res.RelPermalink }}#toolbar=1" width="{{ $width }}" height="{{ $height }}" style="border:1px solid var(--border); border-radius:8px;" allowfullscreen loading="lazy"></iframe>
+  {{- else -}}
+    {{- $final := (printf "/pdfs/%s" (path.Base $src)) -}}
+    <iframe src="{{ $final }}#toolbar=1" width="{{ $width }}" height="{{ $height }}" style="border:1px solid var(--border); border-radius:8px;" allowfullscreen loading="lazy"></iframe>
+  {{- end -}}
+{{- end -}}
