@@ -6,8 +6,15 @@
     <description>Recent content in GPU on chengzhy&#39;s blog</description>
     <generator>Hugo</generator>
     <language>en</language>
-    <lastBuildDate>Tue, 16 Jun 2026 00:00:00 +0000</lastBuildDate>
+    <lastBuildDate>Thu, 02 Jul 2026 00:00:00 +0000</lastBuildDate>
     <atom:link href="https://sendoray.github.io/tags/gpu/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>Tutti：以 GPU 为中心的 SSD KV 缓存，突破长上下文 LLM 服务的 I/O 瓶颈</title>
+      <link>https://sendoray.github.io/paperreading/2026-07-02-tutti-ssd-kv-cache/</link>
+      <pubDate>Thu, 02 Jul 2026 00:00:00 +0000</pubDate>
+      <guid>https://sendoray.github.io/paperreading/2026-07-02-tutti-ssd-kv-cache/</guid>
+      <description>Tutti 通过 GPU 原生对象抽象、GPU io_uring 和感知松弛的 I/O 调度，将 SSD KV 缓存恢复中的 CPU 干预彻底消除，TTFT 降低 78.3%，服务成本降低 27%。</description>
+    </item>
     <item>
       <title>大模型训练工具链地图：从 CUDA 到 verl，到底谁在哪一层？</title>
       <link>https://sendoray.github.io/posts/2026-06-16-llm-training-toolchain-map/</link>

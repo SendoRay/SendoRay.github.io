@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom" xmlns:content="http://purl.org/rss/1.0/modules/content/">
+  <channel>
+    <title>Storage on chengzhy&#39;s blog</title>
+    <link>https://sendoray.github.io/tags/storage/</link>
+    <description>Recent content in Storage on chengzhy&#39;s blog</description>
+    <generator>Hugo</generator>
+    <language>en</language>
+    <lastBuildDate>Thu, 02 Jul 2026 00:00:00 +0000</lastBuildDate>
+    <atom:link href="https://sendoray.github.io/tags/storage/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>Tutti：以 GPU 为中心的 SSD KV 缓存，突破长上下文 LLM 服务的 I/O 瓶颈</title>
+      <link>https://sendoray.github.io/paperreading/2026-07-02-tutti-ssd-kv-cache/</link>
+      <pubDate>Thu, 02 Jul 2026 00:00:00 +0000</pubDate>
+      <guid>https://sendoray.github.io/paperreading/2026-07-02-tutti-ssd-kv-cache/</guid>
+      <description>Tutti 通过 GPU 原生对象抽象、GPU io_uring 和感知松弛的 I/O 调度，将 SSD KV 缓存恢复中的 CPU 干预彻底消除，TTFT 降低 78.3%，服务成本降低 27%。</description>
+    </item>
+  </channel>
+</rss>

@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom" xmlns:content="http://purl.org/rss/1.0/modules/content/">
+  <channel>
+    <title>Serving on chengzhy&#39;s blog</title>
+    <link>https://sendoray.github.io/tags/serving/</link>
+    <description>Recent content in Serving on chengzhy&#39;s blog</description>
+    <generator>Hugo</generator>
+    <language>en</language>
+    <lastBuildDate>Thu, 02 Jul 2026 00:00:00 +0000</lastBuildDate>
+    <atom:link href="https://sendoray.github.io/tags/serving/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>An I/O Characterizing Study of Offloading LLM Models and KV Caches to NVMe SSD</title>
+      <link>https://sendoray.github.io/paperreading/2026-07-02-cheops-llm/</link>
+      <pubDate>Thu, 02 Jul 2026 00:00:00 +0000</pubDate>
+      <guid>https://sendoray.github.io/paperreading/2026-07-02-cheops-llm/</guid>
+      <description>首次系统刻画 LLM 推理中模型权重与 KV 缓存卸载到 NVMe SSD 的块级 I/O 模式：128 KiB 读为主、SSD 远未饱和、KV cache 读写比达 186×。</description>
+    </item>
+  </channel>
+</rss>

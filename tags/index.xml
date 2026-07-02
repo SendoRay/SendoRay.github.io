@@ -6,8 +6,127 @@
     <description>Recent content in Tags on chengzhy&#39;s blog</description>
     <generator>Hugo</generator>
     <language>en</language>
-    <lastBuildDate>Fri, 26 Jun 2026 00:00:00 +0000</lastBuildDate>
+    <lastBuildDate>Thu, 02 Jul 2026 00:00:00 +0000</lastBuildDate>
     <atom:link href="https://sendoray.github.io/tags/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>Agent-Rl</title>
+      <link>https://sendoray.github.io/tags/agent-rl/</link>
+      <pubDate>Thu, 02 Jul 2026 00:00:00 +0000</pubDate>
+      <guid>https://sendoray.github.io/tags/agent-rl/</guid>
+      <description></description>
+    </item>
+    <item>
+      <title>Characterization</title>
+      <link>https://sendoray.github.io/tags/characterization/</link>
+      <pubDate>Thu, 02 Jul 2026 00:00:00 +0000</pubDate>
+      <guid>https://sendoray.github.io/tags/characterization/</guid>
+      <description></description>
+    </item>
+    <item>
+      <title>Credit-Assignment</title>
+      <link>https://sendoray.github.io/tags/credit-assignment/</link>
+      <pubDate>Thu, 02 Jul 2026 00:00:00 +0000</pubDate>
+      <guid>https://sendoray.github.io/tags/credit-assignment/</guid>
+      <description></description>
+    </item>
+    <item>
+      <title>GPU</title>
+      <link>https://sendoray.github.io/tags/gpu/</link>
+      <pubDate>Thu, 02 Jul 2026 00:00:00 +0000</pubDate>
+      <guid>https://sendoray.github.io/tags/gpu/</guid>
+      <description></description>
+    </item>
+    <item>
+      <title>HPC</title>
+      <link>https://sendoray.github.io/tags/hpc/</link>
+      <pubDate>Thu, 02 Jul 2026 00:00:00 +0000</pubDate>
+      <guid>https://sendoray.github.io/tags/hpc/</guid>
+      <description></description>
+    </item>
+    <item>
+      <title>I/O</title>
+      <link>https://sendoray.github.io/tags/i/o/</link>
+      <pubDate>Thu, 02 Jul 2026 00:00:00 +0000</pubDate>
+      <guid>https://sendoray.github.io/tags/i/o/</guid>
+      <description></description>
+    </item>
+    <item>
+      <title>Inference</title>
+      <link>https://sendoray.github.io/tags/inference/</link>
+      <pubDate>Thu, 02 Jul 2026 00:00:00 +0000</pubDate>
+      <guid>https://sendoray.github.io/tags/inference/</guid>
+      <description></description>
+    </item>
+    <item>
+      <title>KV-Cache</title>
+      <link>https://sendoray.github.io/tags/kv-cache/</link>
+      <pubDate>Thu, 02 Jul 2026 00:00:00 +0000</pubDate>
+      <guid>https://sendoray.github.io/tags/kv-cache/</guid>
+      <description></description>
+    </item>
+    <item>
+      <title>LLM</title>
+      <link>https://sendoray.github.io/tags/llm/</link>
+      <pubDate>Thu, 02 Jul 2026 00:00:00 +0000</pubDate>
+      <guid>https://sendoray.github.io/tags/llm/</guid>
+      <description></description>
+    </item>
+    <item>
+      <title>Multi-Agent</title>
+      <link>https://sendoray.github.io/tags/multi-agent/</link>
+      <pubDate>Thu, 02 Jul 2026 00:00:00 +0000</pubDate>
+      <guid>https://sendoray.github.io/tags/multi-agent/</guid>
+      <description></description>
+    </item>
+    <item>
+      <title>Offloading</title>
+      <link>https://sendoray.github.io/tags/offloading/</link>
+      <pubDate>Thu, 02 Jul 2026 00:00:00 +0000</pubDate>
+      <guid>https://sendoray.github.io/tags/offloading/</guid>
+      <description></description>
+    </item>
+    <item>
+      <title>Reinforcement-Learning</title>
+      <link>https://sendoray.github.io/tags/reinforcement-learning/</link>
+      <pubDate>Thu, 02 Jul 2026 00:00:00 +0000</pubDate>
+      <guid>https://sendoray.github.io/tags/reinforcement-learning/</guid>
+      <description></description>
+    </item>
+    <item>
+      <title>Serving</title>
+      <link>https://sendoray.github.io/tags/serving/</link>
+      <pubDate>Thu, 02 Jul 2026 00:00:00 +0000</pubDate>
+      <guid>https://sendoray.github.io/tags/serving/</guid>
+      <description></description>
+    </item>
+    <item>
+      <title>SSD</title>
+      <link>https://sendoray.github.io/tags/ssd/</link>
+      <pubDate>Thu, 02 Jul 2026 00:00:00 +0000</pubDate>
+      <guid>https://sendoray.github.io/tags/ssd/</guid>
+      <description></description>
+    </item>
+    <item>
+      <title>SSD-Offloading</title>
+      <link>https://sendoray.github.io/tags/ssd-offloading/</link>
+      <pubDate>Thu, 02 Jul 2026 00:00:00 +0000</pubDate>
+      <guid>https://sendoray.github.io/tags/ssd-offloading/</guid>
+      <description></description>
+    </item>
+    <item>
+      <title>Storage</title>
+      <link>https://sendoray.github.io/tags/storage/</link>
+      <pubDate>Thu, 02 Jul 2026 00:00:00 +0000</pubDate>
+      <guid>https://sendoray.github.io/tags/storage/</guid>
+      <description></description>
+    </item>
+    <item>
+      <title>Training</title>
+      <link>https://sendoray.github.io/tags/training/</link>
+      <pubDate>Thu, 02 Jul 2026 00:00:00 +0000</pubDate>
+      <guid>https://sendoray.github.io/tags/training/</guid>
+      <description></description>
+    </item>
     <item>
       <title>Agent</title>
       <link>https://sendoray.github.io/tags/agent/</link>
@@ -23,13 +142,6 @@
       <description></description>
     </item>
     <item>
-      <title>LLM</title>
-      <link>https://sendoray.github.io/tags/llm/</link>
-      <pubDate>Fri, 26 Jun 2026 00:00:00 +0000</pubDate>
-      <guid>https://sendoray.github.io/tags/llm/</guid>
-      <description></description>
-    </item>
-    <item>
       <title>Deep-Learning</title>
       <link>https://sendoray.github.io/tags/deep-learning/</link>
       <pubDate>Mon, 22 Jun 2026 00:00:00 +0000</pubDate>
@@ -41,27 +153,6 @@
       <link>https://sendoray.github.io/tags/diffusion/</link>
       <pubDate>Mon, 22 Jun 2026 00:00:00 +0000</pubDate>
       <guid>https://sendoray.github.io/tags/diffusion/</guid>
-      <description></description>
-    </item>
-    <item>
-      <title>Inference</title>
-      <link>https://sendoray.github.io/tags/inference/</link>
-      <pubDate>Mon, 22 Jun 2026 00:00:00 +0000</pubDate>
-      <guid>https://sendoray.github.io/tags/inference/</guid>
-      <description></description>
-    </item>
-    <item>
-      <title>GPU</title>
-      <link>https://sendoray.github.io/tags/gpu/</link>
-      <pubDate>Tue, 16 Jun 2026 00:00:00 +0000</pubDate>
-      <guid>https://sendoray.github.io/tags/gpu/</guid>
-      <description></description>
-    </item>
-    <item>
-      <title>Training</title>
-      <link>https://sendoray.github.io/tags/training/</link>
-      <pubDate>Tue, 16 Jun 2026 00:00:00 +0000</pubDate>
-      <guid>https://sendoray.github.io/tags/training/</guid>
       <description></description>
     </item>
     <item>

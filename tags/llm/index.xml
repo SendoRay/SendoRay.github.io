@@ -6,8 +6,29 @@
     <description>Recent content in LLM on chengzhy&#39;s blog</description>
     <generator>Hugo</generator>
     <language>en</language>
-    <lastBuildDate>Fri, 26 Jun 2026 00:00:00 +0000</lastBuildDate>
+    <lastBuildDate>Thu, 02 Jul 2026 00:00:00 +0000</lastBuildDate>
     <atom:link href="https://sendoray.github.io/tags/llm/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>An I/O Characterizing Study of Offloading LLM Models and KV Caches to NVMe SSD</title>
+      <link>https://sendoray.github.io/paperreading/2026-07-02-cheops-llm/</link>
+      <pubDate>Thu, 02 Jul 2026 00:00:00 +0000</pubDate>
+      <guid>https://sendoray.github.io/paperreading/2026-07-02-cheops-llm/</guid>
+      <description>首次系统刻画 LLM 推理中模型权重与 KV 缓存卸载到 NVMe SSD 的块级 I/O 模式：128 KiB 读为主、SSD 远未饱和、KV cache 读写比达 186×。</description>
+    </item>
+    <item>
+      <title>MLP-Offload：多层级、多路径卸载突破GPU内存墙</title>
+      <link>https://sendoray.github.io/paperreading/2026-07-02-mlp-offload/</link>
+      <pubDate>Thu, 02 Jul 2026 00:00:00 +0000</pubDate>
+      <guid>https://sendoray.github.io/paperreading/2026-07-02-mlp-offload/</guid>
+      <description>MLP-Offload 通过虚拟多级存储层级、多路径并发 I/O 和缓存友好的子组调度，将大模型预训练的优化器卸载 I/O 瓶颈降低 2.5×。</description>
+    </item>
+    <item>
+      <title>Tutti：以 GPU 为中心的 SSD KV 缓存，突破长上下文 LLM 服务的 I/O 瓶颈</title>
+      <link>https://sendoray.github.io/paperreading/2026-07-02-tutti-ssd-kv-cache/</link>
+      <pubDate>Thu, 02 Jul 2026 00:00:00 +0000</pubDate>
+      <guid>https://sendoray.github.io/paperreading/2026-07-02-tutti-ssd-kv-cache/</guid>
+      <description>Tutti 通过 GPU 原生对象抽象、GPU io_uring 和感知松弛的 I/O 调度，将 SSD KV 缓存恢复中的 CPU 干预彻底消除，TTFT 降低 78.3%，服务成本降低 27%。</description>
+    </item>
     <item>
       <title>Agentic Infra 前沿：多 Agent 通信、调度与工程实践</title>
       <link>https://sendoray.github.io/posts/2026-06-26-agentic-infra-frontier/</link>
