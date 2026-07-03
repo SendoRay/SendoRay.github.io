@@ -59,8 +59,8 @@ params:
     title: "chengzhy's blog"
     subtitle: "We choose to go to the moon, not because they are easy, but because they are hard."
     imageUrl: "images/11669.JPG"
-    imageWidth: 240
-    imageHeight: 240
+    imageWidth: 480
+    imageHeight: 480
     imageTitle: my image
     buttons:
       - name: Posts
@@ -123,10 +123,6 @@ menu:
       name: About
       url: /about/
       weight: 20
-    - identifier: tags
-      name: Tags
-      url: /tags/
-      weight: 30
     - identifier: recommended
       name: Recommended
       url: /recommended/

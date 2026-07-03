@@ -127,9 +127,59 @@ summary: "首次系统刻画 LLM 推理中模型权重与 KV 缓存卸载到 NVM
 
 #### DeepNVMe：张量传输库
 
-DeepSpeed 的 I/O 库，提供两种接口：
-- **POSIX**：同步文件 I/O（`open`/`read`/`write`）
-- **libaio**：Linux 异步 I/O（`io_submit`/`io_getevents`）
+DeepSpeed 的 I/O 库，提供两种接口。两者的根本差异在于 **I/O 深度（in-flight 请求数）** 和 **CPU 是否阻塞等待**。
+
+##### POSIX 同步 I/O
+
+```c
+fd = open("model.bin", O_RDONLY);
+read(fd, buf, size);   // ← 线程阻塞，直到数据到达 buf
+// 此时才能使用 buf 中的数据
+close(fd);
+```
+
+调用 `read()` 后当前线程被挂起，CPU 进入等待态，直到 SSD 把数据搬进内存。期间 CPU 空闲、SSD 内部并行度未被利用。**I/O 深度 = 1**：一个线程同一时刻只有 1 个在途请求。要提高吞吐只能开更多线程，但线程调度本身有开销。
+
+##### libaio 异步 I/O
+
+```c
+struct iocb cb;
+io_prep_pread(&cb, fd, buf, size, offset);
+io_submit(ctx, 1, &cb);       // ← 立即返回，I/O 在后台进行
+// ... CPU 可继续提交更多 I/O 或做其他计算 ...
+io_getevents(ctx, 1, 1, events, NULL);  // 稍后收割完成结果
+```
+
+`io_submit()` 把请求丢进内核块设备队列后立即返回，SSD 在后台搬数据。线程可以继续提交更多请求或做其他工作，等数据真正需要时再调 `io_getevents()` 收割。**I/O 深度 > 1**：一个线程可同时维护多个在途请求，SSD 并行处理它们。
+
+##### 时序对比
+
+```
+POSIX（单线程，I/O depth = 1）:
+CPU: [提交] [等待......] [处理] [提交] [等待......] [处理]
+SSD:         [搬数据]                [搬数据]
+     ← 时间被串行化，SSD 大量空闲 →
+
+libaio（单线程，I/O depth = N）:
+CPU: [提交1][提交2][提交3][处理0] [提交4][处理1] ...
+SSD:    [搬数据1] [搬数据2] [搬数据3] [搬数据4] ...
+     ← SSD 持续工作，流水线重叠 →
+```
+
+POSIX 是"提交一个、等一个、再提交一个"的串行模式；libaio 是"提交一批、后台并行搬、按需收割"的流水线模式。NVMe SSD 内部有多个并行通道（多 queue + 多 die 交错），POSIX 的单请求根本喂不饱它。
+
+##### 论文实测数据
+
+| 场景 | POSIX 带宽 | libaio 带宽 | 提升 |
+|------|-----------|------------|------|
+| CPU 读 SSD | ~1.4 GiB/s | 4.1 GiB/s | 2.9× |
+| CPU 写 SSD | ~1.2 GiB/s | 4.0 GiB/s | 3.3× |
+| GPU 读 SSD | ~0.7 GiB/s | 2.0 GiB/s | 2.8× |
+| **GPU 写 SSD** | **~0.5 GiB/s** | **2.8 GiB/s** | **5.5×** |
+
+GPU 写场景差距最大（5.5×），因为 GPU→SSD 要经过 `GPU → CPU 内存 → SSD` 两跳。POSIX 下两跳串行等待；libaio 下可以在等 GPU 数据到达 CPU 内存的同时，把之前已到的数据异步推给 SSD，**两跳重叠**。
+
+但 libaio 也没到极限——fio 基线是 5.3 GiB/s，libaio 最高才 4.1 GiB/s（低 22.6%），说明 DeepNVMe 库的实现本身还有优化空间，可能是拷贝开销或请求提交粒度不够。
 
 #### 实验矩阵
 
