@@ -36,6 +36,52 @@ Read(file_path="<pdf-path>", pages="11-20")
 - **第二遍精读**：逐节深入，填写分析框架
 - **第三遍批判读**：追问每个论断的证据，寻找未验证的假设和潜在问题
 
+### 1.3 提取论文图表
+
+阅读过程中遇到关键图表（架构图、实验结果图、对比表格），用 `scripts/extract_pdf_figures.py` 渲染为图片嵌入博客。
+
+#### 工作流
+
+1. **定位图表**：Read PDF 时记录关键图表所在页码
+2. **查看嵌入图片位置**（找裁剪坐标）：
+   ```
+   python3 scripts/extract_pdf_figures.py <pdf-path> --list
+   ```
+   输出每页嵌入图片的坐标（x0, y0, x1, y1），学术论文多为矢量图，会显示"no embedded raster images"
+3. **整页渲染**（矢量图 / 全页表格首选）：
+   ```
+   python3 scripts/extract_pdf_figures.py <pdf-path> \
+       --page <N> --name <fig-name> --slug <paper-slug> --dpi 200
+   ```
+4. **区域裁剪**（只需页面某部分）：
+   ```
+   python3 scripts/extract_pdf_figures.py <pdf-path> \
+       --page <N> --bbox <x0> <y0> <x1> <y1> \
+       --name <fig-name> --slug <paper-slug> --dpi 300
+   ```
+   坐标单位为 PDF point，原点在左上角。用 `--list` 输出的坐标或 Read 图片后估算。
+5. **多页连续渲染**：
+   ```
+   python3 scripts/extract_pdf_figures.py <pdf-path> \
+       --pages 3-5 --name <fig-name> --slug <paper-slug>
+   ```
+
+#### 输出路径
+
+图片存入 `static/images/paperreading/<slug>/`，在 Markdown 中用 Hugo figure shortcode 引用：
+
+```markdown
+{{< figure src="/images/paperreading/<slug>/<fig-name>.png" title="图 N: 描述" width="80%" >}}
+```
+
+#### 参数建议
+
+| 场景 | DPI | 格式 |
+|------|-----|------|
+| 纯文字 / 表格 | 150-200 | PNG |
+| 架构图 / 流程图 | 200-300 | PNG |
+| 含照片的图 | 200 | JPG |
+
 ## 2. Analysis Framework
 
 对每篇论文，依次回答以下问题。论文未讨论的，标注"论文未讨论"并基于领域知识补充。
@@ -113,6 +159,7 @@ Read(file_path="<pdf-path>", pages="11-20")
 
 输出路径：`content/paperreading/YYYY-MM-DD-paper-name.md`
 PDF 路径：`assets/pdf/YYYY-paper-name.pdf`
+图片路径：`static/images/paperreading/YYYY-paper-name/`
 
 ```markdown
 ---
@@ -130,6 +177,16 @@ summary: "一句话中文摘要"
 ## 论文 PDF
 
 {{< pdf src="pdf/YYYY-paper-name.pdf" >}}
+
+## 0. 论文图表
+
+> 图表提取命令（见 §1.3）：
+> ```
+> python3 scripts/extract_pdf_figures.py assets/pdf/YYYY-paper-name.pdf \
+>     --page 3 --name fig-arch --slug YYYY-paper-name --dpi 200
+> ```
+
+{{< figure src="/images/paperreading/YYYY-paper-name/fig-arch.png" title="图 1: 系统架构" width="80%" >}}
 
 ## 1. 问题定义
 
@@ -196,6 +253,8 @@ summary: "一句话中文摘要"
 - **Related Work**：建立自己的分类框架，不照搬论文段落
 - **量化优先**：用具体数字说话（"快 3 倍"优于"显著提升"）
 - **可操作性**：读完笔记后，读者应能复现方法核心思路并判断是否适用于自己的场景
+- **图表提取**：关键架构图、实验结果图用 `scripts/extract_pdf_figures.py` 提取为图片嵌入博客，避免读者需要打开 PDF 才能看图
+- **图表选择**：只提取对理解方法或结论有实质帮助的图表，不贪多——一张讲透胜过十张堆砌
 
 ## 5. Adaptation
 
