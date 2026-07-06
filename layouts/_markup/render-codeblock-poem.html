@@ -1,0 +1,18 @@
+{{- $lines := split (trim .Inner "\n") "\n" -}}
+{{- $title := trim (index $lines 0) " " -}}
+{{- $author := trim (index $lines 1) " " -}}
+{{- $body := after 2 $lines -}}
+<figure class="poem">
+  <figcaption class="poem-header">
+    <span class="poem-title">{{ $title }}</span>
+    <span class="poem-author">— {{ $author }}</span>
+  </figcaption>
+  <div class="poem-body">
+    {{- range $body -}}
+      {{- $line := trim . " \n\r\t" -}}
+      {{- if $line -}}
+        <span class="poem-line">{{ $line }}</span>
+      {{- end -}}
+    {{- end -}}
+  </div>
+</figure>

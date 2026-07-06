@@ -1,0 +1,79 @@
+.poem {
+  margin: 2.5em 0;
+  padding: 1.8em 2em;
+  background: var(--code-bg);
+  border-radius: var(--radius);
+}
+
+.poem-header {
+  margin-bottom: 1.5em;
+  padding-bottom: 1em;
+  border-bottom: 1px solid var(--border);
+  text-align: center;
+}
+
+.poem-title {
+  display: block;
+  font-family: Georgia, "Noto Serif SC", "Songti SC", serif;
+  font-size: 1.1em;
+  font-weight: 600;
+  color: var(--primary);
+  letter-spacing: 0.02em;
+}
+
+.poem-author {
+  display: block;
+  margin-top: 0.4em;
+  font-size: 0.82em;
+  color: var(--secondary);
+}
+
+.poem-body {
+  font-family: Georgia, "Noto Serif SC", "Songti SC", serif;
+  font-size: 0.96em;
+  line-height: 2;
+  color: var(--content);
+  text-align: center;
+}
+
+.poem-line {
+  display: block;
+}
+
+@media (max-width: 480px) {
+  .poem {
+    padding: 1.2em 1em;
+  }
+  .poem-body {
+    line-height: 1.85;
+  }
+  .phrases {
+    margin: 1.5em 0;
+  }
+  .phrases .phrase {
+    font-size: 1em;
+    line-height: 1.8;
+  }
+}
+
+.phrases {
+  margin: 2em 0;
+  text-align: center;
+}
+
+.phrases .phrase {
+  font-family: Georgia, "Noto Serif SC", "Songti SC", serif;
+  font-size: 1.05em;
+  line-height: 1.9;
+  color: var(--content);
+  margin: 0;
+}
+
+.phrases .phrase + .phrase::before {
+  content: "";
+  display: block;
+  width: 2em;
+  height: 1px;
+  background: var(--tertiary);
+  margin: 1em auto;
+}

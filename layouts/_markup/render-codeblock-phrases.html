@@ -1,0 +1,9 @@
+{{- $lines := split (trim .Inner "\n") "\n" -}}
+<div class="phrases">
+  {{- range $lines -}}
+    {{- $line := trim . " \n\r\t" -}}
+    {{- if $line -}}
+      <p class="phrase">{{ $line }}</p>
+    {{- end -}}
+  {{- end -}}
+</div>
