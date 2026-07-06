@@ -240,3 +240,6 @@ The only reason to recommend it is with FFin
 耻辱的诗
 ```
 
+```phrases
+平庸与伟大消耗的心力相同
+```

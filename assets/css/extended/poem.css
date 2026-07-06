@@ -58,22 +58,20 @@
 
 .phrases {
   margin: 2em 0;
-  text-align: center;
+  padding: 0.3em 0 0.3em 1.5em;
+  border-left: 2px solid var(--tertiary);
 }
 
 .phrases .phrase {
   font-family: Georgia, "Noto Serif SC", "Songti SC", serif;
-  font-size: 1.05em;
+  font-size: 1.03em;
   line-height: 1.9;
   color: var(--content);
   margin: 0;
 }
 
-.phrases .phrase + .phrase::before {
-  content: "";
-  display: block;
-  width: 2em;
-  height: 1px;
-  background: var(--tertiary);
-  margin: 1em auto;
+.phrases .phrase + .phrase {
+  margin-top: 1em;
+  padding-top: 1em;
+  border-top: 1px solid var(--border);
 }
