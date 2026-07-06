@@ -16,6 +16,13 @@
       <description>通过分离式基础设施将智能体 RL 训练的 rollout/reward/training 解耦到异构硬件上，利用硬件亲和性映射 + 轨迹级异步执行 + 状态感知计算，在 3000+ GPU 生产集群上实现 1.35-2.05× 加速。</description>
     </item>
     <item>
+      <title>ServerlessLLM: 用于大语言模型的低延迟无服务器推理</title>
+      <link>https://sendoray.github.io/paperreading/2026-07-06-serverlessllm/</link>
+      <pubDate>Mon, 06 Jul 2026 00:00:00 +0000</pubDate>
+      <guid>https://sendoray.github.io/paperreading/2026-07-06-serverlessllm/</guid>
+      <description>通过多层存储检查点加载、推理实时迁移和启动时间优化调度，将无服务器 LLM 推理延迟降低 10-200×。</description>
+    </item>
+    <item>
       <title>LMCache: An Efficient KV Cache Layer for Enterprise-Scale LLM Inference</title>
       <link>https://sendoray.github.io/paperreading/2026-07-03-lmcache/</link>
       <pubDate>Fri, 03 Jul 2026 00:00:00 +0000</pubDate>

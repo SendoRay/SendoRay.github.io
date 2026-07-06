@@ -16,6 +16,20 @@
       <description></description>
     </item>
     <item>
+      <title>Checkpoint-Loading</title>
+      <link>https://sendoray.github.io/tags/checkpoint-loading/</link>
+      <pubDate>Mon, 06 Jul 2026 00:00:00 +0000</pubDate>
+      <guid>https://sendoray.github.io/tags/checkpoint-loading/</guid>
+      <description></description>
+    </item>
+    <item>
+      <title>Cold-Start</title>
+      <link>https://sendoray.github.io/tags/cold-start/</link>
+      <pubDate>Mon, 06 Jul 2026 00:00:00 +0000</pubDate>
+      <guid>https://sendoray.github.io/tags/cold-start/</guid>
+      <description></description>
+    </item>
+    <item>
       <title>Distributed-Systems</title>
       <link>https://sendoray.github.io/tags/distributed-systems/</link>
       <pubDate>Mon, 06 Jul 2026 00:00:00 +0000</pubDate>
@@ -30,10 +44,24 @@
       <description></description>
     </item>
     <item>
+      <title>Inference</title>
+      <link>https://sendoray.github.io/tags/inference/</link>
+      <pubDate>Mon, 06 Jul 2026 00:00:00 +0000</pubDate>
+      <guid>https://sendoray.github.io/tags/inference/</guid>
+      <description></description>
+    </item>
+    <item>
       <title>LLM</title>
       <link>https://sendoray.github.io/tags/llm/</link>
       <pubDate>Mon, 06 Jul 2026 00:00:00 +0000</pubDate>
       <guid>https://sendoray.github.io/tags/llm/</guid>
+      <description></description>
+    </item>
+    <item>
+      <title>Model-Migration</title>
+      <link>https://sendoray.github.io/tags/model-migration/</link>
+      <pubDate>Mon, 06 Jul 2026 00:00:00 +0000</pubDate>
+      <guid>https://sendoray.github.io/tags/model-migration/</guid>
       <description></description>
     </item>
     <item>
@@ -48,6 +76,20 @@
       <link>https://sendoray.github.io/tags/resource-disaggregation/</link>
       <pubDate>Mon, 06 Jul 2026 00:00:00 +0000</pubDate>
       <guid>https://sendoray.github.io/tags/resource-disaggregation/</guid>
+      <description></description>
+    </item>
+    <item>
+      <title>Scheduling</title>
+      <link>https://sendoray.github.io/tags/scheduling/</link>
+      <pubDate>Mon, 06 Jul 2026 00:00:00 +0000</pubDate>
+      <guid>https://sendoray.github.io/tags/scheduling/</guid>
+      <description></description>
+    </item>
+    <item>
+      <title>Serverless</title>
+      <link>https://sendoray.github.io/tags/serverless/</link>
+      <pubDate>Mon, 06 Jul 2026 00:00:00 +0000</pubDate>
+      <guid>https://sendoray.github.io/tags/serverless/</guid>
       <description></description>
     </item>
     <item>
@@ -146,13 +188,6 @@
       <link>https://sendoray.github.io/tags/i/o/</link>
       <pubDate>Thu, 02 Jul 2026 00:00:00 +0000</pubDate>
       <guid>https://sendoray.github.io/tags/i/o/</guid>
-      <description></description>
-    </item>
-    <item>
-      <title>Inference</title>
-      <link>https://sendoray.github.io/tags/inference/</link>
-      <pubDate>Thu, 02 Jul 2026 00:00:00 +0000</pubDate>
-      <guid>https://sendoray.github.io/tags/inference/</guid>
       <description></description>
     </item>
     <item>

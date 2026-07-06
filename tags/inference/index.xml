@@ -6,8 +6,15 @@
     <description>Recent content in Inference on chengzhy&#39;s blog</description>
     <generator>Hugo</generator>
     <language>en</language>
-    <lastBuildDate>Thu, 02 Jul 2026 00:00:00 +0000</lastBuildDate>
+    <lastBuildDate>Mon, 06 Jul 2026 00:00:00 +0000</lastBuildDate>
     <atom:link href="https://sendoray.github.io/tags/inference/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>ServerlessLLM: 用于大语言模型的低延迟无服务器推理</title>
+      <link>https://sendoray.github.io/paperreading/2026-07-06-serverlessllm/</link>
+      <pubDate>Mon, 06 Jul 2026 00:00:00 +0000</pubDate>
+      <guid>https://sendoray.github.io/paperreading/2026-07-06-serverlessllm/</guid>
+      <description>通过多层存储检查点加载、推理实时迁移和启动时间优化调度，将无服务器 LLM 推理延迟降低 10-200×。</description>
+    </item>
     <item>
       <title>Tutti：以 GPU 为中心的 SSD KV 缓存，突破长上下文 LLM 服务的 I/O 瓶颈</title>
       <link>https://sendoray.github.io/paperreading/2026-07-02-tutti-ssd-kv-cache/</link>
