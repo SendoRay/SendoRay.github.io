@@ -2,10 +2,37 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
   xmlns:xhtml="http://www.w3.org/1999/xhtml">
   <url>
-    <loc>https://sendoray.github.io/tags/caching/</loc>
-    <lastmod>2026-07-03T00:00:00+00:00</lastmod>
+    <loc>https://sendoray.github.io/tags/agent-rl/</loc>
+    <lastmod>2026-07-06T00:00:00+00:00</lastmod>
   </url><url>
     <loc>https://sendoray.github.io/</loc>
+    <lastmod>2026-07-06T00:00:00+00:00</lastmod>
+  </url><url>
+    <loc>https://sendoray.github.io/tags/distributed-systems/</loc>
+    <lastmod>2026-07-06T00:00:00+00:00</lastmod>
+  </url><url>
+    <loc>https://sendoray.github.io/tags/heterogeneous-computing/</loc>
+    <lastmod>2026-07-06T00:00:00+00:00</lastmod>
+  </url><url>
+    <loc>https://sendoray.github.io/tags/llm/</loc>
+    <lastmod>2026-07-06T00:00:00+00:00</lastmod>
+  </url><url>
+    <loc>https://sendoray.github.io/paperreading/</loc>
+    <lastmod>2026-07-06T00:00:00+00:00</lastmod>
+  </url><url>
+    <loc>https://sendoray.github.io/tags/reinforcement-learning/</loc>
+    <lastmod>2026-07-06T00:00:00+00:00</lastmod>
+  </url><url>
+    <loc>https://sendoray.github.io/tags/resource-disaggregation/</loc>
+    <lastmod>2026-07-06T00:00:00+00:00</lastmod>
+  </url><url>
+    <loc>https://sendoray.github.io/paperreading/2026-07-06-rollart/</loc>
+    <lastmod>2026-07-06T00:00:00+00:00</lastmod>
+  </url><url>
+    <loc>https://sendoray.github.io/tags/</loc>
+    <lastmod>2026-07-06T00:00:00+00:00</lastmod>
+  </url><url>
+    <loc>https://sendoray.github.io/tags/caching/</loc>
     <lastmod>2026-07-03T00:00:00+00:00</lastmod>
   </url><url>
     <loc>https://sendoray.github.io/tags/inference-optimization/</loc>
@@ -14,16 +41,10 @@
     <loc>https://sendoray.github.io/tags/kv-cache/</loc>
     <lastmod>2026-07-03T00:00:00+00:00</lastmod>
   </url><url>
-    <loc>https://sendoray.github.io/tags/llm/</loc>
-    <lastmod>2026-07-03T00:00:00+00:00</lastmod>
-  </url><url>
     <loc>https://sendoray.github.io/paperreading/2026-07-03-lmcache/</loc>
     <lastmod>2026-07-03T00:00:00+00:00</lastmod>
   </url><url>
     <loc>https://sendoray.github.io/tags/moe/</loc>
-    <lastmod>2026-07-03T00:00:00+00:00</lastmod>
-  </url><url>
-    <loc>https://sendoray.github.io/paperreading/</loc>
     <lastmod>2026-07-03T00:00:00+00:00</lastmod>
   </url><url>
     <loc>https://sendoray.github.io/tags/pd-disaggregation/</loc>
@@ -43,12 +64,6 @@
   </url><url>
     <loc>https://sendoray.github.io/tags/system-design/</loc>
     <lastmod>2026-07-03T00:00:00+00:00</lastmod>
-  </url><url>
-    <loc>https://sendoray.github.io/tags/</loc>
-    <lastmod>2026-07-03T00:00:00+00:00</lastmod>
-  </url><url>
-    <loc>https://sendoray.github.io/tags/agent-rl/</loc>
-    <lastmod>2026-07-02T00:00:00+00:00</lastmod>
   </url><url>
     <loc>https://sendoray.github.io/paperreading/2026-07-02-cheops-llm/</loc>
     <lastmod>2026-07-02T00:00:00+00:00</lastmod>
@@ -81,9 +96,6 @@
     <lastmod>2026-07-02T00:00:00+00:00</lastmod>
   </url><url>
     <loc>https://sendoray.github.io/posts/</loc>
-    <lastmod>2026-07-02T00:00:00+00:00</lastmod>
-  </url><url>
-    <loc>https://sendoray.github.io/tags/reinforcement-learning/</loc>
     <lastmod>2026-07-02T00:00:00+00:00</lastmod>
   </url><url>
     <loc>https://sendoray.github.io/tags/ssd/</loc>
@@ -198,6 +210,8 @@
     <lastmod>2025-11-21T00:00:00+00:00</lastmod>
   </url><url>
     <loc>https://sendoray.github.io/posts/agent-rl-reading-list/</loc>
+  </url><url>
+    <loc>https://sendoray.github.io/posts/agentic_rl_full_flow/</loc>
   </url><url>
     <loc>https://sendoray.github.io/posts/blog_cosmos3_overview/</loc>
   </url><url>

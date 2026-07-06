@@ -6,8 +6,15 @@
     <description>Recent content in Agent-Rl on chengzhy&#39;s blog</description>
     <generator>Hugo</generator>
     <language>en</language>
-    <lastBuildDate>Thu, 02 Jul 2026 00:00:00 +0000</lastBuildDate>
+    <lastBuildDate>Mon, 06 Jul 2026 00:00:00 +0000</lastBuildDate>
     <atom:link href="https://sendoray.github.io/tags/agent-rl/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>RollArt: Scaling Agent Reinforcement Learning Training via Separated Infrastructure</title>
+      <link>https://sendoray.github.io/paperreading/2026-07-06-rollart/</link>
+      <pubDate>Mon, 06 Jul 2026 00:00:00 +0000</pubDate>
+      <guid>https://sendoray.github.io/paperreading/2026-07-06-rollart/</guid>
+      <description>通过分离式基础设施将智能体 RL 训练的 rollout/reward/training 解耦到异构硬件上，利用硬件亲和性映射 + 轨迹级异步执行 + 状态感知计算，在 3000+ GPU 生产集群上实现 1.35-2.05× 加速。</description>
+    </item>
     <item>
       <title>救援信用分配：当&#34;力挽狂澜&#34;比&#34;一气呵成&#34;更值钱</title>
       <link>https://sendoray.github.io/posts/2026-07-02-rescue-credit-assignment/</link>

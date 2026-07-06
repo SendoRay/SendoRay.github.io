@@ -6,8 +6,15 @@
     <description>Recent content on chengzhy&#39;s blog</description>
     <generator>Hugo</generator>
     <language>en</language>
-    <lastBuildDate>Fri, 03 Jul 2026 00:00:00 +0000</lastBuildDate>
+    <lastBuildDate>Mon, 06 Jul 2026 00:00:00 +0000</lastBuildDate>
     <atom:link href="https://sendoray.github.io/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>RollArt: Scaling Agent Reinforcement Learning Training via Separated Infrastructure</title>
+      <link>https://sendoray.github.io/paperreading/2026-07-06-rollart/</link>
+      <pubDate>Mon, 06 Jul 2026 00:00:00 +0000</pubDate>
+      <guid>https://sendoray.github.io/paperreading/2026-07-06-rollart/</guid>
+      <description>通过分离式基础设施将智能体 RL 训练的 rollout/reward/training 解耦到异构硬件上，利用硬件亲和性映射 + 轨迹级异步执行 + 状态感知计算，在 3000+ GPU 生产集群上实现 1.35-2.05× 加速。</description>
+    </item>
     <item>
       <title>LMCache: An Efficient KV Cache Layer for Enterprise-Scale LLM Inference</title>
       <link>https://sendoray.github.io/paperreading/2026-07-03-lmcache/</link>
@@ -3091,6 +3098,77 @@ E(R(\tau))_{\tau \sim P_{\theta}(\tau)} = \sum_{\tau} R(\tau) P_{\theta}(\tau)
 &lt;h2 id=&#34;七关键趋势总结&#34;&gt;七、关键趋势总结&lt;/h2&gt;
 &lt;h3 id=&#34;1-grpo-取代-ppo-成为主流&#34;&gt;1. GRPO 取代 PPO 成为主流&lt;/h3&gt;
 &lt;p&gt;最大的算法转变是从 PPO（需要昂贵 critic 网络）转向 GRPO 及变体（DAPO、Dr. GRPO），通过组内相对优势消除价值函数，大幅减少内存和计算。DeepSeek-R1 在大规模上验证了此方法。&lt;/p&gt;</description>
+    </item>
+    <item>
+      <title></title>
+      <link>https://sendoray.github.io/posts/agentic_rl_full_flow/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      <guid>https://sendoray.github.io/posts/agentic_rl_full_flow/</guid>
+      <description>&lt;h1 id=&#34;agentic-rl-全流程详解&#34;&gt;Agentic RL 全流程详解&lt;/h1&gt;
+&lt;p&gt;本文档详细阐述 ROLL 框架中 Agentic RL（智能体强化学习）的完整流程，重点说明&lt;strong&gt;容器化环境隔离机制&lt;/strong&gt;（&lt;code&gt;env.reset&lt;/code&gt; 通过 Docker 镜像拉取与容器启动完成环境初始化、&lt;code&gt;env.step&lt;/code&gt; 执行智能体动作），以及&lt;strong&gt;专用 Kubernetes 集群如何管理和隔离每个容器化环境&lt;/strong&gt;。&lt;/p&gt;
+&lt;hr&gt;
+&lt;h2 id=&#34;目录&#34;&gt;目录&lt;/h2&gt;
+&lt;ol&gt;
+&lt;li&gt;&lt;a href=&#34;#1-%E6%95%B4%E4%BD%93%E6%9E%B6%E6%9E%84%E6%A6%82%E8%A7%88&#34;&gt;整体架构概览&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&#34;#2-%E5%AE%B9%E5%99%A8%E5%8C%96%E7%8E%AF%E5%A2%83%E9%9A%94%E7%A6%BB%E6%9C%BA%E5%88%B6&#34;&gt;容器化环境隔离机制&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&#34;#3-envreset%E7%8E%AF%E5%A2%83%E5%88%9D%E5%A7%8B%E5%8C%96%E5%85%A8%E6%B5%81%E7%A8%8B&#34;&gt;env.reset()：环境初始化全流程&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&#34;#4-envstep%E6%99%BA%E8%83%BD%E4%BD%93%E5%8A%A8%E4%BD%9C%E6%89%A7%E8%A1%8C&#34;&gt;env.step()：智能体动作执行&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&#34;#5-kubernetes-%E9%9B%86%E7%BE%A4%E7%9A%84%E5%AE%B9%E5%99%A8%E7%AE%A1%E7%90%86%E4%B8%8E%E9%9A%94%E7%A6%BB&#34;&gt;Kubernetes 集群的容器管理与隔离&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&#34;#6-rollout-%E8%B0%83%E5%BA%A6%E5%A4%9A%E7%8E%AF%E5%A2%83%E5%B9%B6%E5%8F%91%E9%87%87%E6%A0%B7&#34;&gt;Rollout 调度：多环境并发采样&lt;/a&gt;
+&lt;ul&gt;
+&lt;li&gt;6.1 EnvironmentWorker — 多环境进程&lt;/li&gt;
+&lt;li&gt;6.2 GroupQueueManager — 分组采样的中央调度器&lt;/li&gt;
+&lt;li&gt;6.3 TrajEnvManager — 单环境轨迹管理器&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/li&gt;
+&lt;li&gt;&lt;a href=&#34;#7-%E5%A5%96%E5%8A%B1%E8%AE%A1%E7%AE%97%E4%B8%8E%E4%BC%98%E5%8A%BF%E4%BC%B0%E8%AE%A1&#34;&gt;奖励计算与优势估计&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&#34;#8-ppo-%E8%AE%AD%E7%BB%83%E6%9B%B4%E6%96%B0&#34;&gt;PPO 训练更新&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&#34;#9-%E5%AE%8C%E6%95%B4%E8%AE%AD%E7%BB%83%E5%BE%AA%E7%8E%AF14-%E4%B8%AA%E9%98%B6%E6%AE%B5&#34;&gt;完整训练循环：14 个阶段&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&#34;#10-%E4%B8%A4%E7%A7%8D%E4%BF%A1%E7%94%A8%E5%88%86%E9%85%8D%E8%8C%83%E5%BC%8Fstarpo-vs-gigpo&#34;&gt;两种信用分配范式：StarPO vs GiGPO&lt;/a&gt;&lt;/li&gt;
+&lt;/ol&gt;
+&lt;hr&gt;
+&lt;h2 id=&#34;1-整体架构概览&#34;&gt;1. 整体架构概览&lt;/h2&gt;
+&lt;p&gt;Agentic RL 的核心是一个&lt;strong&gt;多角色分布式系统&lt;/strong&gt;，基于 Ray 构建，包含以下关键组件：&lt;/p&gt;
+&lt;pre tabindex=&#34;0&#34;&gt;&lt;code&gt;┌─────────────────────────────────────────────────────────────────┐
+│                     AgenticPipeline (主控)                       │
+│                                                                 │
+│  ┌──────────┐  ┌──────────┐  ┌──────────┐  ┌──────────────┐    │
+│  │actor_train│  │actor_infer│  │ reference│  │    critic    │    │
+│  │ (训练集群) │  │ (推理集群) │  │(参考模型) │  │ (价值网络GAE) │    │
+│  │Megatron/  │  │ vLLM/     │  │           │  │              │    │
+│  │FSDP2      │  │ SGLang   │  │           │  │              │    │
+│  └─────┬─────┘  └─────▲─────┘  └──────────┘  └──────────────┘    │
+│        │  model_update  │                                        │
+│        └────────────────┘                                        │
+│                                                                 │
+│  ┌─────────────────────────────────────────────────────┐        │
+│  │            RolloutScheduler (Ray Actor)              │        │
+│  │  ┌──────────────────────────────────────────────┐   │        │
+│  │  │          GroupQueueManager (Ray Actor)        │   │        │
+│  │  │  GroupQueue[0] ... GroupQueue[N]              │   │        │
+│  │  └──────────────────────────────────────────────┘   │        │
+│  └───────────────────────┬──────────────────────────┘        │
+│                          │                                      │
+│  ┌───────────────────────▼──────────────────────────┐        │
+│  │          EnvironmentWorker (Ray Worker)            │        │
+│  │  ┌────────────┐ ┌────────────┐ ┌────────────┐    │        │
+│  │  │EnvManager 0│ │EnvManager 1│ │EnvManager N│    │        │
+│  │  │  (线程)    │ │  (线程)    │ │  (线程)    │    │        │
+│  │  │    ↓       │ │    ↓       │ │    ↓       │    │        │
+│  │  │  env.reset │ │  env.reset │ │  env.reset │    │        │
+│  │  │  env.step  │ │  env.step  │ │  env.step  │    │        │
+│  │  └────────────┘ └────────────┘ └────────────┘    │        │
+│  └──────────────────────────────────────────────────┘        │
+└─────────────────────────────────────────────────────────────────┘
+                         │
+          ┌──────────────▼──────────────┐
+          │   XRL Sandbox 服务 (容器编排)  │
+          │   ┌─────────┐ ┌─────────┐   │
+          │   │Container│ │Container│   │
+          │   │  env_0  │ │  env_1  │   │
+          │   └─────────┘ └─────────┘   │
+          └─────────────────────────────┘
+&lt;/code&gt;&lt;/pre&gt;&lt;p&gt;&lt;strong&gt;核心思想&lt;/strong&gt;：每个 RL 环境实例运行在一个独立的 Docker 容器中，由 XRL Sandbox 服务统一管理和隔离。训练集群负责模型参数更新，推理集群负责 rollout 时的 LLM 生成，环境集群负责运行智能体交互的沙箱。&lt;/p&gt;</description>
     </item>
     <item>
       <title></title>
