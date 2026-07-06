@@ -6,8 +6,22 @@
     <description>Recent content on chengzhy&#39;s blog</description>
     <generator>Hugo</generator>
     <language>en</language>
-    <lastBuildDate>Thu, 02 Jul 2026 00:00:00 +0000</lastBuildDate>
+    <lastBuildDate>Fri, 03 Jul 2026 00:00:00 +0000</lastBuildDate>
     <atom:link href="https://sendoray.github.io/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>LMCache: An Efficient KV Cache Layer for Enterprise-Scale LLM Inference</title>
+      <link>https://sendoray.github.io/paperreading/2026-07-03-lmcache/</link>
+      <pubDate>Fri, 03 Jul 2026 00:00:00 +0000</pubDate>
+      <guid>https://sendoray.github.io/paperreading/2026-07-03-lmcache/</guid>
+      <description>将 KV cache 从推理引擎中解耦为独立分布式缓存层，通过标准化接口实现跨查询复用、跨引擎共享与多级存储管理，吞吐量最高提升 15×。</description>
+    </item>
+    <item>
+      <title>RDMA Point-to-Point Communication for LLM Systems</title>
+      <link>https://sendoray.github.io/paperreading/2026-07-03-rdma-p2p-llm/</link>
+      <pubDate>Fri, 03 Jul 2026 00:00:00 +0000</pubDate>
+      <guid>https://sendoray.github.io/paperreading/2026-07-03-rdma-p2p-llm/</guid>
+      <description>TransferEngine —— 一个跨厂商（ConnectX-7 / AWS EFA）的 RDMA 点对点通信库，覆盖 KV cache 传输、权重更新、MoE 路由三大场景，KV-cache 传输加速 1.3×，MoE 延迟与 DeepEP 持平。</description>
+    </item>
     <item>
       <title>An I/O Characterizing Study of Offloading LLM Models and KV Caches to NVMe SSD</title>
       <link>https://sendoray.github.io/paperreading/2026-07-02-cheops-llm/</link>
@@ -1012,7 +1026,7 @@ F_{\text{fwd}} \approx 2\,\Theta \quad \text{FLOPs/token}
       <pubDate>Sun, 17 May 2026 00:00:00 +0000</pubDate>
       <guid>https://sendoray.github.io/about/</guid>
       <description>&lt;p&gt;I have completed my undergraduate study in Beijing Institute of Technology, and my teacher is &lt;a href=&#34;https://smen.bit.edu.cn/szdw/szml/znjqryjs/qb08/c0f85dc56afc4ce59e56e5ffcf35ae97.htm&#34;&gt;Huang Xiao&lt;/a&gt;. &lt;br/&gt;&lt;/p&gt;
-&lt;p&gt;At Shanghai tech University, my teacher is Professor &lt;a href=&#34;http://faculty.sist.shanghaitech.edu.cn/faculty/zhoupq/&#34;&gt;Zhou Pingqiang&lt;/a&gt;, and at the University of the Chinese Academy of Sciences, my teacher is Professor &lt;a href=&#34;https://wangying-ict.github.io/&#34;&gt;Wang Ying&lt;/a&gt;. &lt;br/&gt;&lt;/p&gt;
+&lt;p&gt;During my master&amp;rsquo;s studies, at Shanghai Tech University my advisor was Professor &lt;a href=&#34;http://faculty.sist.shanghaitech.edu.cn/faculty/zhoupq/&#34;&gt;Zhou Pingqiang&lt;/a&gt;, and at the University of the Chinese Academy of Sciences my advisor was Professor &lt;a href=&#34;https://wangying-ict.github.io/&#34;&gt;Wang Ying&lt;/a&gt;. &lt;br/&gt;&lt;/p&gt;
 &lt;p&gt;I have interned at &lt;a href=&#34;https://www.lenovo.com.cn/&#34;&gt;Lenovo&lt;/a&gt; and &lt;a href=&#34;https://www.shlab.org.cn/&#34;&gt;Shanghai AI Lab&lt;/a&gt;, and I am currently interning at &lt;a href=&#34;https://www.alibaba.com/&#34;&gt;Alibaba&lt;/a&gt;, working on RL infrastructure.&lt;/p&gt;
 &lt;p&gt;My main job now is about AI infra and LLM inference optimization.&lt;/p&gt;</description>
     </item>

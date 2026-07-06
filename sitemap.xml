@@ -2,6 +2,51 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
   xmlns:xhtml="http://www.w3.org/1999/xhtml">
   <url>
+    <loc>https://sendoray.github.io/tags/caching/</loc>
+    <lastmod>2026-07-03T00:00:00+00:00</lastmod>
+  </url><url>
+    <loc>https://sendoray.github.io/</loc>
+    <lastmod>2026-07-03T00:00:00+00:00</lastmod>
+  </url><url>
+    <loc>https://sendoray.github.io/tags/inference-optimization/</loc>
+    <lastmod>2026-07-03T00:00:00+00:00</lastmod>
+  </url><url>
+    <loc>https://sendoray.github.io/tags/kv-cache/</loc>
+    <lastmod>2026-07-03T00:00:00+00:00</lastmod>
+  </url><url>
+    <loc>https://sendoray.github.io/tags/llm/</loc>
+    <lastmod>2026-07-03T00:00:00+00:00</lastmod>
+  </url><url>
+    <loc>https://sendoray.github.io/paperreading/2026-07-03-lmcache/</loc>
+    <lastmod>2026-07-03T00:00:00+00:00</lastmod>
+  </url><url>
+    <loc>https://sendoray.github.io/tags/moe/</loc>
+    <lastmod>2026-07-03T00:00:00+00:00</lastmod>
+  </url><url>
+    <loc>https://sendoray.github.io/paperreading/</loc>
+    <lastmod>2026-07-03T00:00:00+00:00</lastmod>
+  </url><url>
+    <loc>https://sendoray.github.io/tags/pd-disaggregation/</loc>
+    <lastmod>2026-07-03T00:00:00+00:00</lastmod>
+  </url><url>
+    <loc>https://sendoray.github.io/tags/point-to-point/</loc>
+    <lastmod>2026-07-03T00:00:00+00:00</lastmod>
+  </url><url>
+    <loc>https://sendoray.github.io/tags/rdma/</loc>
+    <lastmod>2026-07-03T00:00:00+00:00</lastmod>
+  </url><url>
+    <loc>https://sendoray.github.io/paperreading/2026-07-03-rdma-p2p-llm/</loc>
+    <lastmod>2026-07-03T00:00:00+00:00</lastmod>
+  </url><url>
+    <loc>https://sendoray.github.io/tags/serving/</loc>
+    <lastmod>2026-07-03T00:00:00+00:00</lastmod>
+  </url><url>
+    <loc>https://sendoray.github.io/tags/system-design/</loc>
+    <lastmod>2026-07-03T00:00:00+00:00</lastmod>
+  </url><url>
+    <loc>https://sendoray.github.io/tags/</loc>
+    <lastmod>2026-07-03T00:00:00+00:00</lastmod>
+  </url><url>
     <loc>https://sendoray.github.io/tags/agent-rl/</loc>
     <lastmod>2026-07-02T00:00:00+00:00</lastmod>
   </url><url>
@@ -9,9 +54,6 @@
     <lastmod>2026-07-02T00:00:00+00:00</lastmod>
   </url><url>
     <loc>https://sendoray.github.io/tags/characterization/</loc>
-    <lastmod>2026-07-02T00:00:00+00:00</lastmod>
-  </url><url>
-    <loc>https://sendoray.github.io/</loc>
     <lastmod>2026-07-02T00:00:00+00:00</lastmod>
   </url><url>
     <loc>https://sendoray.github.io/tags/credit-assignment/</loc>
@@ -29,12 +71,6 @@
     <loc>https://sendoray.github.io/tags/inference/</loc>
     <lastmod>2026-07-02T00:00:00+00:00</lastmod>
   </url><url>
-    <loc>https://sendoray.github.io/tags/kv-cache/</loc>
-    <lastmod>2026-07-02T00:00:00+00:00</lastmod>
-  </url><url>
-    <loc>https://sendoray.github.io/tags/llm/</loc>
-    <lastmod>2026-07-02T00:00:00+00:00</lastmod>
-  </url><url>
     <loc>https://sendoray.github.io/paperreading/2026-07-02-mlp-offload/</loc>
     <lastmod>2026-07-02T00:00:00+00:00</lastmod>
   </url><url>
@@ -44,16 +80,10 @@
     <loc>https://sendoray.github.io/tags/offloading/</loc>
     <lastmod>2026-07-02T00:00:00+00:00</lastmod>
   </url><url>
-    <loc>https://sendoray.github.io/paperreading/</loc>
-    <lastmod>2026-07-02T00:00:00+00:00</lastmod>
-  </url><url>
     <loc>https://sendoray.github.io/posts/</loc>
     <lastmod>2026-07-02T00:00:00+00:00</lastmod>
   </url><url>
     <loc>https://sendoray.github.io/tags/reinforcement-learning/</loc>
-    <lastmod>2026-07-02T00:00:00+00:00</lastmod>
-  </url><url>
-    <loc>https://sendoray.github.io/tags/serving/</loc>
     <lastmod>2026-07-02T00:00:00+00:00</lastmod>
   </url><url>
     <loc>https://sendoray.github.io/tags/ssd/</loc>
@@ -63,9 +93,6 @@
     <lastmod>2026-07-02T00:00:00+00:00</lastmod>
   </url><url>
     <loc>https://sendoray.github.io/tags/storage/</loc>
-    <lastmod>2026-07-02T00:00:00+00:00</lastmod>
-  </url><url>
-    <loc>https://sendoray.github.io/tags/</loc>
     <lastmod>2026-07-02T00:00:00+00:00</lastmod>
   </url><url>
     <loc>https://sendoray.github.io/tags/training/</loc>

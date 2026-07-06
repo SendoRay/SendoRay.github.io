@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom" xmlns:content="http://purl.org/rss/1.0/modules/content/">
+  <channel>
+    <title>RDMA on chengzhy&#39;s blog</title>
+    <link>https://sendoray.github.io/tags/rdma/</link>
+    <description>Recent content in RDMA on chengzhy&#39;s blog</description>
+    <generator>Hugo</generator>
+    <language>en</language>
+    <lastBuildDate>Fri, 03 Jul 2026 00:00:00 +0000</lastBuildDate>
+    <atom:link href="https://sendoray.github.io/tags/rdma/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>RDMA Point-to-Point Communication for LLM Systems</title>
+      <link>https://sendoray.github.io/paperreading/2026-07-03-rdma-p2p-llm/</link>
+      <pubDate>Fri, 03 Jul 2026 00:00:00 +0000</pubDate>
+      <guid>https://sendoray.github.io/paperreading/2026-07-03-rdma-p2p-llm/</guid>
+      <description>TransferEngine —— 一个跨厂商（ConnectX-7 / AWS EFA）的 RDMA 点对点通信库，覆盖 KV cache 传输、权重更新、MoE 路由三大场景，KV-cache 传输加速 1.3×，MoE 延迟与 DeepEP 持平。</description>
+    </item>
+  </channel>
+</rss>
