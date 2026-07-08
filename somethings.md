@@ -79,6 +79,9 @@ https://yifanqiao.notion.site/Solve-the-GPU-Cost-Crisis-with-kvcached-289da9d1f4
 https://guanjiawei.ai/zh/blog/goal-two-personalities
 
 
+
+https://forceinjection.github.io/09_inference_system/kv_cache/02_systems/lmcache/local_cpu_backend.html
+
 Kubernetes
 
 
