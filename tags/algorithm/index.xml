@@ -10,9 +10,9 @@
     <atom:link href="https://sendoray.github.io/tags/algorithm/index.xml" rel="self" type="application/rss+xml" />
     <item>
       <title>强化学习入门：从基础概念到PPO算法</title>
-      <link>https://sendoray.github.io/posts/2025-11-17-reinforcement-learning-intro/</link>
+      <link>https://sendoray.github.io/self/2025-11-17-reinforcement-learning-intro/</link>
       <pubDate>Fri, 21 Nov 2025 00:00:00 +0000</pubDate>
-      <guid>https://sendoray.github.io/posts/2025-11-17-reinforcement-learning-intro/</guid>
+      <guid>https://sendoray.github.io/self/2025-11-17-reinforcement-learning-intro/</guid>
       <description>&lt;p&gt;我们以超级马里奥游戏为例，逐步了解强化学习中涉及的基本概念：&lt;/p&gt;
 &lt;ul&gt;
 &lt;li&gt;环境 (Environment)：环境是智能体所处的外部系统，它负责产生当前的状态，接收智能体的动作并返回新的状态和对应的奖励。环境的作用相当于模拟现实中的条件和反应规则，智能体只能通过与环境的交互来了解其动态变化。以超级马里奥游戏为例，环境包括玩家看到的游戏画面和后台程序逻辑。环境控制了游戏进程，例如生成敌人、提供奖励以及决定游戏何时结束。智能体并不知道环境的内部实现细节，只能依靠输入输出规则与环境互动。&lt;/li&gt;

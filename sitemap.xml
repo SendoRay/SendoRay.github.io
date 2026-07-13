@@ -113,7 +113,7 @@
     <loc>https://sendoray.github.io/tags/offloading/</loc>
     <lastmod>2026-07-02T00:00:00+00:00</lastmod>
   </url><url>
-    <loc>https://sendoray.github.io/posts/</loc>
+    <loc>https://sendoray.github.io/self/</loc>
     <lastmod>2026-07-02T00:00:00+00:00</lastmod>
   </url><url>
     <loc>https://sendoray.github.io/tags/ssd/</loc>
@@ -131,19 +131,19 @@
     <loc>https://sendoray.github.io/paperreading/2026-07-02-tutti-ssd-kv-cache/</loc>
     <lastmod>2026-07-02T00:00:00+00:00</lastmod>
   </url><url>
-    <loc>https://sendoray.github.io/posts/2026-07-02-rescue-credit-assignment/</loc>
+    <loc>https://sendoray.github.io/self/2026-07-02-rescue-credit-assignment/</loc>
     <lastmod>2026-07-02T00:00:00+00:00</lastmod>
   </url><url>
     <loc>https://sendoray.github.io/tags/agent/</loc>
     <lastmod>2026-06-26T00:00:00+00:00</lastmod>
   </url><url>
-    <loc>https://sendoray.github.io/posts/2026-06-26-agentic-infra-frontier/</loc>
+    <loc>https://sendoray.github.io/self/2026-06-26-agentic-infra-frontier/</loc>
     <lastmod>2026-06-26T00:00:00+00:00</lastmod>
   </url><url>
     <loc>https://sendoray.github.io/tags/engineering/</loc>
     <lastmod>2026-06-26T00:00:00+00:00</lastmod>
   </url><url>
-    <loc>https://sendoray.github.io/posts/2026-06-26-hyperparameter-tuning-guide/</loc>
+    <loc>https://sendoray.github.io/self/2026-06-26-hyperparameter-tuning-guide/</loc>
     <lastmod>2026-06-26T00:00:00+00:00</lastmod>
   </url><url>
     <loc>https://sendoray.github.io/tags/deep-learning/</loc>
@@ -152,92 +152,90 @@
     <loc>https://sendoray.github.io/tags/diffusion/</loc>
     <lastmod>2026-06-22T00:00:00+00:00</lastmod>
   </url><url>
-    <loc>https://sendoray.github.io/posts/2026-06-22-diffusion-model-optimization/</loc>
+    <loc>https://sendoray.github.io/self/2026-06-22-diffusion-model-optimization/</loc>
     <lastmod>2026-06-22T00:00:00+00:00</lastmod>
   </url><url>
-    <loc>https://sendoray.github.io/posts/2026-06-16-llm-training-toolchain-map/</loc>
+    <loc>https://sendoray.github.io/self/2026-06-16-llm-training-toolchain-map/</loc>
     <lastmod>2026-06-16T00:00:00+00:00</lastmod>
   </url><url>
     <loc>https://sendoray.github.io/tags/cs-foundations/</loc>
     <lastmod>2026-06-15T00:00:00+00:00</lastmod>
   </url><url>
-    <loc>https://sendoray.github.io/posts/2026-06-15-cs-foundations-3-network/</loc>
+    <loc>https://sendoray.github.io/self/2026-06-15-cs-foundations-3-network/</loc>
     <lastmod>2026-06-15T00:00:00+00:00</lastmod>
   </url><url>
-    <loc>https://sendoray.github.io/posts/2026-06-16-cs-foundations-4-communicate/</loc>
+    <loc>https://sendoray.github.io/self/2026-06-16-cs-foundations-4-communicate/</loc>
     <lastmod>2026-06-15T00:00:00+00:00</lastmod>
   </url><url>
-    <loc>https://sendoray.github.io/posts/2026-06-14-cs-foundations-2-os/</loc>
+    <loc>https://sendoray.github.io/self/2026-06-14-cs-foundations-2-os/</loc>
     <lastmod>2026-06-14T00:00:00+00:00</lastmod>
   </url><url>
-    <loc>https://sendoray.github.io/posts/2026-06-13-cs-foundations-1-architecture/</loc>
+    <loc>https://sendoray.github.io/self/2026-06-13-cs-foundations-1-architecture/</loc>
     <lastmod>2026-06-13T00:00:00+00:00</lastmod>
   </url><url>
-    <loc>https://sendoray.github.io/posts/2026-06-12-kubernetes-for-ai-infra/</loc>
+    <loc>https://sendoray.github.io/self/2026-06-12-kubernetes-for-ai-infra/</loc>
     <lastmod>2026-06-12T00:00:00+00:00</lastmod>
   </url><url>
-    <loc>https://sendoray.github.io/posts/2026-06-11-llm-panorama/</loc>
+    <loc>https://sendoray.github.io/self/2026-06-11-llm-panorama/</loc>
     <lastmod>2026-06-11T00:00:00+00:00</lastmod>
   </url><url>
-    <loc>https://sendoray.github.io/posts/2026-06-11-moe/</loc>
+    <loc>https://sendoray.github.io/self/2026-06-11-moe/</loc>
     <lastmod>2026-06-11T00:00:00+00:00</lastmod>
   </url><url>
-    <loc>https://sendoray.github.io/posts/2026-06-10-kvcache-compute-vs-transfer/</loc>
+    <loc>https://sendoray.github.io/self/2026-06-10-kvcache-compute-vs-transfer/</loc>
     <lastmod>2026-06-10T00:00:00+00:00</lastmod>
   </url><url>
-    <loc>https://sendoray.github.io/posts/2026-06-09-training/</loc>
+    <loc>https://sendoray.github.io/self/2026-06-09-training/</loc>
     <lastmod>2026-06-09T00:00:00+00:00</lastmod>
   </url><url>
-    <loc>https://sendoray.github.io/posts/2026-06-09-verl-omni-deep-dive/</loc>
+    <loc>https://sendoray.github.io/self/2026-06-09-verl-omni-deep-dive/</loc>
     <lastmod>2026-06-09T00:00:00+00:00</lastmod>
   </url><url>
-    <loc>https://sendoray.github.io/posts/2026-05-28-gpu-memory-offload-techniques/</loc>
+    <loc>https://sendoray.github.io/self/2026-05-28-gpu-memory-offload-techniques/</loc>
     <lastmod>2026-05-28T00:00:00+00:00</lastmod>
   </url><url>
     <loc>https://sendoray.github.io/recommended/</loc>
     <lastmod>2026-05-27T00:00:00+00:00</lastmod>
   </url><url>
-    <loc>https://sendoray.github.io/posts/2026-05-26-cuda-graph-deep-dive/</loc>
+    <loc>https://sendoray.github.io/self/2026-05-26-cuda-graph-deep-dive/</loc>
     <lastmod>2026-05-26T00:00:00+00:00</lastmod>
   </url><url>
     <loc>https://sendoray.github.io/tags/investment/</loc>
     <lastmod>2026-05-25T00:00:00+00:00</lastmod>
   </url><url>
-    <loc>https://sendoray.github.io/posts/2026-05-25-investor-essential-handbook/</loc>
+    <loc>https://sendoray.github.io/self/2026-05-25-investor-essential-handbook/</loc>
     <lastmod>2026-05-25T00:00:00+00:00</lastmod>
   </url><url>
-    <loc>https://sendoray.github.io/posts/2026-05-25-programmer-cheatsheet/</loc>
+    <loc>https://sendoray.github.io/self/2026-05-25-programmer-cheatsheet/</loc>
     <lastmod>2026-05-25T00:00:00+00:00</lastmod>
   </url><url>
-    <loc>https://sendoray.github.io/posts/2026-05-21-engineering-methodology-min-p-sampling/</loc>
+    <loc>https://sendoray.github.io/self/2026-05-21-engineering-methodology-min-p-sampling/</loc>
     <lastmod>2026-05-21T00:00:00+00:00</lastmod>
   </url><url>
     <loc>https://sendoray.github.io/about/</loc>
     <lastmod>2026-05-17T00:00:00+00:00</lastmod>
   </url><url>
-    <loc>https://sendoray.github.io/posts/2026-05-17-python-list-tutorial/</loc>
+    <loc>https://sendoray.github.io/self/2026-05-17-python-list-tutorial/</loc>
     <lastmod>2026-05-17T00:00:00+00:00</lastmod>
   </url><url>
-    <loc>https://sendoray.github.io/posts/2026-05-10-llm-business-competition/</loc>
+    <loc>https://sendoray.github.io/self/2026-05-10-llm-business-competition/</loc>
     <lastmod>2026-05-10T00:00:00+00:00</lastmod>
   </url><url>
     <loc>https://sendoray.github.io/tags/algorithm/</loc>
     <lastmod>2025-11-21T00:00:00+00:00</lastmod>
   </url><url>
-    <loc>https://sendoray.github.io/posts/2025-11-17-reinforcement-learning-intro/</loc>
+    <loc>https://sendoray.github.io/self/2025-11-17-reinforcement-learning-intro/</loc>
     <lastmod>2025-11-21T00:00:00+00:00</lastmod>
   </url><url>
-    <loc>https://sendoray.github.io/posts/agent-rl-reading-list/</loc>
+    <loc>https://sendoray.github.io/self/agent-rl-reading-list/</loc>
   </url><url>
-    <loc>https://sendoray.github.io/posts/agentic_rl_full_flow/</loc>
+    <loc>https://sendoray.github.io/self/agentic_rl_full_flow/</loc>
   </url><url>
-    <loc>https://sendoray.github.io/posts/blog_cosmos3_overview/</loc>
+    <loc>https://sendoray.github.io/self/blog_cosmos3_overview/</loc>
   </url><url>
-    <loc>https://sendoray.github.io/posts/mooncake_transfer_engine_guide/</loc>
+    <loc>https://sendoray.github.io/self/mooncake_transfer_engine_guide/</loc>
   </url><url>
-    <loc>https://sendoray.github.io/posts/use_eng/</loc>
-  </url><url>
-    <loc>https://sendoray.github.io/posts/%E9%80%9F%E9%80%9A%E7%89%88%E7%B3%BB%E7%BB%9F%E8%AE%BE%E8%AE%A1%E9%AB%98%E9%A2%91%E8%80%83%E7%82%B9%E6%80%BB%E7%BB%93--%E4%B8%80%E4%BA%A9%E4%B8%89%E5%88%86%E5%9C%B0-2026_6_24-230502/</loc>
+    <loc>https://sendoray.github.io/self/use_eng/</loc>
   </url><url>
     <loc>https://sendoray.github.io/categories/</loc>
   </url>

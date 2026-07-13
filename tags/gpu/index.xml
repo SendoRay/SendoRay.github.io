@@ -17,9 +17,9 @@
     </item>
     <item>
       <title>大模型训练工具链地图：从 CUDA 到 verl，到底谁在哪一层？</title>
-      <link>https://sendoray.github.io/posts/2026-06-16-llm-training-toolchain-map/</link>
+      <link>https://sendoray.github.io/self/2026-06-16-llm-training-toolchain-map/</link>
       <pubDate>Tue, 16 Jun 2026 00:00:00 +0000</pubDate>
-      <guid>https://sendoray.github.io/posts/2026-06-16-llm-training-toolchain-map/</guid>
+      <guid>https://sendoray.github.io/self/2026-06-16-llm-training-toolchain-map/</guid>
       <description>&lt;blockquote&gt;
 &lt;p&gt;很多人刚接触大模型训练时，会同时看到一堆名字：CUDA / PCIe / NVLink / InfiniBand / NCCL，PyTorch / TensorFlow，Transformers / modelscope，Qwen / Llama / DeepSeek，FSDP / DeepSpeed / Megatron，Accelerate / Ray，Trainer / LLaMA-Factory / SWIFT / TRL / OpenRLHF / verl，vLLM / SGLang。&lt;/p&gt;
 &lt;p&gt;它们经常出现在同一个 README、同一份训练配置、同一套分布式启动命令里，所以初学者很容易产生一种错觉：&lt;strong&gt;它们好像都是&amp;quot;训练框架&amp;quot;。&lt;/strong&gt;&lt;/p&gt;
@@ -80,9 +80,9 @@
     </item>
     <item>
       <title>LLM 领域，你需要知道的数字</title>
-      <link>https://sendoray.github.io/posts/2026-06-11-llm-panorama/</link>
+      <link>https://sendoray.github.io/self/2026-06-11-llm-panorama/</link>
       <pubDate>Thu, 11 Jun 2026 00:00:00 +0000</pubDate>
-      <guid>https://sendoray.github.io/posts/2026-06-11-llm-panorama/</guid>
+      <guid>https://sendoray.github.io/self/2026-06-11-llm-panorama/</guid>
       <description>&lt;blockquote&gt;
 &lt;p&gt;这篇文章不讲&amp;quot;什么是 Transformer&amp;quot;，只回答一个问题：&lt;/p&gt;
 &lt;p&gt;&lt;strong&gt;当我们说&amp;quot;跑一个 70B 模型&amp;quot;时，到底在跟多少 FLOPs、多少 GB、多少 GB/s 打交道？&lt;/strong&gt;&lt;/p&gt;&lt;/blockquote&gt;
@@ -139,9 +139,9 @@ F_{\text{fwd}} \approx 2\,\Theta \quad \text{FLOPs/token}
     </item>
     <item>
       <title>图解 MoE 并行训练：从原理到工程实践</title>
-      <link>https://sendoray.github.io/posts/2026-06-11-moe/</link>
+      <link>https://sendoray.github.io/self/2026-06-11-moe/</link>
       <pubDate>Thu, 11 Jun 2026 00:00:00 +0000</pubDate>
-      <guid>https://sendoray.github.io/posts/2026-06-11-moe/</guid>
+      <guid>https://sendoray.github.io/self/2026-06-11-moe/</guid>
       <description>&lt;blockquote&gt;
 &lt;p&gt;MoE（Mixture of Experts）如何用&amp;quot;稀疏激活&amp;quot;换取海量参数容量？Expert Parallelism 如何让数百个 Expert 分布在上百张 GPU 上协同训练？&lt;/p&gt;&lt;/blockquote&gt;
 &lt;h2 id=&#34;一开篇引入&#34;&gt;一、开篇引入&lt;/h2&gt;
@@ -151,9 +151,9 @@ F_{\text{fwd}} \approx 2\,\Theta \quad \text{FLOPs/token}
     </item>
     <item>
       <title>KV Cache 是算还是传？一份 Roofline 视角的全景账</title>
-      <link>https://sendoray.github.io/posts/2026-06-10-kvcache-compute-vs-transfer/</link>
+      <link>https://sendoray.github.io/self/2026-06-10-kvcache-compute-vs-transfer/</link>
       <pubDate>Wed, 10 Jun 2026 00:00:00 +0000</pubDate>
-      <guid>https://sendoray.github.io/posts/2026-06-10-kvcache-compute-vs-transfer/</guid>
+      <guid>https://sendoray.github.io/self/2026-06-10-kvcache-compute-vs-transfer/</guid>
       <description>&lt;h1 id=&#34;一先把-llm-推理这张计算图摆在桌上&#34;&gt;一、先把 LLM 推理这张计算图摆在桌上&lt;/h1&gt;
 &lt;p&gt;聊任何&amp;quot;算 vs 传&amp;quot;的故事之前，得先有一张&lt;strong&gt;所有 decoder-only LLM 通用的计算图&lt;/strong&gt;。Llama / Qwen / Mistral / DeepSeek 这些模型的推理路径在这一层抽象上几乎是一模一样的，区别只在每个算子的具体超参。&lt;/p&gt;
 &lt;h3 id=&#34;11-全景-ascii-图&#34;&gt;1.1 全景 ASCII 图&lt;/h3&gt;
@@ -223,9 +223,9 @@ F_{\text{fwd}} \approx 2\,\Theta \quad \text{FLOPs/token}
     </item>
     <item>
       <title>LLM训练全解</title>
-      <link>https://sendoray.github.io/posts/2026-06-09-training/</link>
+      <link>https://sendoray.github.io/self/2026-06-09-training/</link>
       <pubDate>Tue, 09 Jun 2026 00:00:00 +0000</pubDate>
-      <guid>https://sendoray.github.io/posts/2026-06-09-training/</guid>
+      <guid>https://sendoray.github.io/self/2026-06-09-training/</guid>
       <description>&lt;h2 id=&#34;一训练到底是什么&#34;&gt;一、训练到底是什么？&lt;/h2&gt;
 &lt;p&gt;深度学习的&amp;quot;训练&amp;quot;本质是一个&lt;strong&gt;反复试错并改进&lt;/strong&gt;的过程。通俗讲：&lt;/p&gt;
 &lt;ol&gt;
@@ -288,9 +288,9 @@ F_{\text{fwd}} \approx 2\,\Theta \quad \text{FLOPs/token}
     </item>
     <item>
       <title>GPU 显存 Offload 技术：训练与推理中的工程实践</title>
-      <link>https://sendoray.github.io/posts/2026-05-28-gpu-memory-offload-techniques/</link>
+      <link>https://sendoray.github.io/self/2026-05-28-gpu-memory-offload-techniques/</link>
       <pubDate>Thu, 28 May 2026 00:00:00 +0000</pubDate>
-      <guid>https://sendoray.github.io/posts/2026-05-28-gpu-memory-offload-techniques/</guid>
+      <guid>https://sendoray.github.io/self/2026-05-28-gpu-memory-offload-techniques/</guid>
       <description>&lt;blockquote&gt;
 &lt;p&gt;作者：菽陌松囿&lt;/p&gt;
 &lt;p&gt;链接：https://www.zhihu.com/question/1989041714380416374/answer/1990864712833967977&lt;/p&gt;
@@ -306,9 +306,9 @@ F_{\text{fwd}} \approx 2\,\Theta \quad \text{FLOPs/token}
     </item>
     <item>
       <title>CUDA Graph 深度解析：原理、机制与 vLLM/SGLang 中的工程实践</title>
-      <link>https://sendoray.github.io/posts/2026-05-26-cuda-graph-deep-dive/</link>
+      <link>https://sendoray.github.io/self/2026-05-26-cuda-graph-deep-dive/</link>
       <pubDate>Tue, 26 May 2026 00:00:00 +0000</pubDate>
-      <guid>https://sendoray.github.io/posts/2026-05-26-cuda-graph-deep-dive/</guid>
+      <guid>https://sendoray.github.io/self/2026-05-26-cuda-graph-deep-dive/</guid>
       <description>&lt;h2 id=&#34;一背景为什么需要-cuda-graph&#34;&gt;一、背景：为什么需要 CUDA Graph&lt;/h2&gt;
 &lt;p&gt;GPU 越来越快，单个 kernel 的执行时间已经降到微秒级别。但 &lt;strong&gt;每次从 CPU 提交一个 GPU 操作（kernel launch、memcpy 等）本身也有微秒级的 overhead&lt;/strong&gt;：&lt;/p&gt;
 &lt;ul&gt;

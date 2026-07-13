@@ -10,9 +10,9 @@
     <atom:link href="https://sendoray.github.io/tags/multi-agent/index.xml" rel="self" type="application/rss+xml" />
     <item>
       <title>救援信用分配：当&#34;力挽狂澜&#34;比&#34;一气呵成&#34;更值钱</title>
-      <link>https://sendoray.github.io/posts/2026-07-02-rescue-credit-assignment/</link>
+      <link>https://sendoray.github.io/self/2026-07-02-rescue-credit-assignment/</link>
       <pubDate>Thu, 02 Jul 2026 00:00:00 +0000</pubDate>
-      <guid>https://sendoray.github.io/posts/2026-07-02-rescue-credit-assignment/</guid>
+      <guid>https://sendoray.github.io/self/2026-07-02-rescue-credit-assignment/</guid>
       <description>提出&amp;quot;救援溢价&amp;quot;信用分配假说：在多智能体协作中，接手失败模型并成功完成任务的智能体，其信用得分应高于直接成功的智能体。形式化了三种公式变体并给出完整伪代码。</description>
     </item>
   </channel>

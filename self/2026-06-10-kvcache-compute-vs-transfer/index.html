@@ -1,0 +1,253 @@
+<!doctype html><html lang=en dir=auto data-theme=auto><head><meta charset=utf-8><meta http-equiv=X-UA-Compatible content="IE=edge"><meta name=viewport content="width=device-width,initial-scale=1,shrink-to-fit=no"><meta name=robots content="index, follow"><title>KV Cache 是算还是传？一份 Roofline 视角的全景账 | chengzhy's blog</title>
+<meta name=keywords content="LLM,GPU,Inference"><meta name=description content='一、先把 LLM 推理这张计算图摆在桌上
+聊任何"算 vs 传"的故事之前，得先有一张所有 decoder-only LLM 通用的计算图。Llama / Qwen / Mistral / DeepSeek 这些模型的推理路径在这一层抽象上几乎是一模一样的，区别只在每个算子的具体超参。
+1.1 全景 ASCII 图
+            input tokens [B, N]
+                    │
+                    ▼
+            ┌───────────────┐
+            │   Embedding   │   lookup: [V, d] → [B, N, d]
+            └───────┬───────┘
+                    │  hidden x : [B, N, d]
+                    ▼
+  ╔════════════  × L  Decoder Layers  ════════════╗
+  ║   x ─┬──────────────────────┐                  ║
+  ║      │                      │ residual         ║
+  ║      ▼                      │                  ║
+  ║  ┌─────────┐                │                  ║
+  ║  │ RMSNorm │                │                  ║
+  ║  └────┬────┘                │                  ║
+  ║       ▼                     │                  ║
+  ║  ┌──────────┐    GEMM       │                  ║
+  ║  │ QKV Proj │  x · W_qkv    │                  ║
+  ║  └────┬─────┘                │                  ║
+  ║       │ Q:[B,N,d]  K,V:[B,N,d_kv]              ║
+  ║       ▼                     │                  ║
+  ║  ┌─────────┐                │                  ║
+  ║  │  RoPE   │                │                  ║
+  ║  └────┬────┘                │     ┌──────────┐ ║
+  ║       ├──────────────────────────▶│ KV Cache │─║─ write
+  ║       │                     │     │   pool   │ ║
+  ║       ▼                     │     └────┬─────┘ ║
+  ║  ┌────────────────┐         │          │       ║
+  ║  │   Attention    │◀────────┼──────────┘       ║─ read past K,V
+  ║  │ softmax(QKᵀ)·V │         │                  ║
+  ║  └────────┬───────┘         │                  ║
+  ║           ▼                 │                  ║
+  ║  ┌──────────┐    GEMM       │                  ║
+  ║  │  O Proj  │  · W_o        │                  ║
+  ║  └────┬─────┘                │                  ║
+  ║       ▼                     │                  ║
+  ║      (+)◀───────────────────┘                  ║
+  ║       │ y                                       ║
+  ║       ├──────────────────────┐                  ║
+  ║       ▼                      │ residual         ║
+  ║  ┌─────────┐                 │                  ║
+  ║  │ RMSNorm │                 │                  ║
+  ║  └────┬────┘                 │                  ║
+  ║       ▼                      │                  ║
+  ║  ┌──────────────────┐ 3× GEMM│                  ║
+  ║  │  FFN (SwiGLU)    │        │                  ║
+  ║  │  d → d_ff → d    │        │                  ║
+  ║  └────┬─────────────┘        │                  ║
+  ║       ▼                      │                  ║
+  ║      (+)◀────────────────────┘                  ║
+  ║       │                                         ║
+  ╚═══════╪═════════════════════════════════════════╝
+          ▼
+  ┌────────────────┐
+  │  Final RMSNorm │
+  └────────┬───────┘
+           ▼
+  ┌────────────────┐    GEMM
+  │    LM Head     │  [B,N,d] · [d, V]
+  └────────┬───────┘
+           ▼
+        Logits
+这张图里值得记住的几件事：'><meta name=author content="cheng zhiyuan"><link rel=canonical href=https://sendoray.github.io/self/2026-06-10-kvcache-compute-vs-transfer/><meta name=google-site-verification content="XYZabc"><meta name=yandex-verification content="XYZabc"><meta name=msvalidate.01 content="XYZabc"><link crossorigin=anonymous href=/assets/css/stylesheet.b09e54c196c52a0d97fb066a79232fc5a6d39e4b41e064579616f82999a36498.css integrity="sha256-sJ5UwZbFKg2X+wZqeSMvxabTnktB4GRXlhb4KZmjZJg=" rel="preload stylesheet" as=style><link rel=icon href=https://sendoray.github.io/%3Clink%20/%20abs%20url%3E><link rel=icon type=image/png sizes=16x16 href=https://sendoray.github.io/%3Clink%20/%20abs%20url%3E><link rel=icon type=image/png sizes=32x32 href=https://sendoray.github.io/%3Clink%20/%20abs%20url%3E><link rel=apple-touch-icon href=https://sendoray.github.io/%3Clink%20/%20abs%20url%3E><link rel=mask-icon href=https://sendoray.github.io/%3Clink%20/%20abs%20url%3E><meta name=theme-color content="#2e2e33"><meta name=msapplication-TileColor content="#2e2e33"><link rel=alternate hreflang=en href=https://sendoray.github.io/self/2026-06-10-kvcache-compute-vs-transfer/><noscript><style>#theme-toggle,.top-link{display:none}</style><style>@media(prefers-color-scheme:dark){:root{--theme:rgb(29, 30, 32);--entry:rgb(46, 46, 51);--primary:rgb(218, 218, 219);--secondary:rgb(155, 156, 157);--tertiary:rgb(65, 66, 68);--content:rgb(196, 196, 197);--code-block-bg:rgb(46, 46, 51);--code-bg:rgb(55, 56, 62);--border:rgb(51, 51, 51);color-scheme:dark}.list{background:var(--theme)}.toc{background:var(--entry)}}</style></noscript><script>localStorage.getItem("pref-theme")==="dark"?document.querySelector("html").dataset.theme="dark":localStorage.getItem("pref-theme")==="light"?document.querySelector("html").dataset.theme="light":window.matchMedia("(prefers-color-scheme: dark)").matches?document.querySelector("html").dataset.theme="dark":document.querySelector("html").dataset.theme="light"</script><link rel=stylesheet href=https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css integrity=sha384-nB0miv6/jRmo5UMMR1wu3Gz6NLsoTkbqJghGIsx//Rlm+ZU03BU6SQNC66uf4l5+ crossorigin=anonymous><script defer src=https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js integrity=sha384-7zkQWkzuo3B5mTepMUcHkMB5jZaolc2xDwL6VFqjFALcbeS9Ggm/Yr2r3Dy4lfFg crossorigin=anonymous></script><script defer src=https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js integrity=sha384-43gviWU0YVjaDtb/GhzOouOXtZMP/7XUzwPTstBeZFe/+rCMvRwr4yROQP43s0Xk crossorigin=anonymous></script><script>document.addEventListener("DOMContentLoaded",function(){renderMathInElement(document.body,{delimiters:[{left:"\\[",right:"\\]",display:!0},{left:"$$",right:"$$",display:!0},{left:"\\(",right:"\\)",display:!1},{left:"$",right:"$",display:!1}],throwOnError:!1})})</script><meta property="og:url" content="https://sendoray.github.io/self/2026-06-10-kvcache-compute-vs-transfer/"><meta property="og:site_name" content="chengzhy's blog"><meta property="og:title" content="KV Cache 是算还是传？一份 Roofline 视角的全景账"><meta property="og:description" content='一、先把 LLM 推理这张计算图摆在桌上 聊任何"算 vs 传"的故事之前，得先有一张所有 decoder-only LLM 通用的计算图。Llama / Qwen / Mistral / DeepSeek 这些模型的推理路径在这一层抽象上几乎是一模一样的，区别只在每个算子的具体超参。
+1.1 全景 ASCII 图 input tokens [B, N] │ ▼ ┌───────────────┐ │ Embedding │ lookup: [V, d] → [B, N, d] └───────┬───────┘ │ hidden x : [B, N, d] ▼ ╔════════════ × L Decoder Layers ════════════╗ ║ x ─┬──────────────────────┐ ║ ║ │ │ residual ║ ║ ▼ │ ║ ║ ┌─────────┐ │ ║ ║ │ RMSNorm │ │ ║ ║ └────┬────┘ │ ║ ║ ▼ │ ║ ║ ┌──────────┐ GEMM │ ║ ║ │ QKV Proj │ x · W_qkv │ ║ ║ └────┬─────┘ │ ║ ║ │ Q:[B,N,d] K,V:[B,N,d_kv] ║ ║ ▼ │ ║ ║ ┌─────────┐ │ ║ ║ │ RoPE │ │ ║ ║ └────┬────┘ │ ┌──────────┐ ║ ║ ├──────────────────────────▶│ KV Cache │─║─ write ║ │ │ │ pool │ ║ ║ ▼ │ └────┬─────┘ ║ ║ ┌────────────────┐ │ │ ║ ║ │ Attention │◀────────┼──────────┘ ║─ read past K,V ║ │ softmax(QKᵀ)·V │ │ ║ ║ └────────┬───────┘ │ ║ ║ ▼ │ ║ ║ ┌──────────┐ GEMM │ ║ ║ │ O Proj │ · W_o │ ║ ║ └────┬─────┘ │ ║ ║ ▼ │ ║ ║ (+)◀───────────────────┘ ║ ║ │ y ║ ║ ├──────────────────────┐ ║ ║ ▼ │ residual ║ ║ ┌─────────┐ │ ║ ║ │ RMSNorm │ │ ║ ║ └────┬────┘ │ ║ ║ ▼ │ ║ ║ ┌──────────────────┐ 3× GEMM│ ║ ║ │ FFN (SwiGLU) │ │ ║ ║ │ d → d_ff → d │ │ ║ ║ └────┬─────────────┘ │ ║ ║ ▼ │ ║ ║ (+)◀────────────────────┘ ║ ║ │ ║ ╚═══════╪═════════════════════════════════════════╝ ▼ ┌────────────────┐ │ Final RMSNorm │ └────────┬───────┘ ▼ ┌────────────────┐ GEMM │ LM Head │ [B,N,d] · [d, V] └────────┬───────┘ ▼ Logits 这张图里值得记住的几件事：'><meta property="og:locale" content="en"><meta property="og:type" content="article"><meta property="article:section" content="self"><meta property="article:published_time" content="2026-06-10T00:00:00+00:00"><meta property="article:modified_time" content="2026-06-10T00:00:00+00:00"><meta property="article:tag" content="LLM"><meta property="article:tag" content="GPU"><meta property="article:tag" content="Inference"><meta name=twitter:card content="summary"><meta name=twitter:title content="KV Cache 是算还是传？一份 Roofline 视角的全景账"><meta name=twitter:description content='一、先把 LLM 推理这张计算图摆在桌上 聊任何"算 vs 传"的故事之前，得先有一张所有 decoder-only LLM 通用的计算图。Llama / Qwen / Mistral / DeepSeek 这些模型的推理路径在这一层抽象上几乎是一模一样的，区别只在每个算子的具体超参。
+1.1 全景 ASCII 图 input tokens [B, N] │ ▼ ┌───────────────┐ │ Embedding │ lookup: [V, d] → [B, N, d] └───────┬───────┘ │ hidden x : [B, N, d] ▼ ╔════════════ × L Decoder Layers ════════════╗ ║ x ─┬──────────────────────┐ ║ ║ │ │ residual ║ ║ ▼ │ ║ ║ ┌─────────┐ │ ║ ║ │ RMSNorm │ │ ║ ║ └────┬────┘ │ ║ ║ ▼ │ ║ ║ ┌──────────┐ GEMM │ ║ ║ │ QKV Proj │ x · W_qkv │ ║ ║ └────┬─────┘ │ ║ ║ │ Q:[B,N,d] K,V:[B,N,d_kv] ║ ║ ▼ │ ║ ║ ┌─────────┐ │ ║ ║ │ RoPE │ │ ║ ║ └────┬────┘ │ ┌──────────┐ ║ ║ ├──────────────────────────▶│ KV Cache │─║─ write ║ │ │ │ pool │ ║ ║ ▼ │ └────┬─────┘ ║ ║ ┌────────────────┐ │ │ ║ ║ │ Attention │◀────────┼──────────┘ ║─ read past K,V ║ │ softmax(QKᵀ)·V │ │ ║ ║ └────────┬───────┘ │ ║ ║ ▼ │ ║ ║ ┌──────────┐ GEMM │ ║ ║ │ O Proj │ · W_o │ ║ ║ └────┬─────┘ │ ║ ║ ▼ │ ║ ║ (+)◀───────────────────┘ ║ ║ │ y ║ ║ ├──────────────────────┐ ║ ║ ▼ │ residual ║ ║ ┌─────────┐ │ ║ ║ │ RMSNorm │ │ ║ ║ └────┬────┘ │ ║ ║ ▼ │ ║ ║ ┌──────────────────┐ 3× GEMM│ ║ ║ │ FFN (SwiGLU) │ │ ║ ║ │ d → d_ff → d │ │ ║ ║ └────┬─────────────┘ │ ║ ║ ▼ │ ║ ║ (+)◀────────────────────┘ ║ ║ │ ║ ╚═══════╪═════════════════════════════════════════╝ ▼ ┌────────────────┐ │ Final RMSNorm │ └────────┬───────┘ ▼ ┌────────────────┐ GEMM │ LM Head │ [B,N,d] · [d, V] └────────┬───────┘ ▼ Logits 这张图里值得记住的几件事：'><script type=application/ld+json>{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Selves","item":"https://sendoray.github.io/self/"},{"@type":"ListItem","position":2,"name":"KV Cache 是算还是传？一份 Roofline 视角的全景账","item":"https://sendoray.github.io/self/2026-06-10-kvcache-compute-vs-transfer/"}]}</script><script type=application/ld+json>{"@context":"https://schema.org","@type":"BlogPosting","headline":"KV Cache 是算还是传？一份 Roofline 视角的全景账","name":"KV Cache 是算还是传？一份 Roofline 视角的全景账","description":"一、先把 LLM 推理这张计算图摆在桌上 聊任何\u0026quot;算 vs 传\u0026quot;的故事之前，得先有一张所有 decoder-only LLM 通用的计算图。Llama / Qwen / Mistral / DeepSeek 这些模型的推理路径在这一层抽象上几乎是一模一样的，区别只在每个算子的具体超参。\n1.1 全景 ASCII 图 input tokens [B, N] │ ▼ ┌───────────────┐ │ Embedding │ lookup: [V, d] → [B, N, d] └───────┬───────┘ │ hidden x : [B, N, d] ▼ ╔════════════ × L Decoder Layers ════════════╗ ║ x ─┬──────────────────────┐ ║ ║ │ │ residual ║ ║ ▼ │ ║ ║ ┌─────────┐ │ ║ ║ │ RMSNorm │ │ ║ ║ └────┬────┘ │ ║ ║ ▼ │ ║ ║ ┌──────────┐ GEMM │ ║ ║ │ QKV Proj │ x · W_qkv │ ║ ║ └────┬─────┘ │ ║ ║ │ Q:[B,N,d] K,V:[B,N,d_kv] ║ ║ ▼ │ ║ ║ ┌─────────┐ │ ║ ║ │ RoPE │ │ ║ ║ └────┬────┘ │ ┌──────────┐ ║ ║ ├──────────────────────────▶│ KV Cache │─║─ write ║ │ │ │ pool │ ║ ║ ▼ │ └────┬─────┘ ║ ║ ┌────────────────┐ │ │ ║ ║ │ Attention │◀────────┼──────────┘ ║─ read past K,V ║ │ softmax(QKᵀ)·V │ │ ║ ║ └────────┬───────┘ │ ║ ║ ▼ │ ║ ║ ┌──────────┐ GEMM │ ║ ║ │ O Proj │ · W_o │ ║ ║ └────┬─────┘ │ ║ ║ ▼ │ ║ ║ (+)◀───────────────────┘ ║ ║ │ y ║ ║ ├──────────────────────┐ ║ ║ ▼ │ residual ║ ║ ┌─────────┐ │ ║ ║ │ RMSNorm │ │ ║ ║ └────┬────┘ │ ║ ║ ▼ │ ║ ║ ┌──────────────────┐ 3× GEMM│ ║ ║ │ FFN (SwiGLU) │ │ ║ ║ │ d → d_ff → d │ │ ║ ║ └────┬─────────────┘ │ ║ ║ ▼ │ ║ ║ (+)◀────────────────────┘ ║ ║ │ ║ ╚═══════╪═════════════════════════════════════════╝ ▼ ┌────────────────┐ │ Final RMSNorm │ └────────┬───────┘ ▼ ┌────────────────┐ GEMM │ LM Head │ [B,N,d] · [d, V] └────────┬───────┘ ▼ Logits 这张图里值得记住的几件事：\n","keywords":["LLM","GPU","Inference"],"articleBody":"一、先把 LLM 推理这张计算图摆在桌上 聊任何\"算 vs 传\"的故事之前，得先有一张所有 decoder-only LLM 通用的计算图。Llama / Qwen / Mistral / DeepSeek 这些模型的推理路径在这一层抽象上几乎是一模一样的，区别只在每个算子的具体超参。\n1.1 全景 ASCII 图 input tokens [B, N] │ ▼ ┌───────────────┐ │ Embedding │ lookup: [V, d] → [B, N, d] └───────┬───────┘ │ hidden x : [B, N, d] ▼ ╔════════════ × L Decoder Layers ════════════╗ ║ x ─┬──────────────────────┐ ║ ║ │ │ residual ║ ║ ▼ │ ║ ║ ┌─────────┐ │ ║ ║ │ RMSNorm │ │ ║ ║ └────┬────┘ │ ║ ║ ▼ │ ║ ║ ┌──────────┐ GEMM │ ║ ║ │ QKV Proj │ x · W_qkv │ ║ ║ └────┬─────┘ │ ║ ║ │ Q:[B,N,d] K,V:[B,N,d_kv] ║ ║ ▼ │ ║ ║ ┌─────────┐ │ ║ ║ │ RoPE │ │ ║ ║ └────┬────┘ │ ┌──────────┐ ║ ║ ├──────────────────────────▶│ KV Cache │─║─ write ║ │ │ │ pool │ ║ ║ ▼ │ └────┬─────┘ ║ ║ ┌────────────────┐ │ │ ║ ║ │ Attention │◀────────┼──────────┘ ║─ read past K,V ║ │ softmax(QKᵀ)·V │ │ ║ ║ └────────┬───────┘ │ ║ ║ ▼ │ ║ ║ ┌──────────┐ GEMM │ ║ ║ │ O Proj │ · W_o │ ║ ║ └────┬─────┘ │ ║ ║ ▼ │ ║ ║ (+)◀───────────────────┘ ║ ║ │ y ║ ║ ├──────────────────────┐ ║ ║ ▼ │ residual ║ ║ ┌─────────┐ │ ║ ║ │ RMSNorm │ │ ║ ║ └────┬────┘ │ ║ ║ ▼ │ ║ ║ ┌──────────────────┐ 3× GEMM│ ║ ║ │ FFN (SwiGLU) │ │ ║ ║ │ d → d_ff → d │ │ ║ ║ └────┬─────────────┘ │ ║ ║ ▼ │ ║ ║ (+)◀────────────────────┘ ║ ║ │ ║ ╚═══════╪═════════════════════════════════════════╝ ▼ ┌────────────────┐ │ Final RMSNorm │ └────────┬───────┘ ▼ ┌────────────────┐ GEMM │ LM Head │ [B,N,d] · [d, V] └────────┬───────┘ ▼ Logits 这张图里值得记住的几件事：\n整张图被堆 \\(L\\) 次，每一层结构完全相同； GEMM 一共 5 个：QKV、O、FFN 的 gate / up / down； 唯一带\"状态\"的算子是 Attention——它要读历史 token 的 K、V； KV Cache 是这张图里唯一可以跨 request、跨调用复用的中间结果。这一点是后面所有讨论的钩子。 1.2 每个算子在花什么钱 用 \\(d\\) 表示 hidden size，\\(h\\) 是 query head 数，\\(h_{kv}\\) 是 KV head 数（GQA 时 \\(h_{kv}","wordCount":"1468","inLanguage":"en","datePublished":"2026-06-10T00:00:00Z","dateModified":"2026-06-10T00:00:00Z","author":{"@type":"Person","name":"cheng zhiyuan"},"mainEntityOfPage":{"@type":"WebPage","@id":"https://sendoray.github.io/self/2026-06-10-kvcache-compute-vs-transfer/"},"publisher":{"@type":"Organization","name":"chengzhy's blog","logo":{"@type":"ImageObject","url":"https://sendoray.github.io/%3Clink%20/%20abs%20url%3E"}}}</script></head><body id=top><header class=header><nav class=header-nav><div class=logo><a href=https://sendoray.github.io/ accesskey=h title="Home (Alt + H)"><img src=https://sendoray.github.io/apple-touch-icon.png alt aria-label=logo height=35>Home</a><div class=logo-switches><button id=theme-toggle class=theme-toggle accesskey=t title="(Alt + T)" aria-label="Toggle theme"><svg class="moon" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentcolor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"/></svg><svg class="sun" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentcolor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg></button></div></div><ul id=menu class=menu><li><a href=https://sendoray.github.io/posts/ title=Posts><span>Posts</span></a></li><li><a href=https://sendoray.github.io/paperreading/ title="Paper Reading"><span>Paper Reading</span></a></li><li><a href=https://sendoray.github.io/about/ title=About><span>About</span></a></li><li><a href=https://sendoray.github.io/recommended/ title=Recommended><span>Recommended</span></a></li></ul></nav></header><main class=main><article class=post-single><header class=post-header><nav class=breadcrumbs role=navigation aria-label=Breadcrumb><a href=/>Home</a>
+<svg viewBox="0 0 24 24" fill="none" stroke="currentcolor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-chevron-right"><polyline points="9 18 15 12 9 6"/></svg>
+<a href=/self/>Selves</a><svg viewBox="0 0 24 24" fill="none" stroke="currentcolor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-chevron-right"><polyline points="9 18 15 12 9 6"/></svg></nav><h1 class="post-title entry-hint-parent">KV Cache 是算还是传？一份 Roofline 视角的全景账</h1><div class=post-meta><span title='2026-06-10 00:00:00 +0000 UTC'>June 10, 2026</span>&nbsp;·&nbsp;<span>7 min</span>&nbsp;·&nbsp;<span>1468 words</span>&nbsp;·&nbsp;<span>cheng zhiyuan</span></div></header><details class=toc><summary accesskey=c title="(Alt + C)"><span class=title>Table of Contents</span></summary><div class=inner><nav id=TableOfContents><ul><li><ul><li><a href=#11-全景-ascii-图>1.1 全景 ASCII 图</a></li><li><a href=#12-每个算子在花什么钱>1.2 每个算子在花什么钱</a></li><li><a href=#13-同一张图两种-roofline>1.3 同一张图，两种 roofline</a></li><li><a href=#14-为什么-kv-cache-是这张图里唯一值得搬的东西>1.4 为什么 KV Cache 是这张图里"唯一值得搬"的东西</a></li></ul></li><li><a href=#二问题的起点算还是传>二、问题的起点：算还是传</a></li><li><a href=#三两边各是什么>三、两边各是什么</a><ul><li><a href=#21-重算时间>2.1 重算时间</a></li><li><a href=#22-传输时间>2.2 传输时间</a></li></ul></li><li><a href=#四把不等式两边都化成每-token>四、把不等式两边都化成"每 token"</a></li><li><a href=#五几个真实场景的算账>五、几个真实场景的算账</a><ul><li><a href=#场景-a同机内-h2dcpu--gpupcie-gen5>场景 A：同机内 H2D（CPU → GPU，PCIe Gen5）</a></li><li><a href=#场景-b跨机-pd-分离400-gbe--ib-ndr>场景 B：跨机 PD 分离（400 GbE / IB NDR）</a></li><li><a href=#场景-c低端集群100-gbe>场景 C：低端集群（100 GbE）</a></li><li><a href=#场景-dssd-持久化-kv>场景 D：SSD 持久化 KV</a></li><li><a href=#场景-emha-模型无-gqa比如-gpt-3-175b>场景 E：MHA 模型（无 GQA，比如 GPT-3 175B）</a></li></ul></li><li><a href=#六不等式之外的二阶因素>六、不等式之外的二阶因素</a><ul><li><a href=#51-overlap>5.1 Overlap</a></li><li><a href=#52-attention-的二次项>5.2 Attention 的二次项</a></li><li><a href=#53-显存和-batch-重组>5.3 显存和 batch 重组</a></li><li><a href=#54-命中率>5.4 命中率</a></li><li><a href=#55-量化>5.5 量化</a></li></ul></li><li><a href=#七一张总表>七、一张总表</a></li><li><a href=#八给工程决策的几句话>八、给工程决策的几句话</a></li><li><a href=#九小结>九、小结</a></li></ul></nav></div></details><div class="post-content md-content"><h1 id=一先把-llm-推理这张计算图摆在桌上>一、先把 LLM 推理这张计算图摆在桌上<a hidden class=anchor aria-hidden=true href=#一先把-llm-推理这张计算图摆在桌上>#</a></h1><p>聊任何"算 vs 传"的故事之前，得先有一张<strong>所有 decoder-only LLM 通用的计算图</strong>。Llama / Qwen / Mistral / DeepSeek 这些模型的推理路径在这一层抽象上几乎是一模一样的，区别只在每个算子的具体超参。</p><h3 id=11-全景-ascii-图>1.1 全景 ASCII 图<a hidden class=anchor aria-hidden=true href=#11-全景-ascii-图>#</a></h3><div class=highlight><pre tabindex=0 class=chroma><code class=language-text data-lang=text><span class=line><span class=cl>            input tokens [B, N]
+</span></span><span class=line><span class=cl>                    │
+</span></span><span class=line><span class=cl>                    ▼
+</span></span><span class=line><span class=cl>            ┌───────────────┐
+</span></span><span class=line><span class=cl>            │   Embedding   │   lookup: [V, d] → [B, N, d]
+</span></span><span class=line><span class=cl>            └───────┬───────┘
+</span></span><span class=line><span class=cl>                    │  hidden x : [B, N, d]
+</span></span><span class=line><span class=cl>                    ▼
+</span></span><span class=line><span class=cl>  ╔════════════  × L  Decoder Layers  ════════════╗
+</span></span><span class=line><span class=cl>  ║   x ─┬──────────────────────┐                  ║
+</span></span><span class=line><span class=cl>  ║      │                      │ residual         ║
+</span></span><span class=line><span class=cl>  ║      ▼                      │                  ║
+</span></span><span class=line><span class=cl>  ║  ┌─────────┐                │                  ║
+</span></span><span class=line><span class=cl>  ║  │ RMSNorm │                │                  ║
+</span></span><span class=line><span class=cl>  ║  └────┬────┘                │                  ║
+</span></span><span class=line><span class=cl>  ║       ▼                     │                  ║
+</span></span><span class=line><span class=cl>  ║  ┌──────────┐    GEMM       │                  ║
+</span></span><span class=line><span class=cl>  ║  │ QKV Proj │  x · W_qkv    │                  ║
+</span></span><span class=line><span class=cl>  ║  └────┬─────┘                │                  ║
+</span></span><span class=line><span class=cl>  ║       │ Q:[B,N,d]  K,V:[B,N,d_kv]              ║
+</span></span><span class=line><span class=cl>  ║       ▼                     │                  ║
+</span></span><span class=line><span class=cl>  ║  ┌─────────┐                │                  ║
+</span></span><span class=line><span class=cl>  ║  │  RoPE   │                │                  ║
+</span></span><span class=line><span class=cl>  ║  └────┬────┘                │     ┌──────────┐ ║
+</span></span><span class=line><span class=cl>  ║       ├──────────────────────────▶│ KV Cache │─║─ write
+</span></span><span class=line><span class=cl>  ║       │                     │     │   pool   │ ║
+</span></span><span class=line><span class=cl>  ║       ▼                     │     └────┬─────┘ ║
+</span></span><span class=line><span class=cl>  ║  ┌────────────────┐         │          │       ║
+</span></span><span class=line><span class=cl>  ║  │   Attention    │◀────────┼──────────┘       ║─ read past K,V
+</span></span><span class=line><span class=cl>  ║  │ softmax(QKᵀ)·V │         │                  ║
+</span></span><span class=line><span class=cl>  ║  └────────┬───────┘         │                  ║
+</span></span><span class=line><span class=cl>  ║           ▼                 │                  ║
+</span></span><span class=line><span class=cl>  ║  ┌──────────┐    GEMM       │                  ║
+</span></span><span class=line><span class=cl>  ║  │  O Proj  │  · W_o        │                  ║
+</span></span><span class=line><span class=cl>  ║  └────┬─────┘                │                  ║
+</span></span><span class=line><span class=cl>  ║       ▼                     │                  ║
+</span></span><span class=line><span class=cl>  ║      (+)◀───────────────────┘                  ║
+</span></span><span class=line><span class=cl>  ║       │ y                                       ║
+</span></span><span class=line><span class=cl>  ║       ├──────────────────────┐                  ║
+</span></span><span class=line><span class=cl>  ║       ▼                      │ residual         ║
+</span></span><span class=line><span class=cl>  ║  ┌─────────┐                 │                  ║
+</span></span><span class=line><span class=cl>  ║  │ RMSNorm │                 │                  ║
+</span></span><span class=line><span class=cl>  ║  └────┬────┘                 │                  ║
+</span></span><span class=line><span class=cl>  ║       ▼                      │                  ║
+</span></span><span class=line><span class=cl>  ║  ┌──────────────────┐ 3× GEMM│                  ║
+</span></span><span class=line><span class=cl>  ║  │  FFN (SwiGLU)    │        │                  ║
+</span></span><span class=line><span class=cl>  ║  │  d → d_ff → d    │        │                  ║
+</span></span><span class=line><span class=cl>  ║  └────┬─────────────┘        │                  ║
+</span></span><span class=line><span class=cl>  ║       ▼                      │                  ║
+</span></span><span class=line><span class=cl>  ║      (+)◀────────────────────┘                  ║
+</span></span><span class=line><span class=cl>  ║       │                                         ║
+</span></span><span class=line><span class=cl>  ╚═══════╪═════════════════════════════════════════╝
+</span></span><span class=line><span class=cl>          ▼
+</span></span><span class=line><span class=cl>  ┌────────────────┐
+</span></span><span class=line><span class=cl>  │  Final RMSNorm │
+</span></span><span class=line><span class=cl>  └────────┬───────┘
+</span></span><span class=line><span class=cl>           ▼
+</span></span><span class=line><span class=cl>  ┌────────────────┐    GEMM
+</span></span><span class=line><span class=cl>  │    LM Head     │  [B,N,d] · [d, V]
+</span></span><span class=line><span class=cl>  └────────┬───────┘
+</span></span><span class=line><span class=cl>           ▼
+</span></span><span class=line><span class=cl>        Logits
+</span></span></code></pre></div><p>这张图里值得记住的几件事：</p><ul><li><strong>整张图被堆 <span class="math inline">\(L\)</span>
+次</strong>，每一层结构完全相同；</li><li><strong>GEMM 一共 5 个</strong>：QKV、O、FFN 的 gate / up / down；</li><li><strong>唯一带"状态"的算子是 Attention</strong>——它要读历史 token 的 K、V；</li><li><strong>KV Cache 是这张图里唯一可以跨 request、跨调用复用的中间结果</strong>。这一点是后面所有讨论的钩子。</li></ul><h3 id=12-每个算子在花什么钱>1.2 每个算子在花什么钱<a hidden class=anchor aria-hidden=true href=#12-每个算子在花什么钱>#</a></h3><p>用 <span class="math inline">\(d\)</span>
+表示 hidden size，<span class="math inline">\(h\)</span>
+是 query head 数，<span class="math inline">\(h_{kv}\)</span>
+是 KV head 数（GQA 时 <span class="math inline">\(h_{kv}&lt;h\)</span>
+），<span class="math inline">\(d_h\)</span>
+是 head dim（<span class="math inline">\(d = h \cdot d_h\)</span>
+，记 <span class="math inline">\(d_{kv} = h_{kv} \cdot d_h\)</span>
+），<span class="math inline">\(d_{ff}\)</span>
+是 FFN 中间维度，<span class="math inline">\(N_q\)</span>
+是当前 batch 里要处理的 query token 数，<span class="math inline">\(N_{kv}\)</span>
+是 KV cache 中已有 token 数。一层之内，每个 query token 的开销大致如下：</p><table><thead><tr><th>算子</th><th>FLOPs / token</th><th>主要 memory traffic</th><th>bound（prefill / decode）</th></tr></thead><tbody><tr><td>RMSNorm × 2</td><td><span class="math inline">\(\sim 10\,d\)</span></td><td>读写 hidden <span class="math inline">\(\sim 4d\)</span></td><td>mem / mem</td></tr><tr><td>QKV Proj</td><td><span class="math inline">\(2d(d+2d_{kv})\)</span></td><td>读权重 <span class="math inline">\(d(d+2d_{kv})\)</span></td><td><strong>comp</strong> / mem</td></tr><tr><td>RoPE</td><td><span class="math inline">\(\sim 6(d+d_{kv})\)</span></td><td>element-wise</td><td>mem / mem</td></tr><tr><td>Attention（QKᵀ + softmax + ·V）</td><td><span class="math inline">\(\sim 4d \cdot N_{kv}\)</span></td><td>读 KV cache <span class="math inline">\(2 \cdot N_{kv} \cdot d_{kv} \cdot \text{bytes}\)</span></td><td>comp / <strong>mem</strong></td></tr><tr><td>Output Proj</td><td><span class="math inline">\(2d^2\)</span></td><td>读权重 <span class="math inline">\(d^2\)</span></td><td><strong>comp</strong> / mem</td></tr><tr><td>FFN（SwiGLU 3 GEMM）</td><td><span class="math inline">\(6 \cdot d \cdot d_{ff}\)</span></td><td>读权重 <span class="math inline">\(3 \cdot d \cdot d_{ff}\)</span></td><td><strong>comp</strong> / mem</td></tr></tbody></table><p>把整层加起来，每个 token 在一层的非 attention 部分 FLOPs 大约是：</p><div class="math display">\[
+f_{\text{layer}} \;\approx\; 2\bigl[\,d(d+2d_{kv}) + d^2 + 3 d \cdot d_{ff}\,\bigr] \;=\; 2 \cdot \Theta_{\text{layer}}
+\]</div><p>这正是大家常说的 <strong>&ldquo;前向 ≈ 2Θ FLOPs / token&rdquo;</strong> 那条经验公式的来源——它就是把上表里所有 GEMM 的参数量乘 2 累加起来。</p><p>以 Llama-3-70B（<span class="math inline">\(d{=}8192\)</span>
+, <span class="math inline">\(h_{kv}{=}8\)</span>
+, <span class="math inline">\(d_h{=}128\)</span>
+, <span class="math inline">\(d_{ff}{=}28672\)</span>
+, <span class="math inline">\(L{=}80\)</span>
+）代入：</p><ul><li>每层非 attention 参数 <span class="math inline">\(\approx 856\,\text{M}\)</span></li><li>全模型 <span class="math inline">\(\approx 80 \times 856\,\text{M} \approx 68.5\,\text{B}\)</span>
+✓ 跟标称 70B 对得上</li><li>每 token 前向 FLOPs <span class="math inline">\(\approx 2 \times 70\,\text{B} \approx 140\,\text{GFLOPs}\)</span></li></ul><h3 id=13-同一张图两种-roofline>1.3 同一张图，两种 roofline<a hidden class=anchor aria-hidden=true href=#13-同一张图两种-roofline>#</a></h3><p>关键观察是：<strong>同一张图，prefill 和 decode 落在 roofline 的两端</strong>。</p><p><strong>Prefill</strong>（一次性吃 <span class="math inline">\(N\)</span>
+个 token）：</p><ul><li>所有 GEMM 的形状是 <span class="math inline">\([N, d] \times [d, d']\)</span>
+，矩阵-矩阵乘，arithmetic intensity 高；</li><li>Attention 是 <span class="math inline">\([N, d] \cdot [d, N]\)</span>
+，FLOPs 随 <span class="math inline">\(N^2\)</span>
+增长；</li><li><strong>整体 compute-bound</strong>，瓶颈是 GPU 的 BF16/FP8 算力。</li></ul><p><strong>Decode</strong>（每次只算 1 个 query token，但要看完所有历史 KV）：</p><ul><li>GEMM 退化成 <span class="math inline">\([1, d] \times [d, d']\)</span>
+，本质是矩阵-向量乘，arithmetic intensity 极低；</li><li>Attention 每生成 1 个 token 就要把 <span class="math inline">\(N_{kv}\)</span>
+个历史 token 的 K、V 全部读一遍；</li><li><strong>整体 memory-bound</strong>，瓶颈是 HBM 带宽，KV cache 读取占大头。</li></ul><p>这就是为什么"省一次 prefill"和"省一次 decode"的工程意义完全不同：prefill 省的是<strong>算力</strong>，decode 省的是<strong>带宽</strong>。</p><h3 id=14-为什么-kv-cache-是这张图里唯一值得搬的东西>1.4 为什么 KV Cache 是这张图里"唯一值得搬"的东西<a hidden class=anchor aria-hidden=true href=#14-为什么-kv-cache-是这张图里唯一值得搬的东西>#</a></h3><p>回头看 1.1 那张图，几乎所有中间张量（hidden、Q、attention output、FFN activation）都是<strong>算完就丢、不跨 request 共享</strong>的——它们要么是当前 token 独有，要么会立刻被下一层覆盖。</p><p><strong>只有 K 和 V 不一样</strong>。它们：</p><ol><li><strong>只取决于历史 token</strong>，跟 batch 里其它请求、跟未来要生成什么 token 都无关；</li><li><strong>必须保留</strong>——不存就得重算，存了就能复用；</li><li><strong>跨请求可共享</strong>——只要 prefix 一样，KV 就一样（这是 Prefix Caching / RadixAttention 的物理基础）。</li></ol><p>这三条性质让 KV Cache 成了整张计算图里<strong>唯一一个值得花心思去存、去搬、去管理的中间结果</strong>。</p><p>而一旦它要被"搬"，下一个问题就来了——</p><h2 id=二问题的起点算还是传>二、问题的起点：算还是传<a hidden class=anchor aria-hidden=true href=#二问题的起点算还是传>#</a></h2><p>做 LLM 推理优化时，几乎所有"花活"都绕不开同一个问题：</p><blockquote><p><strong>这段 KV Cache，是该重新算一遍，还是从别处搬过来？</strong></p></blockquote><p>它出现在很多场景里：</p><ul><li><strong>Prefix Caching / RadixAttention</strong>：命中前缀时，是把 KV 从 host 内存（甚至 SSD）拉回 GPU，还是直接 prefill 一遍？</li><li><strong>PD 分离（Prefill / Decode 解耦）</strong>：Prefill 节点把 KV 通过 NIC 推给 Decode 节点，是否真的比让 Decode 自己 prefill 更划算？</li><li><strong>KV Offload</strong>：显存吃紧把 KV 换到 CPU，等下一次访问再 H2D 回来，划不划算？</li><li><strong>InfiniGen 这类异构 KV 管理</strong>：哪些 layer / head 该留在 HBM，哪些可以下放？</li></ul><p>这些问题其实是同一个**&ldquo;算 vs 传&rdquo;**的取舍，本质上可以用一条非常朴素的不等式来判断：</p><div class="math display">\[
+\boxed{\,T_{\text{recompute}} \;>\; T_{\text{transfer}} \;\Longrightarrow\; \text{传比算划算}\,}
+\]</div><p>下面把这条不等式拆开，写一份带数值的全景账。</p><h2 id=三两边各是什么>三、两边各是什么<a hidden class=anchor aria-hidden=true href=#三两边各是什么>#</a></h2><h3 id=21-重算时间>2.1 重算时间 <span class="math inline">\(T_{\text{recompute}}\)</span></h3><p>如果选择<strong>不传、自己重新 prefill</strong>，所花的时间由 GPU 的算力 roofline 决定：</p><div class="math display">\[
+T_{\text{recompute}} \;=\; \frac{F_{\text{prefill}}}{P_{\text{gpu}} \cdot \text{MFU}}
+\]</div><ul><li><span class="math inline">\(F_{\text{prefill}}\)</span>
+：prefill 阶段需要的总 FLOPs</li><li><span class="math inline">\(P_{\text{gpu}}\)</span>
+：GPU 在该精度下的峰值算力（如 H100 BF16 约 1000 TFLOPs/s）</li><li><span class="math inline">\(\text{MFU}\)</span>
+：实际能跑到的算力利用率，prefill 阶段一般 0.3 ~ 0.5</li></ul><p><strong><span class="math inline">\(F_{\text{prefill}}\)</span>
+的估算</strong>：对一个参数量为 <span class="math inline">\(\Theta\)</span>
+的 dense Transformer，处理 <span class="math inline">\(N\)</span>
+个 token 的 prefill，主干 GEMM 的 FLOPs 约为：</p><div class="math display">\[
+F_{\text{gemm}} \approx 2\,\Theta\,N
+\]</div><p>注意 attention 部分有 <span class="math inline">\(O(N^2)\)</span>
+的项：</p><div class="math display">\[
+F_{\text{attn}} \approx 2 \cdot L \cdot N^2 \cdot d_{\text{model}}
+\]</div><p>其中 <span class="math inline">\(L\)</span>
+是层数。当 <span class="math inline">\(N\)</span>
+很大（长上下文）或者用了 GQA 让 GEMM 部分相对变小时，attention 这一项会逐渐压过 GEMM，roofline 会从 compute-bound 滑向 attention 的 memory-bound。</p><h3 id=22-传输时间>2.2 传输时间 <span class="math inline">\(T_{\text{transfer}}\)</span></h3><p>如果选择<strong>把现成的 KV Cache 搬过来</strong>，所花的时间由"链路带宽"决定：</p><div class="math display">\[
+T_{\text{transfer}} \;=\; \frac{S_{\text{kv}}}{B_{\text{eff}}}
+\]</div><p>其中传输带宽是整条路径上<strong>最窄的那一段</strong>：</p><div class="math display">\[
+B_{\text{eff}} \;=\; \min\bigl(B_{\text{h2d}},\; B_{\text{nic}},\; B_{\text{nvlink}},\; B_{\text{ssd}},\; \dots\bigr)
+\]</div><p>常见瓶颈带宽（典型上限，实际打折）：</p><table><thead><tr><th>链路</th><th>单向带宽</th><th>实测可用</th></tr></thead><tbody><tr><td>HBM3（卡内显存）</td><td>3 TB/s</td><td>~80%</td></tr><tr><td>NVLink 4.0（卡间）</td><td>900 GB/s</td><td>~80%</td></tr><tr><td>PCIe Gen5 x16（H2D）</td><td>64 GB/s</td><td>~50 GB/s</td></tr><tr><td>PCIe Gen4 x16（H2D）</td><td>32 GB/s</td><td>~25 GB/s</td></tr><tr><td>400 GbE / IB NDR（NIC）</td><td>50 GB/s</td><td>~40 GB/s</td></tr><tr><td>100 GbE / IB EDR（NIC）</td><td>12.5 GB/s</td><td>~10 GB/s</td></tr><tr><td>NVMe SSD（顺序读）</td><td>7 GB/s</td><td>~5 GB/s</td></tr></tbody></table><p><strong><span class="math inline">\(S_{\text{kv}}\)</span>
+的估算</strong>：每个 token 的 KV Cache 大小为：</p><div class="math display">\[
+s_{\text{kv}} \;=\; 2 \cdot L \cdot H_{\text{kv}} \cdot d_{\text{head}} \cdot \text{bytes}
+\]</div><ul><li>系数 2 对应 K 和 V</li><li><span class="math inline">\(H_{\text{kv}}\)</span>
+：KV head 数（GQA / MQA 在这里发挥作用）</li><li><span class="math inline">\(\text{bytes}\)</span>
+：dtype 字节数（FP16/BF16=2，FP8=1）</li></ul><p>总传输量：<span class="math inline">\(S_{\text{kv}} = N \cdot s_{\text{kv}}\)</span>
+。</p><h2 id=四把不等式两边都化成每-token>四、把不等式两边都化成"每 token"<a hidden class=anchor aria-hidden=true href=#四把不等式两边都化成每-token>#</a></h2><p>把 <span class="math inline">\(T_{\text{recompute}}\)</span>
+和 <span class="math inline">\(T_{\text{transfer}}\)</span>
+都除以 <span class="math inline">\(N\)</span>
+（先忽略 attention 二次项），得到非常干净的两个量：</p><div class="math display">\[
+t_{\text{recompute}} \approx \frac{2\,\Theta}{P_{\text{gpu}} \cdot \text{MFU}},\qquad
+t_{\text{transfer}} = \frac{s_{\text{kv}}}{B_{\text{eff}}}
+\]</div><p>定义 <strong>算传比</strong> <span class="math inline">\(\rho\)</span>
+：</p><div class="math display">\[
+\rho \;=\; \frac{t_{\text{recompute}}}{t_{\text{transfer}}} \;=\; \frac{2\,\Theta \cdot B_{\text{eff}}}{P_{\text{gpu}} \cdot \text{MFU} \cdot s_{\text{kv}}}
+\]</div><ul><li><span class="math inline">\(\rho > 1\)</span>
+：<strong>传比算快</strong>，应该传；</li><li><span class="math inline">\(\rho &lt; 1\)</span>
+：<strong>算比传快</strong>，重 prefill 反而更优；</li><li><span class="math inline">\(\rho \approx 1\)</span>
+：边界，要结合 overlap、显存压力、batch 重组等二阶因素再判。</li></ul><p>这个比值的好处是：<strong>它把模型结构、硬件参数、链路类型全部塞进了一个数</strong>，做架构决策时一眼就能扫出来。</p><h2 id=五几个真实场景的算账>五、几个真实场景的算账<a hidden class=anchor aria-hidden=true href=#五几个真实场景的算账>#</a></h2><p>下面以 <strong>Llama-3-70B（GQA，8 KV heads，80 层，head_dim=128，BF16）</strong> 为例。</p><ul><li><span class="math inline">\(\Theta \approx 70 \times 10^9\)</span></li><li><span class="math inline">\(s_{\text{kv}} = 2 \times 80 \times 8 \times 128 \times 2 = 327{,}680\)</span>
+B <span class="math inline">\(\approx\)</span>
+<strong>320 KB / token</strong></li><li><span class="math inline">\(P_{\text{gpu}} \cdot \text{MFU}\)</span>
+：H100 BF16 取 <span class="math inline">\(1000 \times 0.4 = 400\)</span>
+TFLOPs/s</li></ul><p>代入：</p><div class="math display">\[
+t_{\text{recompute}} \approx \frac{2 \times 70 \times 10^9}{4 \times 10^{14}} = 350\ \mu s\,/\,\text{token}
+\]</div><p>注意这是<strong>单卡</strong>的数。实际 70B 通常 TP=4 / TP=8，每张卡只承担一部分 GEMM，所以单 token prefill 的真实壁钟时间会更小，但<strong>单位算力消耗</strong>没变。下面比较时直接用"每 token 的算力时间"。</p><h3 id=场景-a同机内-h2dcpu--gpupcie-gen5>场景 A：同机内 H2D（CPU → GPU，PCIe Gen5）<a hidden class=anchor aria-hidden=true href=#场景-a同机内-h2dcpu--gpupcie-gen5>#</a></h3><div class="math display">\[
+t_{\text{transfer}} = \frac{320\ \text{KB}}{50\ \text{GB/s}} \approx 6.4\ \mu s\,/\,\text{token}
+\]</div><div class="math display">\[
+\rho \approx \frac{350}{6.4} \approx 55
+\]</div><p><strong>结论</strong>：H2D 链路下，把 KV Cache 从 CPU 拉回来比重新 prefill 快 50 倍以上。这就是 Prefix Caching / KV Offload 在单机场景下几乎"无脑划算"的根源。</p><h3 id=场景-b跨机-pd-分离400-gbe--ib-ndr>场景 B：跨机 PD 分离（400 GbE / IB NDR）<a hidden class=anchor aria-hidden=true href=#场景-b跨机-pd-分离400-gbe--ib-ndr>#</a></h3><div class="math display">\[
+t_{\text{transfer}} = \frac{320\ \text{KB}}{40\ \text{GB/s}} \approx 8\ \mu s\,/\,\text{token}
+\]</div><div class="math display">\[
+\rho \approx \frac{350}{8} \approx 44
+\]</div><p><strong>结论</strong>：高速 NIC 下 PD 分离依然有近一个数量级优势。这解释了为什么 Mooncake / DistServe 这类方案敢把 prefill 拆出去单独组池子。</p><h3 id=场景-c低端集群100-gbe>场景 C：低端集群（100 GbE）<a hidden class=anchor aria-hidden=true href=#场景-c低端集群100-gbe>#</a></h3><div class="math display">\[
+t_{\text{transfer}} = \frac{320\ \text{KB}}{10\ \text{GB/s}} \approx 32\ \mu s\,/\,\text{token}
+\]</div><div class="math display">\[
+\rho \approx \frac{350}{32} \approx 11
+\]</div><p><strong>结论</strong>：依然显著划算，但留给"传输和计算 overlap"的 margin 已经明显变小，链路抖动会直接打到尾延迟上。</p><h3 id=场景-dssd-持久化-kv>场景 D：SSD 持久化 KV<a hidden class=anchor aria-hidden=true href=#场景-dssd-持久化-kv>#</a></h3><div class="math display">\[
+t_{\text{transfer}} = \frac{320\ \text{KB}}{5\ \text{GB/s}} \approx 64\ \mu s\,/\,\text{token}
+\]</div><div class="math display">\[
+\rho \approx \frac{350}{64} \approx 5.5
+\]</div><p><strong>结论</strong>：仍然 > 1，但加上 SSD 的随机访问延迟、文件系统 overhead，实际收益会打折。一般用于<strong>离线 prefix 命中率高、且显存/内存都装不下</strong>的场景。</p><h3 id=场景-emha-模型无-gqa比如-gpt-3-175b>场景 E：MHA 模型（无 GQA，比如 GPT-3 175B）<a hidden class=anchor aria-hidden=true href=#场景-emha-模型无-gqa比如-gpt-3-175b>#</a></h3><p>如果模型是 64 KV heads（典型 MHA），<span class="math inline">\(s_{\text{kv}}\)</span>
+直接放大 8 倍到 ~2.6 MB/token。这时即便 H2D：</p><div class="math display">\[
+\rho \approx \frac{2 \times 175 \times 10^9 / (4 \times 10^{14})}{2.6\ \text{MB} / 50\ \text{GB/s}} = \frac{875\ \mu s}{52\ \mu s} \approx 17
+\]</div><p><strong>结论</strong>：还是传划算，但比例从 ~50× 滑到 ~17×。<strong>GQA 不仅省显存，也让"传 KV"这件事的性价比下降——重算变得相对没那么亏了</strong>。这也是为什么有些 GQA-heavy 的新模型反而更倾向"重 prefill"路线。</p><h2 id=六不等式之外的二阶因素>六、不等式之外的二阶因素<a hidden class=anchor aria-hidden=true href=#六不等式之外的二阶因素>#</a></h2><p>上面只是 roofline 的"主项"。真实工程里至少还要叠加几条修正：</p><h3 id=51-overlap>5.1 Overlap<a hidden class=anchor aria-hidden=true href=#51-overlap>#</a></h3><p>传输和计算可以走不同 stream，理想情况下 H2D / NIC RDMA 完全和当前层的计算重叠。这时 <span class="math inline">\(T_{\text{transfer}}\)</span>
+不是直接加在端到端延迟上，而是：</p><div class="math display">\[
+T_{\text{e2e}} \approx \max\bigl(T_{\text{compute}},\; T_{\text{transfer}}\bigr)
+\]</div><p>只要两边在一个数量级，就有空间通过预取做到<strong>近无损</strong>（参见 <a href=/posts/2026-05-28-gpu-memory-offload-techniques/>GPU 显存 Offload 技术：训练与推理中的工程实践</a> 里 Diffusion weight offload 的例子）。</p><h3 id=52-attention-的二次项>5.2 Attention 的二次项<a hidden class=anchor aria-hidden=true href=#52-attention-的二次项>#</a></h3><p>当上下文 <span class="math inline">\(N\)</span>
+很大（比如 128k），prefill 的 attention 部分不再可忽略。这时 <span class="math inline">\(T_{\text{recompute}}\)</span>
+的增长比线性更快，<strong><span class="math inline">\(\rho\)</span>
+会进一步放大，传 KV 的优势越长越明显</strong>。这是 long context + prefix cache 命中场景下收益爆炸的根本原因。</p><h3 id=53-显存和-batch-重组>5.3 显存和 batch 重组<a hidden class=anchor aria-hidden=true href=#53-显存和-batch-重组>#</a></h3><p>传 KV 要先有地方放。显存压力大的时候，&ldquo;传过来"也意味着挤掉别的 request 的 KV，间接降低 batch size 和 MFU。这时候 <span class="math inline">\(\rho\)</span>
+高也未必是赢。</p><h3 id=54-命中率>5.4 命中率<a hidden class=anchor aria-hidden=true href=#54-命中率>#</a></h3><p>Prefix Caching 的真实收益要乘上一个<strong>命中概率</strong> <span class="math inline">\(p\)</span>
+：</p><div class="math display">\[
+\mathbb{E}[\text{saved}] \;=\; p \cdot (T_{\text{recompute}} - T_{\text{transfer}}) - (1-p) \cdot T_{\text{lookup overhead}}
+\]</div><p>命中率低的时候，<strong>索引和 lookup 本身的开销可能把收益吃掉</strong>。</p><h3 id=55-量化>5.5 量化<a hidden class=anchor aria-hidden=true href=#55-量化>#</a></h3><p>KV Cache 量化（FP8 / INT8 / KIVI 之类）会<strong>同时</strong>改变两边：</p><ul><li><span class="math inline">\(s_{\text{kv}}\)</span>
+直接减半甚至 1/4，<span class="math inline">\(t_{\text{transfer}}\)</span>
+同比下降；</li><li>但量化-反量化本身要消耗算力，<span class="math inline">\(t_{\text{recompute}}\)</span>
+相对优势略降。</li></ul><p>总体仍然是放大 <span class="math inline">\(\rho\)</span>
+，所以 KV 量化在 PD 分离 / Offload 场景里几乎是默认开。</p><h2 id=七一张总表>七、一张总表<a hidden class=anchor aria-hidden=true href=#七一张总表>#</a></h2><p>把上面的场景汇总成一张可贴墙上的表（70B GQA，BF16，H100，MFU=0.4）：</p><table><thead><tr><th>场景</th><th>链路有效带宽</th><th><span class="math inline">\(t_{\text{transfer}}\)</span></th><th><span class="math inline">\(\rho\)</span></th><th>结论</th></tr></thead><tbody><tr><td>同机 H2D（PCIe Gen5）</td><td>50 GB/s</td><td>6.4 μs</td><td>~55</td><td>几乎无脑传</td></tr><tr><td>PD 分离（400G IB）</td><td>40 GB/s</td><td>8 μs</td><td>~44</td><td>强烈推荐传</td></tr><tr><td>PD 分离（100G）</td><td>10 GB/s</td><td>32 μs</td><td>~11</td><td>划算但要谨慎抖动</td></tr><tr><td>SSD 持久化 KV</td><td>5 GB/s</td><td>64 μs</td><td>~5.5</td><td>仅离线 / 命中率高时</td></tr><tr><td>MHA 175B + H2D</td><td>50 GB/s</td><td>52 μs</td><td>~17</td><td>仍传，但优势缩水</td></tr></tbody></table><h2 id=八给工程决策的几句话>八、给工程决策的几句话<a hidden class=anchor aria-hidden=true href=#八给工程决策的几句话>#</a></h2><ol><li><strong>先估 <span class="math inline">\(\rho\)</span>
+，再谈架构</strong>。不要凭感觉决定"是不是要做 prefix cache / PD 分离&rdquo;，先用上面那个公式算一下，能不能拿到 5× 以上的潜在收益。</li><li><strong>盯住链路上最窄那一段</strong>。<span class="math inline">\(B_{\text{eff}} = \min(\cdot)\)</span>
+不是修辞，决定一切的就是那一段。把 NIC 升到 400G、PCIe 升到 Gen5，往往比改任何 kernel 都管用。</li><li><strong>结构优化会反向影响这笔账</strong>。GQA / MQA / KV 量化让 <span class="math inline">\(s_{\text{kv}}\)</span>
+变小，&ldquo;传"的优势在缩；MoE 让 <span class="math inline">\(\Theta\)</span>
+（激活参数）变小，&ldquo;算"的劣势也在缩。这两条的组合方向决定了一个推理栈到底要不要押注 PD 分离。</li><li><strong>Overlap 是二阶但能决定生死</strong>。<span class="math inline">\(\rho\)</span>
+算出来等于 2 的场景，做不到 overlap 就是收益归零；做到 overlap 就是端到端时延减半。</li><li><strong>命中率比公式更难估</strong>。线下 trace、线上灰度，是工程上唯一靠谱的办法。</li></ol><h2 id=九小结>九、小结<a hidden class=anchor aria-hidden=true href=#九小结>#</a></h2><blockquote><p>「算 vs 传」的本质是 GPU 算力 roofline 和链路带宽 roofline 的赛跑。</p></blockquote><p>记住这一条公式就够用了：</p><div class="math display">\[
+\rho \;=\; \frac{2\,\Theta \cdot B_{\text{eff}}}{P_{\text{gpu}} \cdot \text{MFU} \cdot s_{\text{kv}}}
+\]</div><p>下次再听到 &ldquo;Prefix Cache / PD 分离 / KV Offload / InfiniGen&rdquo; 这些名词，先别急着读论文，把模型的 <span class="math inline">\(\Theta\)</span>
+、<span class="math inline">\(s_{\text{kv}}\)</span>
+和你机房里那段最窄的带宽塞进这条式子，先看看 <span class="math inline">\(\rho\)</span>
+长什么样。</p><p>数能告诉你，这一仗到底值不值得打。</p></div><footer class=post-footer><ul class=post-tags><li><a href=https://sendoray.github.io/tags/llm/>LLM</a></li><li><a href=https://sendoray.github.io/tags/gpu/>GPU</a></li><li><a href=https://sendoray.github.io/tags/inference/>Inference</a></li></ul><nav class=paginav><a class=prev href=https://sendoray.github.io/self/2026-06-11-moe/><span class=title>« Prev</span>
+<span>图解 MoE 并行训练：从原理到工程实践</span>
+</a><a class=next href=https://sendoray.github.io/self/2026-06-09-training/><span class=title>Next »</span>
+<span>LLM训练全解</span></a></nav></footer></article></main><footer class=footer><span>&copy; 2026 <a href=https://sendoray.github.io/>chengzhy's blog</a></span> ·
+<span>Powered by
+<a href="https://gohugo.io/?utm_source=papermod" rel=noopener target=_blank>Hugo</a> &
+        <a href=https://github.com/adityatelange/hugo-PaperMod/ rel=noopener target=_blank>PaperMod</a></span></footer><a href=#top id=top-link class="top-link hidden" aria-label="go to top" title="Go to Top (Alt + G)" accesskey=g><svg viewBox="0 0 24 24" fill="none" stroke="currentcolor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-chevrons-up"><polyline points="17 11 12 6 7 11"/><polyline points="17 18 12 13 7 18"/></svg>
+</a><script>let menu=document.getElementById("menu");if(menu){const e=localStorage.getItem("menu-scroll-position");e&&(menu.scrollLeft=parseInt(e,10)),menu.onscroll=function(){localStorage.setItem("menu-scroll-position",menu.scrollLeft)}}document.querySelectorAll('a[href^="#"]').forEach(e=>{e.addEventListener("click",function(e){e.preventDefault();var t=this.getAttribute("href").substr(1);window.matchMedia("(prefers-reduced-motion: reduce)").matches?document.querySelector(`[id='${decodeURIComponent(t)}']`).scrollIntoView():document.querySelector(`[id='${decodeURIComponent(t)}']`).scrollIntoView({behavior:"smooth"}),t==="top"?history.replaceState(null,null," "):history.pushState(null,null,`#${t}`)})})</script><script>var toplink=document.getElementById("top-link");window.onscroll=function(){const e=window.innerHeight;document.body.scrollTop>e||document.documentElement.scrollTop>e?toplink.classList.remove("hidden"):toplink.classList.add("hidden")}</script><script>document.getElementById("theme-toggle").addEventListener("click",()=>{const e=document.querySelector("html");e.dataset.theme==="dark"?(e.dataset.theme="light",localStorage.setItem("pref-theme","light")):(e.dataset.theme="dark",localStorage.setItem("pref-theme","dark"))})</script><script>document.querySelectorAll("pre > code").forEach(e=>{const n=e.parentNode.parentNode,t=document.createElement("button");t.classList.add("copy-code"),t.innerHTML="copy";function s(){t.innerHTML="copied!",setTimeout(()=>{t.innerHTML="copy"},2e3)}t.addEventListener("click",t=>{if("clipboard"in navigator){navigator.clipboard.writeText(e.textContent),s();return}const n=document.createRange();n.selectNodeContents(e);const o=window.getSelection();o.removeAllRanges(),o.addRange(n);try{document.execCommand("copy"),s()}catch{}o.removeRange(n)}),n.classList.contains("highlight")?n.appendChild(t):n.parentNode.firstChild==n||(e.parentNode.parentNode.parentNode.parentNode.parentNode.nodeName=="TABLE"?e.parentNode.parentNode.parentNode.parentNode.parentNode.appendChild(t):e.parentNode.appendChild(t))})</script></body></html>

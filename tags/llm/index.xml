@@ -59,9 +59,9 @@
     </item>
     <item>
       <title>Agentic Infra 前沿：多 Agent 通信、调度与工程实践</title>
-      <link>https://sendoray.github.io/posts/2026-06-26-agentic-infra-frontier/</link>
+      <link>https://sendoray.github.io/self/2026-06-26-agentic-infra-frontier/</link>
       <pubDate>Fri, 26 Jun 2026 00:00:00 +0000</pubDate>
-      <guid>https://sendoray.github.io/posts/2026-06-26-agentic-infra-frontier/</guid>
+      <guid>https://sendoray.github.io/self/2026-06-26-agentic-infra-frontier/</guid>
       <description>&lt;blockquote&gt;
 &lt;p&gt;这篇文章不讲 &amp;ldquo;什么是 Agent&amp;rdquo;、也不讲 DP/TP/PP，只聚焦一个问题：&lt;/p&gt;
 &lt;p&gt;&lt;strong&gt;当你有 N 个 Agent 需要协作完成复杂任务时，底层 Infra 到底在解决什么问题？&lt;/strong&gt;&lt;/p&gt;&lt;/blockquote&gt;
@@ -151,9 +151,9 @@
     </item>
     <item>
       <title>训推工程师必备：超参设置与实验结果判断完全指南</title>
-      <link>https://sendoray.github.io/posts/2026-06-26-hyperparameter-tuning-guide/</link>
+      <link>https://sendoray.github.io/self/2026-06-26-hyperparameter-tuning-guide/</link>
       <pubDate>Fri, 26 Jun 2026 00:00:00 +0000</pubDate>
-      <guid>https://sendoray.github.io/posts/2026-06-26-hyperparameter-tuning-guide/</guid>
+      <guid>https://sendoray.github.io/self/2026-06-26-hyperparameter-tuning-guide/</guid>
       <description>&lt;p&gt;跑实验不是&amp;quot;随便调调参数看看效果&amp;quot;，而是一门有章法的工程实践。很多人把超参调优当玄学，本质上是因为没搞清楚每个超参的&lt;strong&gt;物理含义&lt;/strong&gt;和它们之间的&lt;strong&gt;耦合关系&lt;/strong&gt;。这篇文章从训推工程师的视角，系统梳理 LR、BS、WD 等核心超参的设置方法论，以及如何判断实验结果是否合理。&lt;/p&gt;
 &lt;blockquote&gt;
 &lt;p&gt;TL;DR：&lt;strong&gt;Learning Rate 决定步长、Batch Size 决定梯度噪声、两者必须联动调整&lt;/strong&gt;。合理的实验结果应该是：loss 平滑下降、eval 指标与 loss 方向一致、不出现 NaN/spike/plateau 三大异常。&lt;/p&gt;&lt;/blockquote&gt;
@@ -215,9 +215,9 @@
     </item>
     <item>
       <title>大模型训练工具链地图：从 CUDA 到 verl，到底谁在哪一层？</title>
-      <link>https://sendoray.github.io/posts/2026-06-16-llm-training-toolchain-map/</link>
+      <link>https://sendoray.github.io/self/2026-06-16-llm-training-toolchain-map/</link>
       <pubDate>Tue, 16 Jun 2026 00:00:00 +0000</pubDate>
-      <guid>https://sendoray.github.io/posts/2026-06-16-llm-training-toolchain-map/</guid>
+      <guid>https://sendoray.github.io/self/2026-06-16-llm-training-toolchain-map/</guid>
       <description>&lt;blockquote&gt;
 &lt;p&gt;很多人刚接触大模型训练时，会同时看到一堆名字：CUDA / PCIe / NVLink / InfiniBand / NCCL，PyTorch / TensorFlow，Transformers / modelscope，Qwen / Llama / DeepSeek，FSDP / DeepSpeed / Megatron，Accelerate / Ray，Trainer / LLaMA-Factory / SWIFT / TRL / OpenRLHF / verl，vLLM / SGLang。&lt;/p&gt;
 &lt;p&gt;它们经常出现在同一个 README、同一份训练配置、同一套分布式启动命令里，所以初学者很容易产生一种错觉：&lt;strong&gt;它们好像都是&amp;quot;训练框架&amp;quot;。&lt;/strong&gt;&lt;/p&gt;
@@ -278,9 +278,9 @@
     </item>
     <item>
       <title>LLM 领域，你需要知道的数字</title>
-      <link>https://sendoray.github.io/posts/2026-06-11-llm-panorama/</link>
+      <link>https://sendoray.github.io/self/2026-06-11-llm-panorama/</link>
       <pubDate>Thu, 11 Jun 2026 00:00:00 +0000</pubDate>
-      <guid>https://sendoray.github.io/posts/2026-06-11-llm-panorama/</guid>
+      <guid>https://sendoray.github.io/self/2026-06-11-llm-panorama/</guid>
       <description>&lt;blockquote&gt;
 &lt;p&gt;这篇文章不讲&amp;quot;什么是 Transformer&amp;quot;，只回答一个问题：&lt;/p&gt;
 &lt;p&gt;&lt;strong&gt;当我们说&amp;quot;跑一个 70B 模型&amp;quot;时，到底在跟多少 FLOPs、多少 GB、多少 GB/s 打交道？&lt;/strong&gt;&lt;/p&gt;&lt;/blockquote&gt;
@@ -337,9 +337,9 @@ F_{\text{fwd}} \approx 2\,\Theta \quad \text{FLOPs/token}
     </item>
     <item>
       <title>图解 MoE 并行训练：从原理到工程实践</title>
-      <link>https://sendoray.github.io/posts/2026-06-11-moe/</link>
+      <link>https://sendoray.github.io/self/2026-06-11-moe/</link>
       <pubDate>Thu, 11 Jun 2026 00:00:00 +0000</pubDate>
-      <guid>https://sendoray.github.io/posts/2026-06-11-moe/</guid>
+      <guid>https://sendoray.github.io/self/2026-06-11-moe/</guid>
       <description>&lt;blockquote&gt;
 &lt;p&gt;MoE（Mixture of Experts）如何用&amp;quot;稀疏激活&amp;quot;换取海量参数容量？Expert Parallelism 如何让数百个 Expert 分布在上百张 GPU 上协同训练？&lt;/p&gt;&lt;/blockquote&gt;
 &lt;h2 id=&#34;一开篇引入&#34;&gt;一、开篇引入&lt;/h2&gt;
@@ -349,9 +349,9 @@ F_{\text{fwd}} \approx 2\,\Theta \quad \text{FLOPs/token}
     </item>
     <item>
       <title>KV Cache 是算还是传？一份 Roofline 视角的全景账</title>
-      <link>https://sendoray.github.io/posts/2026-06-10-kvcache-compute-vs-transfer/</link>
+      <link>https://sendoray.github.io/self/2026-06-10-kvcache-compute-vs-transfer/</link>
       <pubDate>Wed, 10 Jun 2026 00:00:00 +0000</pubDate>
-      <guid>https://sendoray.github.io/posts/2026-06-10-kvcache-compute-vs-transfer/</guid>
+      <guid>https://sendoray.github.io/self/2026-06-10-kvcache-compute-vs-transfer/</guid>
       <description>&lt;h1 id=&#34;一先把-llm-推理这张计算图摆在桌上&#34;&gt;一、先把 LLM 推理这张计算图摆在桌上&lt;/h1&gt;
 &lt;p&gt;聊任何&amp;quot;算 vs 传&amp;quot;的故事之前，得先有一张&lt;strong&gt;所有 decoder-only LLM 通用的计算图&lt;/strong&gt;。Llama / Qwen / Mistral / DeepSeek 这些模型的推理路径在这一层抽象上几乎是一模一样的，区别只在每个算子的具体超参。&lt;/p&gt;
 &lt;h3 id=&#34;11-全景-ascii-图&#34;&gt;1.1 全景 ASCII 图&lt;/h3&gt;
@@ -421,9 +421,9 @@ F_{\text{fwd}} \approx 2\,\Theta \quad \text{FLOPs/token}
     </item>
     <item>
       <title>LLM训练全解</title>
-      <link>https://sendoray.github.io/posts/2026-06-09-training/</link>
+      <link>https://sendoray.github.io/self/2026-06-09-training/</link>
       <pubDate>Tue, 09 Jun 2026 00:00:00 +0000</pubDate>
-      <guid>https://sendoray.github.io/posts/2026-06-09-training/</guid>
+      <guid>https://sendoray.github.io/self/2026-06-09-training/</guid>
       <description>&lt;h2 id=&#34;一训练到底是什么&#34;&gt;一、训练到底是什么？&lt;/h2&gt;
 &lt;p&gt;深度学习的&amp;quot;训练&amp;quot;本质是一个&lt;strong&gt;反复试错并改进&lt;/strong&gt;的过程。通俗讲：&lt;/p&gt;
 &lt;ol&gt;
@@ -486,9 +486,9 @@ F_{\text{fwd}} \approx 2\,\Theta \quad \text{FLOPs/token}
     </item>
     <item>
       <title>VeRL-Omni 全面解析：多模态扩散模型的 RL 后训练框架</title>
-      <link>https://sendoray.github.io/posts/2026-06-09-verl-omni-deep-dive/</link>
+      <link>https://sendoray.github.io/self/2026-06-09-verl-omni-deep-dive/</link>
       <pubDate>Tue, 09 Jun 2026 00:00:00 +0000</pubDate>
-      <guid>https://sendoray.github.io/posts/2026-06-09-verl-omni-deep-dive/</guid>
+      <guid>https://sendoray.github.io/self/2026-06-09-verl-omni-deep-dive/</guid>
       <description>&lt;blockquote&gt;
 &lt;p&gt;一句话概括：VeRL-Omni 用强化学习把 Qwen-Image / Wan2.2 / SD3.5 这类&lt;strong&gt;已经训好的扩散生成模型&lt;/strong&gt;继续 finetune，让生成的图像 / 视频更贴合人类偏好，或满足任意可定义的 reward 信号。&lt;/p&gt;
 &lt;p&gt;这篇文章面向有 LLM / Infra 背景的同学，回答三个问题：&lt;/p&gt;
@@ -508,9 +508,9 @@ F_{\text{fwd}} \approx 2\,\Theta \quad \text{FLOPs/token}
     </item>
     <item>
       <title>GPU 显存 Offload 技术：训练与推理中的工程实践</title>
-      <link>https://sendoray.github.io/posts/2026-05-28-gpu-memory-offload-techniques/</link>
+      <link>https://sendoray.github.io/self/2026-05-28-gpu-memory-offload-techniques/</link>
       <pubDate>Thu, 28 May 2026 00:00:00 +0000</pubDate>
-      <guid>https://sendoray.github.io/posts/2026-05-28-gpu-memory-offload-techniques/</guid>
+      <guid>https://sendoray.github.io/self/2026-05-28-gpu-memory-offload-techniques/</guid>
       <description>&lt;blockquote&gt;
 &lt;p&gt;作者：菽陌松囿&lt;/p&gt;
 &lt;p&gt;链接：https://www.zhihu.com/question/1989041714380416374/answer/1990864712833967977&lt;/p&gt;
@@ -526,9 +526,9 @@ F_{\text{fwd}} \approx 2\,\Theta \quad \text{FLOPs/token}
     </item>
     <item>
       <title>一次新功能开发的工程方法论：以接入 Min-P 采样算子为例</title>
-      <link>https://sendoray.github.io/posts/2026-05-21-engineering-methodology-min-p-sampling/</link>
+      <link>https://sendoray.github.io/self/2026-05-21-engineering-methodology-min-p-sampling/</link>
       <pubDate>Thu, 21 May 2026 00:00:00 +0000</pubDate>
-      <guid>https://sendoray.github.io/posts/2026-05-21-engineering-methodology-min-p-sampling/</guid>
+      <guid>https://sendoray.github.io/self/2026-05-21-engineering-methodology-min-p-sampling/</guid>
       <description>&lt;p&gt;最近在给推理框架接入一个新的采样算子（Min-P Sampling）时，复盘了一下自己的开发节奏，发现一个比较稳定的&amp;quot;四步法&amp;quot;非常好用。这篇博客不聊采样算法本身的数学细节，而是把它当成一个载体，记录一下我现在做新功能时的工程方法论。&lt;/p&gt;
 &lt;blockquote&gt;
 &lt;p&gt;TL;DR：&lt;strong&gt;先理解背景 → 再看历史方案 → 写 minimal test 跑通新功能 → 接入大框架&lt;/strong&gt;。每一步都要有明确的退出条件，不要跳步。&lt;/p&gt;&lt;/blockquote&gt;
@@ -564,9 +564,9 @@ F_{\text{fwd}} \approx 2\,\Theta \quad \text{FLOPs/token}
     </item>
     <item>
       <title>大模型的商业竞争趋势</title>
-      <link>https://sendoray.github.io/posts/2026-05-10-llm-business-competition/</link>
+      <link>https://sendoray.github.io/self/2026-05-10-llm-business-competition/</link>
       <pubDate>Sun, 10 May 2026 00:00:00 +0000</pubDate>
-      <guid>https://sendoray.github.io/posts/2026-05-10-llm-business-competition/</guid>
+      <guid>https://sendoray.github.io/self/2026-05-10-llm-business-competition/</guid>
       <description>&lt;blockquote&gt;
 &lt;p&gt;原文来自知乎 机智的Ryan&lt;/p&gt;&lt;/blockquote&gt;
 &lt;p&gt;自 ChatGPT 发布那一天起，我就时常思考大语言模型的商业规律和竞争动态，但一直找不到一个好的抓手。&lt;/p&gt;

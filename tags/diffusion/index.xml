@@ -10,16 +10,16 @@
     <atom:link href="https://sendoray.github.io/tags/diffusion/index.xml" rel="self" type="application/rss+xml" />
     <item>
       <title>扩散模型优化技术全面综述：从采样加速到高效架构设计</title>
-      <link>https://sendoray.github.io/posts/2026-06-22-diffusion-model-optimization/</link>
+      <link>https://sendoray.github.io/self/2026-06-22-diffusion-model-optimization/</link>
       <pubDate>Mon, 22 Jun 2026 00:00:00 +0000</pubDate>
-      <guid>https://sendoray.github.io/posts/2026-06-22-diffusion-model-optimization/</guid>
+      <guid>https://sendoray.github.io/self/2026-06-22-diffusion-model-optimization/</guid>
       <description>系统梳理扩散模型全栈优化技术：采样加速、步数蒸馏、高效架构、训练优化、推理部署，涵盖DDIM到Consistency Models、U-Net到DiT的完整技术演进。</description>
     </item>
     <item>
       <title>VeRL-Omni 全面解析：多模态扩散模型的 RL 后训练框架</title>
-      <link>https://sendoray.github.io/posts/2026-06-09-verl-omni-deep-dive/</link>
+      <link>https://sendoray.github.io/self/2026-06-09-verl-omni-deep-dive/</link>
       <pubDate>Tue, 09 Jun 2026 00:00:00 +0000</pubDate>
-      <guid>https://sendoray.github.io/posts/2026-06-09-verl-omni-deep-dive/</guid>
+      <guid>https://sendoray.github.io/self/2026-06-09-verl-omni-deep-dive/</guid>
       <description>&lt;blockquote&gt;
 &lt;p&gt;一句话概括：VeRL-Omni 用强化学习把 Qwen-Image / Wan2.2 / SD3.5 这类&lt;strong&gt;已经训好的扩散生成模型&lt;/strong&gt;继续 finetune，让生成的图像 / 视频更贴合人类偏好，或满足任意可定义的 reward 信号。&lt;/p&gt;
 &lt;p&gt;这篇文章面向有 LLM / Infra 背景的同学，回答三个问题：&lt;/p&gt;

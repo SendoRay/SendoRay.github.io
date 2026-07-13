@@ -10,9 +10,9 @@
     <atom:link href="https://sendoray.github.io/tags/agent/index.xml" rel="self" type="application/rss+xml" />
     <item>
       <title>Agentic Infra 前沿：多 Agent 通信、调度与工程实践</title>
-      <link>https://sendoray.github.io/posts/2026-06-26-agentic-infra-frontier/</link>
+      <link>https://sendoray.github.io/self/2026-06-26-agentic-infra-frontier/</link>
       <pubDate>Fri, 26 Jun 2026 00:00:00 +0000</pubDate>
-      <guid>https://sendoray.github.io/posts/2026-06-26-agentic-infra-frontier/</guid>
+      <guid>https://sendoray.github.io/self/2026-06-26-agentic-infra-frontier/</guid>
       <description>&lt;blockquote&gt;
 &lt;p&gt;这篇文章不讲 &amp;ldquo;什么是 Agent&amp;rdquo;、也不讲 DP/TP/PP，只聚焦一个问题：&lt;/p&gt;
 &lt;p&gt;&lt;strong&gt;当你有 N 个 Agent 需要协作完成复杂任务时，底层 Infra 到底在解决什么问题？&lt;/strong&gt;&lt;/p&gt;&lt;/blockquote&gt;

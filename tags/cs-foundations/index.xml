@@ -10,9 +10,9 @@
     <atom:link href="https://sendoray.github.io/tags/cs-foundations/index.xml" rel="self" type="application/rss+xml" />
     <item>
       <title>程序员的硬核基础（三）：计算机网络，从一根网线到 socket 编程</title>
-      <link>https://sendoray.github.io/posts/2026-06-15-cs-foundations-3-network/</link>
+      <link>https://sendoray.github.io/self/2026-06-15-cs-foundations-3-network/</link>
       <pubDate>Mon, 15 Jun 2026 00:00:00 +0000</pubDate>
-      <guid>https://sendoray.github.io/posts/2026-06-15-cs-foundations-3-network/</guid>
+      <guid>https://sendoray.github.io/self/2026-06-15-cs-foundations-3-network/</guid>
       <description>&lt;blockquote&gt;
 &lt;p&gt;这篇文章不写&amp;quot;七层模型背诵题&amp;quot;，只回答一个问题：&lt;/p&gt;
 &lt;p&gt;&lt;strong&gt;为什么 TCP 慢、UDP 不可靠、socket API 简单？这些设计决定背后的取舍是什么？&lt;/strong&gt;&lt;/p&gt;
@@ -66,9 +66,9 @@
     </item>
     <item>
       <title>程序员的硬核基础（四）：通信</title>
-      <link>https://sendoray.github.io/posts/2026-06-16-cs-foundations-4-communicate/</link>
+      <link>https://sendoray.github.io/self/2026-06-16-cs-foundations-4-communicate/</link>
       <pubDate>Mon, 15 Jun 2026 00:00:00 +0000</pubDate>
-      <guid>https://sendoray.github.io/posts/2026-06-16-cs-foundations-4-communicate/</guid>
+      <guid>https://sendoray.github.io/self/2026-06-16-cs-foundations-4-communicate/</guid>
       <description>&lt;blockquote&gt;
 &lt;p&gt;从一台机器的硬件结构出发，逐步讲清 DMA、Pinned Memory、Zero-Copy 等底层原理，再纵览 AI 基础设施通信的五层架构：硬件互连 → 节点间网络 → 通信库 → 底层框架 → 上层应用。&lt;/p&gt;&lt;/blockquote&gt;
 &lt;hr&gt;
@@ -105,9 +105,9 @@
     </item>
     <item>
       <title>程序员的硬核基础（二）：操作系统，从用户态到内核旁路</title>
-      <link>https://sendoray.github.io/posts/2026-06-14-cs-foundations-2-os/</link>
+      <link>https://sendoray.github.io/self/2026-06-14-cs-foundations-2-os/</link>
       <pubDate>Sun, 14 Jun 2026 00:00:00 +0000</pubDate>
-      <guid>https://sendoray.github.io/posts/2026-06-14-cs-foundations-2-os/</guid>
+      <guid>https://sendoray.github.io/self/2026-06-14-cs-foundations-2-os/</guid>
       <description>&lt;blockquote&gt;
 &lt;p&gt;这篇文章不写&amp;quot;Linux 入门&amp;quot;，只回答一个问题：&lt;/p&gt;
 &lt;p&gt;&lt;strong&gt;操作系统内核到底在你和硬件之间做了什么？什么时候它是帮手，什么时候是路障？&lt;/strong&gt;&lt;/p&gt;
@@ -136,9 +136,9 @@
     </item>
     <item>
       <title>程序员的硬核基础（一）：体系结构，从晶体管到 PCIe 拓扑</title>
-      <link>https://sendoray.github.io/posts/2026-06-13-cs-foundations-1-architecture/</link>
+      <link>https://sendoray.github.io/self/2026-06-13-cs-foundations-1-architecture/</link>
       <pubDate>Sat, 13 Jun 2026 00:00:00 +0000</pubDate>
-      <guid>https://sendoray.github.io/posts/2026-06-13-cs-foundations-1-architecture/</guid>
+      <guid>https://sendoray.github.io/self/2026-06-13-cs-foundations-1-architecture/</guid>
       <description>&lt;blockquote&gt;
 &lt;p&gt;这篇文章不讲&amp;quot;CPU 怎么造出来的&amp;quot;，只回答一个问题：&lt;/p&gt;
 &lt;p&gt;&lt;strong&gt;当我们说&amp;quot;数据从内存搬到网卡&amp;quot;时，它到底走了哪条物理路径？&lt;/strong&gt;&lt;/p&gt;

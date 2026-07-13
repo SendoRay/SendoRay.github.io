@@ -17,9 +17,9 @@
     </item>
     <item>
       <title>大模型训练工具链地图：从 CUDA 到 verl，到底谁在哪一层？</title>
-      <link>https://sendoray.github.io/posts/2026-06-16-llm-training-toolchain-map/</link>
+      <link>https://sendoray.github.io/self/2026-06-16-llm-training-toolchain-map/</link>
       <pubDate>Tue, 16 Jun 2026 00:00:00 +0000</pubDate>
-      <guid>https://sendoray.github.io/posts/2026-06-16-llm-training-toolchain-map/</guid>
+      <guid>https://sendoray.github.io/self/2026-06-16-llm-training-toolchain-map/</guid>
       <description>&lt;blockquote&gt;
 &lt;p&gt;很多人刚接触大模型训练时，会同时看到一堆名字：CUDA / PCIe / NVLink / InfiniBand / NCCL，PyTorch / TensorFlow，Transformers / modelscope，Qwen / Llama / DeepSeek，FSDP / DeepSpeed / Megatron，Accelerate / Ray，Trainer / LLaMA-Factory / SWIFT / TRL / OpenRLHF / verl，vLLM / SGLang。&lt;/p&gt;
 &lt;p&gt;它们经常出现在同一个 README、同一份训练配置、同一套分布式启动命令里，所以初学者很容易产生一种错觉：&lt;strong&gt;它们好像都是&amp;quot;训练框架&amp;quot;。&lt;/strong&gt;&lt;/p&gt;
@@ -80,9 +80,9 @@
     </item>
     <item>
       <title>LLM 领域，你需要知道的数字</title>
-      <link>https://sendoray.github.io/posts/2026-06-11-llm-panorama/</link>
+      <link>https://sendoray.github.io/self/2026-06-11-llm-panorama/</link>
       <pubDate>Thu, 11 Jun 2026 00:00:00 +0000</pubDate>
-      <guid>https://sendoray.github.io/posts/2026-06-11-llm-panorama/</guid>
+      <guid>https://sendoray.github.io/self/2026-06-11-llm-panorama/</guid>
       <description>&lt;blockquote&gt;
 &lt;p&gt;这篇文章不讲&amp;quot;什么是 Transformer&amp;quot;，只回答一个问题：&lt;/p&gt;
 &lt;p&gt;&lt;strong&gt;当我们说&amp;quot;跑一个 70B 模型&amp;quot;时，到底在跟多少 FLOPs、多少 GB、多少 GB/s 打交道？&lt;/strong&gt;&lt;/p&gt;&lt;/blockquote&gt;

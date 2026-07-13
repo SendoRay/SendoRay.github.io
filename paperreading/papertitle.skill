@@ -1,0 +1,63 @@
+---
+name: paper-title
+description: Resolve a scholarly paper's real title from its URL (arXiv abs/pdf links, plus conference/journal/OpenReview pages) and rewrite reading-list entries from a bare link into "[Title](link)". Use when the user pastes a paper link into content/paperreading/_index.md or any Hugo reading list and wants titles filled in automatically, gives one or more paper URLs to "add to my to-read list", or asks to "look up this paper's title" / "帮我把论文链接补上标题" / invokes /paper-title <url>.
+argument-hint: "[paper-url ...]"
+---
+
+# Paper Title
+
+## Overview
+
+Turn a bare paper URL into a titled reading-list entry. Given a link, resolve
+the paper's real title and rewrite `- [ ] <url>` into `- [ ] [Title](url)`.
+Optimized for arXiv (uses the arXiv API), with a generic `citation_title`
+fallback for other scholarly sites.
+
+## Workflow
+
+1. **Collect target URLs.**
+   - If URLs are passed as arguments, use those.
+   - Otherwise read `content/paperreading/_index.md` and find every list item
+     that is still a bare URL (e.g. `- [ ] https://...`). Skip items already in
+     `[Title](url)` form.
+
+2. **Resolve titles** with the bundled script (accepts many URLs at once):
+
+   ```bash
+   python3 .qoder/skills/paper-title/scripts/fetch_paper_title.py <url> [url ...]
+   ```
+
+   Each output line is `<url>\t<title>`, or `<url>\tERROR: <reason>` on failure.
+
+3. **Fall back on ERROR.** For any line marked `ERROR` (anti-bot wall, JS-only
+   page, paywall), use the `WebFetch` tool on that URL with a prompt like
+   "Return only the paper's title" and use the result.
+
+4. **Rewrite entries in place**, preserving the checkbox and the exact original
+   URL. Example:
+
+   ```
+   - [ ] https://arxiv.org/abs/1706.03762
+   ```
+
+   becomes
+
+   ```
+   - [ ] [Attention Is All You Need](https://arxiv.org/abs/1706.03762)
+   ```
+
+5. **Report** which titles were filled in. Do not reorder or edit other lines.
+
+## Notes
+
+- The script uses only the Python stdlib and needs network access.
+- arXiv `/pdf/…` and `/abs/…` both resolve; keep the URL as the user pasted it —
+  do not normalize pdf→abs in the file unless asked.
+- If a title legitimately can't be resolved, leave the bare link and say so
+  rather than inventing a title.
+
+## Resources
+
+- `scripts/fetch_paper_title.py` — resolve one or many paper titles from URLs;
+  arXiv via API, others via `citation_title`/`og:title`/`<title>`, with
+  interstitial anti-bot pages reported as errors.
