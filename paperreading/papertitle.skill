@@ -20,11 +20,14 @@ fallback for other scholarly sites.
    - Otherwise read `content/paperreading/_index.md` and find every list item
      that is still a bare URL (e.g. `- [ ] https://...`). Skip items already in
      `[Title](url)` form.
+   - **Deduplicate**: skip any URL whose paper is already in the list. Treat the
+     same arXiv id as a duplicate regardless of `abs`/`pdf` form or version
+     suffix (`v1`/`v2`), so the same paper is never added twice.
 
 2. **Resolve titles** with the bundled script (accepts many URLs at once):
 
    ```bash
-   python3 .qoder/skills/paper-title/scripts/fetch_paper_title.py <url> [url ...]
+   python3 scripts/fetch_paper_title.py <url> [url ...]
    ```
 
    Each output line is `<url>\t<title>`, or `<url>\tERROR: <reason>` on failure.

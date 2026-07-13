@@ -2,13 +2,43 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
   xmlns:xhtml="http://www.w3.org/1999/xhtml">
   <url>
+    <loc>https://sendoray.github.io/</loc>
+    <lastmod>2026-07-13T00:00:00+00:00</lastmod>
+  </url><url>
+    <loc>https://sendoray.github.io/tags/function-call/</loc>
+    <lastmod>2026-07-13T00:00:00+00:00</lastmod>
+  </url><url>
+    <loc>https://sendoray.github.io/tags/inference/</loc>
+    <lastmod>2026-07-13T00:00:00+00:00</lastmod>
+  </url><url>
+    <loc>https://sendoray.github.io/tags/kv-cache/</loc>
+    <lastmod>2026-07-13T00:00:00+00:00</lastmod>
+  </url><url>
+    <loc>https://sendoray.github.io/tags/llm/</loc>
+    <lastmod>2026-07-13T00:00:00+00:00</lastmod>
+  </url><url>
+    <loc>https://sendoray.github.io/tags/memory-management/</loc>
+    <lastmod>2026-07-13T00:00:00+00:00</lastmod>
+  </url><url>
+    <loc>https://sendoray.github.io/tags/multi-agent/</loc>
+    <lastmod>2026-07-13T00:00:00+00:00</lastmod>
+  </url><url>
+    <loc>https://sendoray.github.io/paperreading/</loc>
+    <lastmod>2026-07-13T00:00:00+00:00</lastmod>
+  </url><url>
+    <loc>https://sendoray.github.io/tags/scheduling/</loc>
+    <lastmod>2026-07-13T00:00:00+00:00</lastmod>
+  </url><url>
+    <loc>https://sendoray.github.io/tags/</loc>
+    <lastmod>2026-07-13T00:00:00+00:00</lastmod>
+  </url><url>
+    <loc>https://sendoray.github.io/paperreading/2026-07-13-tokencake/</loc>
+    <lastmod>2026-07-13T00:00:00+00:00</lastmod>
+  </url><url>
     <loc>https://sendoray.github.io/tags/agent-rl/</loc>
     <lastmod>2026-07-06T00:00:00+00:00</lastmod>
   </url><url>
     <loc>https://sendoray.github.io/tags/checkpoint-loading/</loc>
-    <lastmod>2026-07-06T00:00:00+00:00</lastmod>
-  </url><url>
-    <loc>https://sendoray.github.io/</loc>
     <lastmod>2026-07-06T00:00:00+00:00</lastmod>
   </url><url>
     <loc>https://sendoray.github.io/tags/cold-start/</loc>
@@ -20,16 +50,7 @@
     <loc>https://sendoray.github.io/tags/heterogeneous-computing/</loc>
     <lastmod>2026-07-06T00:00:00+00:00</lastmod>
   </url><url>
-    <loc>https://sendoray.github.io/tags/inference/</loc>
-    <lastmod>2026-07-06T00:00:00+00:00</lastmod>
-  </url><url>
-    <loc>https://sendoray.github.io/tags/llm/</loc>
-    <lastmod>2026-07-06T00:00:00+00:00</lastmod>
-  </url><url>
     <loc>https://sendoray.github.io/tags/model-migration/</loc>
-    <lastmod>2026-07-06T00:00:00+00:00</lastmod>
-  </url><url>
-    <loc>https://sendoray.github.io/paperreading/</loc>
     <lastmod>2026-07-06T00:00:00+00:00</lastmod>
   </url><url>
     <loc>https://sendoray.github.io/tags/reinforcement-learning/</loc>
@@ -41,25 +62,16 @@
     <loc>https://sendoray.github.io/paperreading/2026-07-06-rollart/</loc>
     <lastmod>2026-07-06T00:00:00+00:00</lastmod>
   </url><url>
-    <loc>https://sendoray.github.io/tags/scheduling/</loc>
-    <lastmod>2026-07-06T00:00:00+00:00</lastmod>
-  </url><url>
     <loc>https://sendoray.github.io/tags/serverless/</loc>
     <lastmod>2026-07-06T00:00:00+00:00</lastmod>
   </url><url>
     <loc>https://sendoray.github.io/paperreading/2026-07-06-serverlessllm/</loc>
     <lastmod>2026-07-06T00:00:00+00:00</lastmod>
   </url><url>
-    <loc>https://sendoray.github.io/tags/</loc>
-    <lastmod>2026-07-06T00:00:00+00:00</lastmod>
-  </url><url>
     <loc>https://sendoray.github.io/tags/caching/</loc>
     <lastmod>2026-07-03T00:00:00+00:00</lastmod>
   </url><url>
     <loc>https://sendoray.github.io/tags/inference-optimization/</loc>
-    <lastmod>2026-07-03T00:00:00+00:00</lastmod>
-  </url><url>
-    <loc>https://sendoray.github.io/tags/kv-cache/</loc>
     <lastmod>2026-07-03T00:00:00+00:00</lastmod>
   </url><url>
     <loc>https://sendoray.github.io/paperreading/2026-07-03-lmcache/</loc>
@@ -105,9 +117,6 @@
     <lastmod>2026-07-02T00:00:00+00:00</lastmod>
   </url><url>
     <loc>https://sendoray.github.io/paperreading/2026-07-02-mlp-offload/</loc>
-    <lastmod>2026-07-02T00:00:00+00:00</lastmod>
-  </url><url>
-    <loc>https://sendoray.github.io/tags/multi-agent/</loc>
     <lastmod>2026-07-02T00:00:00+00:00</lastmod>
   </url><url>
     <loc>https://sendoray.github.io/tags/offloading/</loc>

@@ -6,8 +6,15 @@
     <description>Recent content in Scheduling on chengzhy&#39;s blog</description>
     <generator>Hugo</generator>
     <language>en</language>
-    <lastBuildDate>Mon, 06 Jul 2026 00:00:00 +0000</lastBuildDate>
+    <lastBuildDate>Mon, 13 Jul 2026 00:00:00 +0000</lastBuildDate>
     <atom:link href="https://sendoray.github.io/tags/scheduling/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>TokenCake：面向多智能体 LLM 应用的 KV-Cache 中心服务框架</title>
+      <link>https://sendoray.github.io/paperreading/2026-07-13-tokencake/</link>
+      <pubDate>Mon, 13 Jul 2026 00:00:00 +0000</pubDate>
+      <guid>https://sendoray.github.io/paperreading/2026-07-13-tokencake/</guid>
+      <description>多智能体 LLM 应用的频繁函数调用带来 KV Cache 的时间低利用与空间争用两大问题。TokenCake 用 agent-aware 的时间调度器（函数调用期主动 offload 空闲 KV Cache）+ 空间调度器（为关键路径智能体预留显存），端到端延迟比 vLLM 降低 47%+，GPU 显存利用率提升最多 16.9 个百分点。</description>
+    </item>
     <item>
       <title>ServerlessLLM: 用于大语言模型的低延迟无服务器推理</title>
       <link>https://sendoray.github.io/paperreading/2026-07-06-serverlessllm/</link>

@@ -6,8 +6,57 @@
     <description>Recent content in Tags on chengzhy&#39;s blog</description>
     <generator>Hugo</generator>
     <language>en</language>
-    <lastBuildDate>Mon, 06 Jul 2026 00:00:00 +0000</lastBuildDate>
+    <lastBuildDate>Mon, 13 Jul 2026 00:00:00 +0000</lastBuildDate>
     <atom:link href="https://sendoray.github.io/tags/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>Function-Call</title>
+      <link>https://sendoray.github.io/tags/function-call/</link>
+      <pubDate>Mon, 13 Jul 2026 00:00:00 +0000</pubDate>
+      <guid>https://sendoray.github.io/tags/function-call/</guid>
+      <description></description>
+    </item>
+    <item>
+      <title>Inference</title>
+      <link>https://sendoray.github.io/tags/inference/</link>
+      <pubDate>Mon, 13 Jul 2026 00:00:00 +0000</pubDate>
+      <guid>https://sendoray.github.io/tags/inference/</guid>
+      <description></description>
+    </item>
+    <item>
+      <title>KV-Cache</title>
+      <link>https://sendoray.github.io/tags/kv-cache/</link>
+      <pubDate>Mon, 13 Jul 2026 00:00:00 +0000</pubDate>
+      <guid>https://sendoray.github.io/tags/kv-cache/</guid>
+      <description></description>
+    </item>
+    <item>
+      <title>LLM</title>
+      <link>https://sendoray.github.io/tags/llm/</link>
+      <pubDate>Mon, 13 Jul 2026 00:00:00 +0000</pubDate>
+      <guid>https://sendoray.github.io/tags/llm/</guid>
+      <description></description>
+    </item>
+    <item>
+      <title>Memory-Management</title>
+      <link>https://sendoray.github.io/tags/memory-management/</link>
+      <pubDate>Mon, 13 Jul 2026 00:00:00 +0000</pubDate>
+      <guid>https://sendoray.github.io/tags/memory-management/</guid>
+      <description></description>
+    </item>
+    <item>
+      <title>Multi-Agent</title>
+      <link>https://sendoray.github.io/tags/multi-agent/</link>
+      <pubDate>Mon, 13 Jul 2026 00:00:00 +0000</pubDate>
+      <guid>https://sendoray.github.io/tags/multi-agent/</guid>
+      <description></description>
+    </item>
+    <item>
+      <title>Scheduling</title>
+      <link>https://sendoray.github.io/tags/scheduling/</link>
+      <pubDate>Mon, 13 Jul 2026 00:00:00 +0000</pubDate>
+      <guid>https://sendoray.github.io/tags/scheduling/</guid>
+      <description></description>
+    </item>
     <item>
       <title>Agent-Rl</title>
       <link>https://sendoray.github.io/tags/agent-rl/</link>
@@ -44,20 +93,6 @@
       <description></description>
     </item>
     <item>
-      <title>Inference</title>
-      <link>https://sendoray.github.io/tags/inference/</link>
-      <pubDate>Mon, 06 Jul 2026 00:00:00 +0000</pubDate>
-      <guid>https://sendoray.github.io/tags/inference/</guid>
-      <description></description>
-    </item>
-    <item>
-      <title>LLM</title>
-      <link>https://sendoray.github.io/tags/llm/</link>
-      <pubDate>Mon, 06 Jul 2026 00:00:00 +0000</pubDate>
-      <guid>https://sendoray.github.io/tags/llm/</guid>
-      <description></description>
-    </item>
-    <item>
       <title>Model-Migration</title>
       <link>https://sendoray.github.io/tags/model-migration/</link>
       <pubDate>Mon, 06 Jul 2026 00:00:00 +0000</pubDate>
@@ -79,13 +114,6 @@
       <description></description>
     </item>
     <item>
-      <title>Scheduling</title>
-      <link>https://sendoray.github.io/tags/scheduling/</link>
-      <pubDate>Mon, 06 Jul 2026 00:00:00 +0000</pubDate>
-      <guid>https://sendoray.github.io/tags/scheduling/</guid>
-      <description></description>
-    </item>
-    <item>
       <title>Serverless</title>
       <link>https://sendoray.github.io/tags/serverless/</link>
       <pubDate>Mon, 06 Jul 2026 00:00:00 +0000</pubDate>
@@ -104,13 +132,6 @@
       <link>https://sendoray.github.io/tags/inference-optimization/</link>
       <pubDate>Fri, 03 Jul 2026 00:00:00 +0000</pubDate>
       <guid>https://sendoray.github.io/tags/inference-optimization/</guid>
-      <description></description>
-    </item>
-    <item>
-      <title>KV-Cache</title>
-      <link>https://sendoray.github.io/tags/kv-cache/</link>
-      <pubDate>Fri, 03 Jul 2026 00:00:00 +0000</pubDate>
-      <guid>https://sendoray.github.io/tags/kv-cache/</guid>
       <description></description>
     </item>
     <item>
@@ -188,13 +209,6 @@
       <link>https://sendoray.github.io/tags/i/o/</link>
       <pubDate>Thu, 02 Jul 2026 00:00:00 +0000</pubDate>
       <guid>https://sendoray.github.io/tags/i/o/</guid>
-      <description></description>
-    </item>
-    <item>
-      <title>Multi-Agent</title>
-      <link>https://sendoray.github.io/tags/multi-agent/</link>
-      <pubDate>Thu, 02 Jul 2026 00:00:00 +0000</pubDate>
-      <guid>https://sendoray.github.io/tags/multi-agent/</guid>
       <description></description>
     </item>
     <item>
