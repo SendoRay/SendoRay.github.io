@@ -74,6 +74,7 @@ https://yifanqiao.notion.site/Solve-the-GPU-Cost-Crisis-with-kvcached-289da9d1f4
 
 经典的数字
 比如 带宽什么的
+
 https://github.com/doongz/notes
 
 
@@ -83,7 +84,7 @@ https://guanjiawei.ai/zh/blog/goal-two-personalities
 
 https://forceinjection.github.io/09_inference_system/kv_cache/02_systems/lmcache/local_cpu_backend.html
 
-Kubernetes
+
 
 
 看看别人的infra 怎么做的
