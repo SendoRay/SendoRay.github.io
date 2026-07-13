@@ -74,6 +74,7 @@ https://yifanqiao.notion.site/Solve-the-GPU-Cost-Crisis-with-kvcached-289da9d1f4
 
 经典的数字
 比如 带宽什么的
+https://github.com/doongz/notes
 
 
 https://guanjiawei.ai/zh/blog/goal-two-personalities
