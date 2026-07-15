@@ -1,0 +1,46 @@
+# Polymarket API endpoints
+api:
+  gamma_base: "https://gamma-api.polymarket.com"
+  clob_base: "https://clob.polymarket.com"
+  data_base: "https://data-api.polymarket.com"
+  goldsky_subgraph: "https://api.goldsky.com/api/public/project_cl6mb8i9h0003e201j6li0diw/subgraphs/orderbook-subgraph/0.0.1/gn"
+
+# Collector settings
+collector:
+  poll_interval_seconds: 60       # REST polling interval for trades
+  gamma_poll_interval_seconds: 300 # Market metadata refresh interval
+  batch_limit: 500                 # Trades per API request
+  request_timeout_seconds: 30
+  max_retries: 3
+  retry_backoff_seconds: 5
+
+# Detection pipeline
+detector:
+  # L1 fast filter (SQL-level, before ML)
+  l1_low_probability_threshold: 0.30   # Only analyze trades where Yes < 30%
+  l1_min_amount_usd: 5000               # Only analyze trades >= $5,000
+
+  # L2 ML scoring
+  ml_score_high: 0.80                   # High severity threshold
+  ml_score_low: 0.60                    # Low severity threshold
+
+  # Rule hard-trigger (bypasses ML, always alerts)
+  rule_hard_trigger:
+    new_wallet_max_age_days: 7
+    low_probability_max: 0.10
+    min_amount_usd: 10000
+
+# Alert settings
+alerter:
+  dedup_window_minutes: 30              # Same wallet+market dedup window
+  telegram_enabled: true
+
+# Trainer settings
+trainer:
+  retrain_interval_days: 7
+  training_window_days: 90
+  contamination: 0.05                   # Expected anomaly ratio for Isolation Forest
+
+# Dashboard
+dashboard:
+  page_size: 50
