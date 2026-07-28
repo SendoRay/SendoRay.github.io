@@ -1231,6 +1231,30 @@ E(R(\tau))_{\tau \sim P_{\theta}(\tau)} = \sum_{\tau} R(\tau) P_{\theta}(\tau)
     </item>
     <item>
       <title></title>
+      <link>https://sendoray.github.io/posts/he/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      <guid>https://sendoray.github.io/posts/he/</guid>
+      <description>&lt;p&gt;上个月，‘elsewhere’报道了 DeepSeek 的融资故事。其中最多人讨论的，莫过于那个传说中的4小时投资人会议。&lt;/p&gt;
+&lt;p&gt;　　此去一个月间，梁文锋的各种语录在江湖流传，我们也多方收集到了一些其中内容。&lt;/p&gt;
+&lt;p&gt;　　其间，梁文锋说了非常多次的“不”：不是天才，不赚不合理的利润、不追求用户量、不闭源、不做3D / 视频生成 / 世界模型，不做下一个超级 app 。他说，克制是一种战略，用来换取做成 AGI 的概率。&lt;/p&gt;
+&lt;p&gt;　　在我们了解到的有限素材里，有以下高频词：模型、成本、AGI 、时间、开源等等。&lt;/p&gt;
+&lt;p&gt;　　绝大多数时候，梁文锋的语气留有余地，用词浅白质朴。只有在讲到少数他在乎的问题时，才会流露出些许锋利：“只要能够保持团队的稳定性，我一定能做成 AGI 。就这么简单。”&lt;/p&gt;
+&lt;p&gt;　　以下是我们收集到的52条言语。部分词句在保留原意的基础上，与原文可能略有出入。&lt;/p&gt;
+&lt;p&gt;　　DeepSeek 只有一条主线&lt;/p&gt;
+&lt;p&gt;　　1． 现在做产品不是收益最大化的时候。通往 AGI 的路上，要经过产品这个台阶，但我们不需要太多的心思和精力去做 C 端、 B 端的产品。当站在一个技术的高位上来做相对低一级别的技术，是降维打击。产品是在 AGI 路上的副产物。&lt;/p&gt;
+&lt;p&gt;　　2． 很多东西不在我们的主线上，比如 3D 、视频生成；又比如世界模型，跟智能的上限也没有太大的关系。&lt;/p&gt;
+&lt;p&gt;　　3． 多模态对产品来讲很重要，对 C 端用户很重要。但它只是一个组件，不是主线和智能本身。&lt;/p&gt;
+&lt;p&gt;　　4． 大模型的幻觉当然有方法可以解决，但这是一个长命题。在内部，幻觉被我们归结为一个产品问题，会去解决，但不是重点。&lt;/p&gt;
+&lt;p&gt;　　5． 现阶段最重要的还是 Coding Agent 。以国内的情况来看，最合理的做法应该是全力做通用的 Agent ，金融、医疗等其他 Agent 的优先级较低。&lt;/p&gt;
+&lt;p&gt;　　6． 如果 AI 时代会产生很多家万亿级别的公司，DeepSeek 是其中一家（的话）就很好了。&lt;/p&gt;
+&lt;p&gt;　　先实现持续学习，再AI自迭代，终点是具身智能&lt;/p&gt;
+&lt;p&gt;　　7． AI 现在不缺品味和直觉，缺的是持续学习的能力。&lt;/p&gt;
+&lt;p&gt;　　8． 人类能够持续学习，但同一件事，就得给 AI 所有的上下文。这几乎是不可能的，所以 AI 并不能够替代员工。所以，下一代模型必须要有持续学习的能力，才能叫下一代模型。&lt;/p&gt;
+&lt;p&gt;　　9． 我们希望下一代模型能够帮助我们自己的开发。说得简单一点，我们做的模型，第一目标不是大家用得好用，而是我们自己用得好用。这是实现 AGI 最快的方法。&lt;/p&gt;
+&lt;p&gt;　　10． 目前全世界现在都还没有找到好的方法，因为“学习”是由很多东西组成的。&lt;/p&gt;</description>
+    </item>
+    <item>
+      <title></title>
       <link>https://sendoray.github.io/self/agent-rl-reading-list/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       <guid>https://sendoray.github.io/self/agent-rl-reading-list/</guid>
