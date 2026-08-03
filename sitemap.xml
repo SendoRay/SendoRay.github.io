@@ -3,7 +3,22 @@
   xmlns:xhtml="http://www.w3.org/1999/xhtml">
   <url>
     <loc>https://sendoray.github.io/</loc>
-    <lastmod>2026-07-13T00:00:00+00:00</lastmod>
+    <lastmod>2026-08-03T00:00:00+00:00</lastmod>
+  </url><url>
+    <loc>https://sendoray.github.io/tags/english/</loc>
+    <lastmod>2026-08-03T00:00:00+00:00</lastmod>
+  </url><url>
+    <loc>https://sendoray.github.io/posts/</loc>
+    <lastmod>2026-08-03T00:00:00+00:00</lastmod>
+  </url><url>
+    <loc>https://sendoray.github.io/tags/</loc>
+    <lastmod>2026-08-03T00:00:00+00:00</lastmod>
+  </url><url>
+    <loc>https://sendoray.github.io/posts/he/</loc>
+    <lastmod>2026-08-03T00:00:00+00:00</lastmod>
+  </url><url>
+    <loc>https://sendoray.github.io/posts/use_eng/</loc>
+    <lastmod>2026-08-03T00:00:00+00:00</lastmod>
   </url><url>
     <loc>https://sendoray.github.io/tags/function-call/</loc>
     <lastmod>2026-07-13T00:00:00+00:00</lastmod>
@@ -27,9 +42,6 @@
     <lastmod>2026-07-13T00:00:00+00:00</lastmod>
   </url><url>
     <loc>https://sendoray.github.io/tags/scheduling/</loc>
-    <lastmod>2026-07-13T00:00:00+00:00</lastmod>
-  </url><url>
-    <loc>https://sendoray.github.io/tags/</loc>
     <lastmod>2026-07-13T00:00:00+00:00</lastmod>
   </url><url>
     <loc>https://sendoray.github.io/paperreading/2026-07-13-tokencake/</loc>
@@ -215,7 +227,7 @@
     <loc>https://sendoray.github.io/self/2026-05-25-investor-essential-handbook/</loc>
     <lastmod>2026-05-25T00:00:00+00:00</lastmod>
   </url><url>
-    <loc>https://sendoray.github.io/self/2026-05-25-programmer-cheatsheet/</loc>
+    <loc>https://sendoray.github.io/posts/2026-05-25-programmer-cheatsheet/</loc>
     <lastmod>2026-05-25T00:00:00+00:00</lastmod>
   </url><url>
     <loc>https://sendoray.github.io/self/2026-05-21-engineering-methodology-min-p-sampling/</loc>
@@ -236,8 +248,6 @@
     <loc>https://sendoray.github.io/self/2025-11-17-reinforcement-learning-intro/</loc>
     <lastmod>2025-11-21T00:00:00+00:00</lastmod>
   </url><url>
-    <loc>https://sendoray.github.io/posts/he/</loc>
-  </url><url>
     <loc>https://sendoray.github.io/self/agent-rl-reading-list/</loc>
   </url><url>
     <loc>https://sendoray.github.io/self/agentic_rl_full_flow/</loc>
@@ -246,10 +256,6 @@
   </url><url>
     <loc>https://sendoray.github.io/self/mooncake_transfer_engine_guide/</loc>
   </url><url>
-    <loc>https://sendoray.github.io/self/use_eng/</loc>
-  </url><url>
     <loc>https://sendoray.github.io/categories/</loc>
-  </url><url>
-    <loc>https://sendoray.github.io/posts/</loc>
   </url>
 </urlset>
