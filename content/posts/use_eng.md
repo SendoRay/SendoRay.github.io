@@ -1373,3 +1373,9 @@ I'll take it if you can give me 10% off.                  打九折的话我就�
 I'll think about it.                                       我再想想。
 I'll come back later.                                      我回头再来。
 ```
+
+
+# 一些有趣的用法
+```text
+xx dong change the world, we leave that to those who weare xx.
+```
