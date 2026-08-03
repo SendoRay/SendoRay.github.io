@@ -1,7 +1,35 @@
-看论文常看到的但是易忘的单词
+---
+title: 英语速查手册
+date: '2026-08-03'
+tags:
+- English
 
+draft: false
+ShowToc: true
+TocOpen: false
+ShowReadingTime: true
+ShowBreadCrumbs: true
+ShowPostNavLinks: true
+---
 
-# 动词
+> 一份日常英语速查手册，涵盖论文阅读高频词汇、生活分场景单词、出国旅游常用句子。
+
+---
+
+## 目录
+
+1. [论文高频词汇](#1-论文高频词汇)
+2. [生活常用单词（分场景）](#2-生活常用单词分场景)
+3. [出国旅游常用句子（分场景）](#3-出国旅游常用句子分场景)
+4. [一些有趣的用法](#4-一些有趣的用法)
+
+---
+
+## 1. 论文高频词汇
+
+看论文常看到的但是易忘的单词。
+
+### 1.1 动词
 
 ```text
 alleviate         减少，减轻
@@ -28,7 +56,7 @@ denote            表示，指代
 
 
 
-# 形容词
+### 1.2 形容词
 
 ```text
 ambiguous         模糊的，有歧义的
@@ -45,7 +73,7 @@ explicit          显式的
 trivial           平凡的，琐碎的
 ```
 
-# 副词 / 连接词
+### 1.3 副词 / 连接词
 
 ```text
 respectively      分别地
@@ -59,7 +87,7 @@ analogously       类似地
 excel at          擅长
 ```
 
-# 名词
+### 1.4 名词
 
 ```text
 overhead          开销，额外成本
@@ -75,12 +103,11 @@ perception        感知
 ```
 
 
----
+## 2. 生活常用单词（分场景）
+
 笔者之后想要去出国旅游，觉得需要提前准备一些不同场景的不同单词。
-生活常用单词（分场景）
 
-
-# 超市购物
+### 2.1 超市购物
 
 ```text
 cart              购物车
@@ -112,7 +139,7 @@ out of stock      缺货
 ```
 
 
-# 餐厅点餐
+### 2.2 餐厅点餐
 
 ```text
 menu              菜单
@@ -153,16 +180,16 @@ gluten-free       无麸质的
 ```
 
 
-# 交通出行
+### 2.3 交通出行
 
 ```text
 commute           通勤
 fare              票价
 transfer          换乘
 platform          站台
-terminal          航站楼 / 终点站
+
 depart            出发
-arrive            到达
+
 delay             延误
 cancel            取消
 board             登机 / 上车
@@ -193,7 +220,7 @@ ride-share        拼车
 ```
 
 
-# 酒店住宿
+### 2.4 酒店住宿
 
 ```text
 reception         前台
@@ -222,7 +249,7 @@ indoor pool       室内泳池
 ```
 
 
-# 医院看病
+### 2.5 医院看病
 
 ```text
 appointment       预约（挂号）
@@ -264,7 +291,7 @@ emergency room    急诊室
 ```
 
 
-# 银行业务
+### 2.6 银行业务
 
 ```text
 account           账户
@@ -295,7 +322,7 @@ ID required       需要身份证明
 ```
 
 
-# 租房居住
+### 2.7 租房居住
 
 ```text
 landlord          房东
@@ -328,7 +355,7 @@ recycling         回收利用
 ```
 
 
-# 学校教育
+### 2.8 学校教育
 
 ```text
 enroll            注册 / 报名
@@ -365,7 +392,7 @@ audit a course    旁听
 ```
 
 
-# 办公职场
+### 2.9 办公职场
 
 ```text
 colleague         同事
@@ -405,7 +432,7 @@ contract          合同
 ```
 
 
-# 社交日常
+### 2.10 社交日常
 
 ```text
 greeting          问候
@@ -445,7 +472,7 @@ never mind        没事 / 别在意
 ```
 
 
-# 天气自然
+### 2.11 天气自然
 
 ```text
 forecast          天气预报
@@ -484,7 +511,7 @@ tornado           龙卷风
 ```
 
 
-# 数码电子产品
+### 2.12 数码电子产品
 
 ```text
 charger           充电器
@@ -537,7 +564,7 @@ screenshot        截图
 ```
 
 
-# 服装购物
+### 2.13 服装购物
 
 ```text
 fitting room      试衣间
@@ -577,7 +604,7 @@ warranty          保修
 ```
 
 
-# 美容理发
+### 2.14 美容理发
 
 ```text
 barber            理发师（男）
@@ -618,7 +645,7 @@ cleanser          洗面奶
 ```
 
 
-# 运动健身
+### 2.15 运动健身
 
 ```text
 workout           锻炼
@@ -662,7 +689,7 @@ posture           姿势
 ```
 
 
-# 邮局快递
+### 2.16 邮局快递
 
 ```text
 post office       邮局
@@ -693,7 +720,7 @@ zip code / postcode 邮编
 ```
 
 
-# 机场出行
+### 2.17 机场出行
 
 ```text
 boarding          登机
@@ -739,7 +766,7 @@ emergency exit    紧急出口
 ```
 
 
-# 房屋维修
+### 2.18 房屋维修
 
 ```text
 faucet            水龙头
@@ -778,7 +805,7 @@ rust              锈
 ```
 
 
-# 宠物饲养
+### 2.19 宠物饲养
 
 ```text
 pet               宠物
@@ -817,7 +844,7 @@ obedience training 服从训练
 ```
 
 
-# 节日庆祝
+### 2.20 节日庆祝
 
 ```text
 birthday          生日
@@ -858,7 +885,7 @@ trick or treat    不给糖就捣蛋
 ```
 
 
-# 情绪表达
+### 2.21 情绪表达
 
 ```text
 happy             开心
@@ -896,12 +923,9 @@ moody             情绪化的
 ```
 
 
----
+## 3. 出国旅游常用句子（分场景）
 
-出国旅游常用句子（分场景）
-
-
-# 机场值机 / 海关
+### 3.1 机场值机 / 海关
 
 ```text
 I'd like to check in for flight CA123.                    我想办理 CA123 航班的值机。
@@ -927,7 +951,7 @@ Here's my baggage claim tag.                               这是我的行李牌
 ```
 
 
-# 入境海关问答
+### 3.2 入境海关问答
 
 ```text
 What's the purpose of your visit?                          你来访的目的是什么？
@@ -948,7 +972,7 @@ Here's my visa and passport.                               这是我的签证和
 ```
 
 
-# 酒店入住 / 退房
+### 3.3 酒店入住 / 退房
 
 ```text
 I have a reservation under the name Zhang.                我姓张，有预订。
@@ -974,7 +998,7 @@ Is there a fitness center / pool?                          有健身房 / 游泳
 ```
 
 
-# 餐厅点餐 / 结账
+### 3.4 餐厅点餐 / 结账
 
 ```text
 A table for two, please.                                   两位，谢谢。
@@ -1004,7 +1028,7 @@ I think there's a mistake on the bill.                    我觉得账单有误�
 ```
 
 
-# 交通问路 / 乘车
+### 3.5 交通问路 / 乘车
 
 ```text
 Excuse me, how do I get to the train station?             请问，火车站怎么走？
@@ -1033,7 +1057,7 @@ Keep the change.                                           不用找了。
 ```
 
 
-# 购物 / 退税
+### 3.6 购物 / 退税
 
 ```text
 I'm just looking, thanks.                                  我只是随便看看，谢谢。
@@ -1061,7 +1085,7 @@ I bought this yesterday, but it doesn't work.            我昨天买的，但�
 ```
 
 
-# 银行 / 换汇
+### 3.7 银行 / 换汇
 
 ```text
 Where can I exchange money?                                在哪里可以换汇？
@@ -1079,7 +1103,7 @@ Is there a fee for using this card abroad?                在海外用这张卡�
 ```
 
 
-# 看病就医
+### 3.8 看病就医
 
 ```text
 I need to see a doctor.                                    我需要看医生。
@@ -1107,7 +1131,7 @@ Call a doctor, please!                                     请叫医生！
 ```
 
 
-# 紧急求助
+### 3.9 紧急求助
 
 ```text
 Help!                                                      救命！
@@ -1132,7 +1156,7 @@ Stay calm, help is on the way.                            保持冷静，救援�
 ```
 
 
-# 社交闲聊
+### 3.10 社交闲聊
 
 ```text
 Hi, how are you?                                           你好，最近怎么样？
@@ -1160,7 +1184,7 @@ Have a nice day!                                           祝你有美好的一
 ```
 
 
-# 拍照 / 帮忙
+### 3.11 拍照 / 帮忙
 
 ```text
 Could you take a photo of us?                              能帮我们拍张照吗？
@@ -1180,7 +1204,7 @@ Can we take a photo together?                             可以一起合个影�
 ```
 
 
-# 手机 / 网络
+### 3.12 手机 / 网络
 
 ```text
 Where can I buy a local SIM card?                         在哪里可以买本地电话卡？
@@ -1202,7 +1226,7 @@ Is there free Wi-Fi in the hotel?                         酒店有免费 Wi-Fi 
 ```
 
 
-# 投诉 / 维权
+### 3.13 投诉 / 维权
 
 ```text
 I'd like to speak to the manager.                         我想跟经理谈谈。
@@ -1223,7 +1247,7 @@ I'm very disappointed with the service.                  我对服务很失望�
 ```
 
 
-# 退税 / 机场离境
+### 3.14 退税 / 机场离境
 
 ```text
 Where is the tax refund counter?                          退税柜台在哪里？
@@ -1247,7 +1271,7 @@ Will the airline provide accommodation?                  航空公司会提供�
 ```
 
 
-# 住宿 / 民宿
+### 3.15 住宿 / 民宿
 
 ```text
 I booked through Airbnb / Booking.com.                   我在 Airbnb / Booking.com 上预订的。
@@ -1269,7 +1293,7 @@ There's no hot water in the shower.                      淋浴没有热水。
 ```
 
 
-# 租车 / 自驾
+### 3.16 租车 / 自驾
 
 ```text
 I'd like to rent a car for three days.                    我想租三天车。
@@ -1294,7 +1318,7 @@ Is there a GPS in the car?                                车里有 GPS 吗？
 ```
 
 
-# 观光 / 门票
+### 3.17 观光 / 门票
 
 ```text
 What are the must-see attractions here?                  这里的必去景点有哪些？
@@ -1320,7 +1344,7 @@ How do I get to the rooftop viewpoint?                   去屋顶观景台怎�
 ```
 
 
-# 天气 / 出行建议
+### 3.18 天气 / 出行建议
 
 ```text
 What's the weather forecast for tomorrow?                明天天气预报怎么说？
@@ -1338,7 +1362,7 @@ Is it safe to drive in this weather?                     这种天气开车安�
 ```
 
 
-# 打电话 / 预约
+### 3.19 打电话 / 预约
 
 ```text
 Hello, I'd like to make a reservation.                   你好，我想预约。
@@ -1357,7 +1381,7 @@ About 30 minutes.                                         大约 30 分钟。
 ```
 
 
-# 打折 / 砍价
+### 3.20 打折 / 砍价
 
 ```text
 Is this on sale?                                           这个在打折吗？
@@ -1375,7 +1399,7 @@ I'll come back later.                                      我回头再来。
 ```
 
 
-# 一些有趣的用法
+## 4. 一些有趣的用法
 ```text
 xx dong change the world, we leave that to those who weare xx.
 ```
