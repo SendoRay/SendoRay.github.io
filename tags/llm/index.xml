@@ -533,9 +533,9 @@ F_{\text{fwd}} \approx 2\,\Theta \quad \text{FLOPs/token}
     </item>
     <item>
       <title>一次新功能开发的工程方法论：以接入 Min-P 采样算子为例</title>
-      <link>https://sendoray.github.io/self/2026-05-21-engineering-methodology-min-p-sampling/</link>
+      <link>https://sendoray.github.io/posts/2026-05-21-engineering-methodology-min-p-sampling/</link>
       <pubDate>Thu, 21 May 2026 00:00:00 +0000</pubDate>
-      <guid>https://sendoray.github.io/self/2026-05-21-engineering-methodology-min-p-sampling/</guid>
+      <guid>https://sendoray.github.io/posts/2026-05-21-engineering-methodology-min-p-sampling/</guid>
       <description>&lt;p&gt;最近在给推理框架接入一个新的采样算子（Min-P Sampling）时，复盘了一下自己的开发节奏，发现一个比较稳定的&amp;quot;四步法&amp;quot;非常好用。这篇博客不聊采样算法本身的数学细节，而是把它当成一个载体，记录一下我现在做新功能时的工程方法论。&lt;/p&gt;
 &lt;blockquote&gt;
 &lt;p&gt;TL;DR：&lt;strong&gt;先理解背景 → 再看历史方案 → 写 minimal test 跑通新功能 → 接入大框架&lt;/strong&gt;。每一步都要有明确的退出条件，不要跳步。&lt;/p&gt;&lt;/blockquote&gt;
