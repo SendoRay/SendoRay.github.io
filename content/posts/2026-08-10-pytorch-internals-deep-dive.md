@@ -1,10 +1,9 @@
 ---
 title: "深入理解 PyTorch"
-date: '2026-08-10'
+date: '2026-06-10'
 tags:
 - PyTorch
 - GPU
-- Training
 
 draft: false
 math: true

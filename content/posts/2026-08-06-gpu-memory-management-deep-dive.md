@@ -1,10 +1,9 @@
 ---
 title: "GPU训练中的内存管理详解"
-date: '2026-08-06'
+date: '2026-06-06'
 tags:
-- LLM
 - GPU
-- Training
+
 
 draft: false
 math: true
@@ -296,7 +295,18 @@ for batch in loader:
 └──────────────┘        （"malloc 快、首次 touch 慢"的全部原因）
 ```
 
-`free` 同样不是"还给 OS"：块回到 glibc 的空闲链表/arena，供后续 `malloc` 复用；只有堆顶存在超过 trim 阈值（`M_TRIM_THRESHOLD`，默认 128KB）的连续空闲时才用 `brk` 缩堆归还。所以进程的 RSS 往往**只增不减**——这与第三章要讲的"PyTorch 分配器拿了显存不还驱动、`nvidia-smi` 只增不减"是**同一个设计在两个层面的重演**：向下层批发昂贵（系统调用/驱动调用 + 页表操作），自己池化零售便宜。
+`free` 同样不是"还给 OS"：块回到 glibc 的空闲链表/arena，供后续 `malloc` 复用；只有堆顶存在超过 trim 阈值（`M_TRIM_THRESHOLD`，默认 128KB）的连续空闲时才用 `brk` 缩堆归还。多线程下 glibc 还会按线程开多个 arena 减少锁竞争，代价是各 arena 的空闲内存互不共享、RSS 进一步虚高——与"多进程各自的 PyTorch 池互不相让"（3.7）又是一次同构。所以进程的 RSS 往往**只增不减**——这与第三章要讲的"PyTorch 分配器拿了显存不还驱动、`nvidia-smi` 只增不减"是**同一个设计在两个层面的重演**：向下层批发昂贵（系统调用/驱动调用 + 页表操作），自己池化零售便宜。
+
+这组同构可以直接列成对照表，第三章读到对应机制时回来看一眼：
+
+| glibc ptmalloc（管 RAM） | PyTorch CachingAllocator（管 HBM） |
+|---|---|
+| 按大小分箱的 bins 空闲链表 | 按大小归池的空闲块链表（small/large pool） |
+| `brk`/`mmap` 向 OS 批发 | `cudaMalloc` 向驱动批发 Segment |
+| `free` 回 arena，不还 OS | tensor 释放回池，不 `cudaFree` |
+| `M_TRIM_THRESHOLD` 达标才缩堆 | `empty_cache()` 才归还完全空闲的 Segment |
+| RSS 只增不减 | `nvidia-smi` 只增不减 |
+| 外碎片：bins 里的块拼不出大块 | 外碎片：Segment 内空闲块不连续 |
 
 **认知误区**："free 了内存，top 里的 RSS 就该降"。不降是常态：小块回了 arena、大块要凑满 trim 阈值才缩堆。判断 C/C++ 程序泄漏要用 valgrind/ASan 看"不可达块"，正如判断 PyTorch 泄漏要看 `memory_allocated()` 而不是 `nvidia-smi`（3.1 展开）。
 
@@ -317,7 +327,7 @@ print(f"first touch: {(t2-t1)*1e3:8.2f} ms")  # ~100 ms  26 万次缺页中断
 print(f"re-touch:    {(t3-t2)*1e3:8.2f} ms")  # ~1 ms    纯内存写入速度
 ```
 
-三个数字差两个量级：第一行是 glibc 登记虚拟地址的成本，第二行是 OS 逐页分配物理内存的成本，第三行才是硬件真实的写入速度。这也解释了为什么基准测试要先 warmup：第一个 step 的耗时里混着大量缺页开销，不代表稳态。
+三个数字差两个量级：第一行是 glibc 登记虚拟地址的成本，第二行是 OS 逐页分配物理内存的成本，第三行才是硬件真实的写入速度。这也解释了为什么基准测试要先 warmup：第一个 step 的耗时里混着大量缺页开销，不代表稳态。顺带一提大页（Huge Pages，2MB/1GB 一页）：页变大，同样 1GB 的缺页次数从 26 万降到 512，TLB 命中率也随之提升——Linux 的透明大页（THP）对训练 host 侧的大块分配（DataLoader 缓存、offload 目的地）通常是净收益。
 
 #### 从可换页到锁页：三种姿势
 
@@ -381,7 +391,7 @@ loader = DataLoader(ds, batch_size=64, num_workers=4, pin_memory=True)
 | 系统 RAM（pageable） | 0.5~2 TB | ~200 GB/s（CPU 侧） | 数据预处理、checkpoint 中转 |
 | 系统 RAM（pinned） | 手动分配，建议 <60% | PCIe ~25 GB/s（到 GPU） | H2D/D2H 高速通道、offload 目的地 |
 | NVMe SSD | 数 TB | ~7 GB/s | checkpoint 落盘、冷数据 offload |
-| Unified Memory | 虚拟无限 | 缺页迁移，不稳定 | 原型验证，生产训练罕用 |
+| Unified Memory | 虚拟无限 | 缺页迁移，不稳定 | 原型验证，生产训练罕用（机制详见 4.4） |
 
 记住本章最重要的一个对比：**HBM : PCIe : NVMe ≈ 2000 : 25 : 7（GB/s）**。后面所有优化技术，本质都是在这三级带宽悬崖之间做取舍。
 
@@ -867,6 +877,17 @@ export PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True
 
 `torch.cuda.memory_stats()` 里有两个与此相关的预警计数器：`num_alloc_retries`（走到第 2 步的次数）持续上涨，说明显存已在碎片化边缘反复横跳，是比 OOM 更早的告警信号；`num_ooms` 则是真正抛出异常的次数。
 
+释放链还有一个高频陷阱：**引用计数在 `StorageImpl` 级，不在 tensor 级**。view/切片不拷贝数据，只是新建一个 `TensorImpl` 指向同一个 storage：
+
+```python
+x = torch.empty(2**28, device='cuda')   # 1 GiB 的 storage
+y = x[:100]                              # view：共享同一个 StorageImpl
+del x                                    # allocated 不降：y 仍持有整个 storage
+y = y.clone()                            # ✅ 拷出所需部分，原 storage 才能释放
+```
+
+日志里存了大 tensor 的一个小切片、显存却居高不下，就是这个机制在起作用——它也是第六章泄漏成因里"隐式引用链"的典型一环。
+
 ```text
  Python          ATen & Storage         CachingAllocator        CUDA Driver
 ───────────────────────────────────────────────────────────────────────
@@ -902,7 +923,7 @@ f = lambda tag: print(f"[{tag}] allocated="
     f"{torch.cuda.memory_allocated()/GiB:.2f} GiB, reserved="
     f"{torch.cuda.memory_reserved()/GiB:.2f} GiB")
 
-x = torch.empty(GiB // 4, 4, device='cuda')   # 1 GiB
+x = torch.empty(GiB // 4, device='cuda')   # 1 GiB：2^28 个 float32 × 4 B
 f("创建后")   # allocated=1.00, reserved=1.00 ← cudaMalloc 发生了
 del x
 f("del 后")   # allocated=0.00, reserved=1.00 ← 块回池，cudaFree 没发生
@@ -911,6 +932,8 @@ f("清缓存后")  # allocated=0.00, reserved=0.00 ← 此刻才真正还驱动
 ```
 
 三行输出就是本节全部结论的压缩：`del` 只降 allocated；reserved 要等 `empty_cache()`；而训练中你几乎永远不该调后者（3.5 讲过代价）。引用计数与 `intrusive_ptr` 在源码层的实现细节，见 [深入理解 PyTorch](/self/2026-08-10-pytorch-internals-deep-dive/)。
+
+顺带一个排障技巧：环境变量 `PYTORCH_NO_CUDA_MEMORY_CACHING=1` 可以整体旁路缓存池，让每次申请/释放都直通 `cudaMalloc`/`cudaFree`。训练会慢到没法用，但在怀疑"某个 bug 被分配器的块复用掩盖了"（比如越界写污染了被复用的旧块）时，它能让 `compute-sanitizer` 看到干净的分配边界，让越界访问当场暴露。
 
 ### 3.7 CUDA 原生内存池：cudaMallocAsync 与 Stream-Ordered Allocator
 
@@ -938,6 +961,8 @@ GPU:   ── k1 ── k2 ── free ── malloc ── k3 ──（按 stre
 
 那它和 PyTorch 自研池怎么选？逐维度对比：
 
+**认知误区**："cudaMallocAsync 是异步的，所以分配本身变快了"。快的不是分配，是**不再等别人**：旧 `cudaFree` 要等全卡 kernel 排空才能返回，新 API 入队即返回——看的人变快了，活本身还是那些活，只是换到 GPU 时间线上按 stream 序做。
+
 | 维度 | PyTorch CachingAllocator | cudaMallocAsync 驱动池 |
 |---|---|---|
 | 实现在哪层 | PyTorch C++ 库（用户态） | CUDA 驱动 |
@@ -954,7 +979,7 @@ PyTorch 提供了切换开关（实验性）：
 export PYTORCH_CUDA_ALLOC_CONF=backend:cudaMallocAsync
 ```
 
-**何时值得试**：多进程共卡（训练 + 推理服务同卡，各自的 PyTorch 池互相挤占）；自写 CUDA extension 里频繁裸调 `cudaMalloc`（驱动池能统一接管）。**为什么 PyTorch 默认仍是自研池**：十年历史沉淀的碎片策略经过海量训练负载验证且可调；snapshot/三水位这套排障工具生态（第六章的主力武器）目前只在自研池上完整可用——拿黑盒换同步消除，对已经重度依赖可观测性的训练基础设施不划算。
+**何时值得试**：多进程共卡（训练 + 推理服务同卡，各自的 PyTorch 池互相挤占）；自写 CUDA extension 里频繁裸调 `cudaMalloc`（驱动池能统一接管）。**为什么 PyTorch 默认仍是自研池**：十年历史沉淀的碎片策略经过海量训练负载验证且可调；snapshot/三水位这套排障工具生态（第六章的主力武器）目前只在自研池上完整可用——拿黑盒换同步消除，对已经重度依赖可观测性的训练基础设施不划算。切换前还要知道两条兼容性约束：`backend:cudaMallocAsync` 与 `expandable_segments` 互斥（两者都想接管虚拟地址管理）；`memory_snapshot()` 等逐块观测接口在该后端下信息大幅缩水，只剩池级统计。
 
 ### 3.8 本章小结：现象 → 根因 → 处理
 
@@ -990,6 +1015,17 @@ $$
 
 驻留线程少，SM 就缺少足够的 warp 来掩盖访存延迟（latency hiding）——寄存器用得"太阔"的 kernel，单线程快了、整卡吞吐反而可能降。
 
+把这道权衡题量化（A100，每 SM 64K 寄存器、最大驻留 2048 线程）：
+
+| regs/thread | 寄存器允许的驻留线程 | occupancy 上限 | 典型情形 |
+|---|---|---|---|
+| ≤32 | 2048（打满） | 100% | 简单 elementwise kernel |
+| 64 | 1024 | 50% | 常规计算 kernel |
+| 128 | 512 | 25% | 重寄存器 kernel（手写 GEMM tile） |
+| 255（上限） | 256 | 12.5% | 极限情形，编译器已在 spill 边缘 |
+
+但 occupancy 不是越高越好——FlashAttention、CUTLASS 这类高性能 kernel 故意用大量寄存器换每线程更多的原地累加，靠指令级并行而非线程级并行掩盖延迟。真正碰不得的红线是下面的 spill。
+
 寄存器不够用时（大数组、动态下标、寄存器压力过高），编译器把变量 **spill 到 local memory**。这是全文最具误导性的名字：**名叫 local，物理上在 HBM**（每线程私有地址空间，经 L1/L2 缓存）——从 ~1 cycle 的寄存器掉进几百 cycle 的显存路径，性能陡降。控制手段与诊断：
 
 ```cuda
@@ -1004,6 +1040,13 @@ nvcc -Xptxas -v ...          # 编译时打印每 kernel 的寄存器数与 spil
 # ptxas info: Used 96 registers, 128 bytes spill stores, 196 bytes spill loads
 #                              ▲ spill 非零就该警觉，热循环里尤其致命
 ```
+
+看到 spill 非零后的治理顺序：
+
+1. **拆 kernel**：一个巨型 kernel 拆成两个，寄存器压力各自减半；
+2. **消灭动态下标数组**：局部数组被动态下标访问时编译器无法把它拆进寄存器，是 spill 最常见的单点成因——改查表进 shared memory 或 `__constant__`；
+3. **调 `__launch_bounds__`**：若 occupancy 有富余，允许编译器多用寄存器换掉 spill；
+4. **确认热点**：实在消不掉，用 Nsight Compute 的 memory workload 分析确认 local memory 流量不在最热的循环里，再接受它。
 
 ### 4.2 Shared Memory：SM 片上的手动缓存
 
@@ -1032,7 +1075,13 @@ cudaFuncSetAttribute(kernel_b,
     cudaFuncAttributeMaxDynamicSharedMemorySize, 100 * 1024);
 ```
 
-它为什么重要？一句点到：**FlashAttention 正是靠 shared memory tiling 把 attention 的 $s \times s$ 中间矩阵分块留在片上算完**、不落 HBM，才有了 2.2 里"$5sh$ 项归零"的显存收益——金字塔顶层的 kernel 优化，改写的是底层 HBM 的容量账本。
+忘了这行声明的症状很典型：`cudaErrorInvalidValue`，发生在 **launch 时**而非编译时——因为动态 shared memory 的大小编译器根本不知道，只有 launch 那一刻才能校验。
+
+它为什么重要？一句点到：**FlashAttention 正是靠 shared memory tiling 把 attention 的 $s \times s$ 中间矩阵分块留在片上算完**、不落 HBM，才有了 2.2 里"$5sh$ 项归零"的显存收益——金字塔顶层的 kernel 优化，改写的是底层 HBM 的容量账本。用 7B 算例的形状算笔 tile 预算就知道 48KB 默认上限为什么不够：$d = 4096$、32 头 → head_dim = 128，取分块 $B_{r} = B_{c} = 64$，则 Q/K/V 三个 tile 各 $64 \times 128 \times 2\,\text{B} = 16\,\text{KB}$，再加 $64 \times 64$ 的 fp32 分数矩阵 16KB——合计已约 64KB，超过 48KB，所以 FlashAttention 的实现里都有那行 `cudaFuncSetAttribute`。
+
+另一个绕不开的性能细节：shared memory 分成 32 个 bank（按 4B 交错），同一 warp 的 32 个线程若有多个线程落在同一 bank 的不同地址，硬件只能把访问串行化（**bank conflict**）。经典解法是给二维 tile 加一列 padding（`__shared__ float tile[32][33]`）让列访问错开 bank——高性能 kernel 的 shared 数组维度里那个"多余"的 +1，就是这么来的。
+
+**认知误区**："shared memory 和 L1 是一块 SRAM，硬件会自动帮我用好"。同一块 192KB 硬件不假，但 L1 是自动挡（硬件决定缓存什么）、shared 是手动挡（代码显式搬入搬出）——FlashAttention 之所以要"手写"，正是因为自动挡永远猜不到 attention 的分块访问模式。
 
 ### 4.3 Device 端 malloc：kernel 里也能 malloc，但几乎不该用
 
@@ -1055,9 +1104,19 @@ __global__ void bad_kernel(...) {
 2. **无池化、无碎片治理**：第三章那套 split/coalesce/三水位统计全都不存在，device heap 碎了就碎了；
 3. **两套分配互不互通**：device malloc 的指针不能用 host 侧 `cudaFree` 释放（反之亦然），也不在 PyTorch 分配器和任何监控工具的视野里。
 
+同族限额还有一个：kernel 内 `printf` 的输出先写进固定大小的 FIFO 缓冲（`cudaLimitPrintfFifoSize`，默认 1MB），打满就静默丢弃——"kernel 里加了 printf 却没输出"八成是这个原因，不是代码没跑到。
+
 **认知误区**："在 kernel 里 malloc 省掉了和 host 的交互，应该更快"。恰好相反：host 侧分配可以被 PyTorch 池化成几乎零成本（3.6 的快路径），而 device malloc 每次都是海量线程抢同一把锁——**不是更快，是更慢**。
 
-生产 kernel 的正确姿势是 **host 侧预分配 workspace，把指针传进 kernel**：PyTorch custom op 用 `torch.empty()` 开 workspace 再传给 kernel 正是这个模式——顺带把 workspace 纳入了 caching allocator 的池化与三水位统计，监控、snapshot、碎片治理全部白拿。cuBLAS/cuDNN 的 workspace（2.3）同此理。
+生产 kernel 的正确姿势是 **host 侧预分配 workspace，把指针传进 kernel**：PyTorch custom op 用 `torch.empty()` 开 workspace 再传给 kernel 正是这个模式——顺带把 workspace 纳入了 caching allocator 的池化与三水位统计，监控、snapshot、碎片治理全部白拿。cuBLAS/cuDNN 的 workspace（2.3）同此理。落到代码上就三行：
+
+```python
+def fused_op(x):
+    # host 侧预分配：走 CachingAllocator，池内命中近零成本，且被三水位统计
+    workspace = torch.empty(ws_bytes, dtype=torch.uint8, device=x.device)
+    my_ext.fused_kernel(x, workspace)   # kernel 只用指针，不管申请与释放
+    return x                            # workspace 出作用域即回池（3.6）
+```
 
 ### 4.4 cudaMallocManaged / 统一内存（UVM）
 
@@ -1077,6 +1136,8 @@ __global__ void bad_kernel(...) {
         反向同理：CPU 访问驻留在 HBM 的页 → 迁回 RAM
 ```
 
+别和 1.6 的 zero-copy 混淆：两者都是"GPU 访问 host 侧数据"，但 zero-copy **永不迁移**——每次访问都现走 PCIe，适合"只读一遍"；UVM 则把页**搬到访问方**，首次贵、后续就是本地 HBM 速度，适合"反复访问但放不下"。选型口诀：访问次数 ≈ 1 用 zero-copy，访问次数 ≫ 1 用 UVM + prefetch。
+
 它的两张王牌：**编程模型极简**（不写任何 memcpy）和 **oversubscription（超额订阅）**——分配量可以超过显存容量，驱动自动换页。代价同样醒目：缺页迁移延迟不可控（单次 μs 级，零碎访问模式下累积成灾难）；CPU/GPU 交替访问同一页会来回抖动（thrashing），带宽全烧在页迁移上。两条性能救生索：
 
 ```c
@@ -1090,6 +1151,8 @@ cudaMemPrefetchAsync(p, size, dev, stream);
 ```
 
 生产训练为什么慎用：训练的访存模式高度规律（第二章的静态五件套 + 潮汐式激活），显式管理永远能做得比缺页驱动更好，把关键路径交给不可控的迁移延迟得不偿失。何时可用：原型验证（先跑通再优化）；访问稀疏的超大结构（如巨型 embedding 表只热访问小部分）；单卡推理超显存的兜底方案（能跑优于跑不了）。
+
+把这条底线量化一下：假设用 UVM 在 8GB 消费卡上跑 7B bf16 推理（参数 14GB，超显存近一倍），每生成一个 token 都要把全部参数访问一遍，驱动只能持续把页换进换出——每 token 至少 6GB 经 PCIe 重新迁入，$6\,\text{GB} / 25\,\text{GB/s} \approx 240\,\text{ms}$；而参数全在 HBM 时 decode 一个 token 只要十几 ms——慢一个量级以上。能跑，但这就是"能跑"与"方案"（显式逐层 offload + prefetch）的差距。
 
 ### 4.5 收口：一张表看全所有申请与释放 API
 
@@ -1131,6 +1194,15 @@ cudaMemPrefetchAsync(p, size, dev, stream);
 | 寄存器 | nvcc/ptxas 编译期静态分配（4.1） | SM 寄存器文件 | kernel 结束即释放，无 API | 无运行时概念 | 所有 kernel 局部变量 |
 
 表后的分层心智模型："申请与释放"自底向上共四层——**OS/glibc 管系统内存（虚拟地址懒分配 + 池化不归还），CUDA driver 管显存和页注册，PyTorch 池在 driver 之上再做一层池化，kernel 片上资源则彻底取消运行时分配（编译期/调度期定义）**。每一层都在重复同一个模式：越靠近硬件越昂贵的操作，就越要提前、批量、池化。
+
+每一层也有自己的观测工具——排查内存问题先定位层，再拿对应的工具：
+
+| 层 | 观测工具 | 看什么 |
+|---|---|---|
+| OS/glibc | `top`/`ps` 的 RSS、valgrind | CPU 侧泄漏、缺页开销（1.5） |
+| CUDA driver | `nvidia-smi`、DCGM | 进程级显存总量（含 context） |
+| PyTorch 池 | 三水位、memory_snapshot | 泄漏 vs 碎片 vs 缓存（第六章主力） |
+| kernel 片上 | `ptxas -v`、Nsight Compute | 寄存器数、spill、occupancy（4.1） |
 
 ---
 
@@ -1726,7 +1798,9 @@ except torch.cuda.OutOfMemoryError:
 
 | 变量 | 用途 |
 |---|---|
-| `PYTORCH_CUDA_ALLOC_CONF` | 分配器调参：`expandable_segments:True` / `max_split_size_mb` / `roundup_power2_divisions` |
+| `PYTORCH_CUDA_ALLOC_CONF` | 分配器调参：`expandable_segments:True` / `max_split_size_mb` / `roundup_power2_divisions` / `backend:cudaMallocAsync`（3.7） |
+| `PYTORCH_NO_CUDA_MEMORY_CACHING=1` | 旁路缓存池直通 `cudaMalloc`/`cudaFree`，配合 compute-sanitizer 排查越界（3.6） |
+| `MALLOC_MMAP_THRESHOLD_` / `MALLOC_TRIM_THRESHOLD_` | glibc 的 mmap 分流与缩堆阈值（1.5），CPU 侧 RSS 异常时可调 |
 | `CUDA_VISIBLE_DEVICES` | 限定进程可见的 GPU |
 | `NCCL_DEBUG=INFO` | 打印 NCCL 初始化与通信细节，排查通信 buffer 与拓扑 |
 
