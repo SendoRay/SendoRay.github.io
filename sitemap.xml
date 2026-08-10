@@ -3,22 +3,31 @@
   xmlns:xhtml="http://www.w3.org/1999/xhtml">
   <url>
     <loc>https://sendoray.github.io/</loc>
-    <lastmod>2026-08-03T00:00:00+00:00</lastmod>
+    <lastmod>2026-08-10T00:00:00+00:00</lastmod>
   </url><url>
-    <loc>https://sendoray.github.io/tags/english/</loc>
-    <lastmod>2026-08-03T00:00:00+00:00</lastmod>
+    <loc>https://sendoray.github.io/tags/gpu/</loc>
+    <lastmod>2026-08-10T00:00:00+00:00</lastmod>
   </url><url>
-    <loc>https://sendoray.github.io/posts/</loc>
-    <lastmod>2026-08-03T00:00:00+00:00</lastmod>
+    <loc>https://sendoray.github.io/tags/pytorch/</loc>
+    <lastmod>2026-08-10T00:00:00+00:00</lastmod>
+  </url><url>
+    <loc>https://sendoray.github.io/self/</loc>
+    <lastmod>2026-08-10T00:00:00+00:00</lastmod>
   </url><url>
     <loc>https://sendoray.github.io/tags/</loc>
-    <lastmod>2026-08-03T00:00:00+00:00</lastmod>
+    <lastmod>2026-08-10T00:00:00+00:00</lastmod>
   </url><url>
-    <loc>https://sendoray.github.io/posts/he/</loc>
-    <lastmod>2026-08-03T00:00:00+00:00</lastmod>
+    <loc>https://sendoray.github.io/tags/training/</loc>
+    <lastmod>2026-08-10T00:00:00+00:00</lastmod>
   </url><url>
-    <loc>https://sendoray.github.io/posts/use_eng/</loc>
-    <lastmod>2026-08-03T00:00:00+00:00</lastmod>
+    <loc>https://sendoray.github.io/self/2026-08-10-pytorch-internals-deep-dive/</loc>
+    <lastmod>2026-08-10T00:00:00+00:00</lastmod>
+  </url><url>
+    <loc>https://sendoray.github.io/self/2026-08-06-gpu-memory-management-deep-dive/</loc>
+    <lastmod>2026-08-06T00:00:00+00:00</lastmod>
+  </url><url>
+    <loc>https://sendoray.github.io/tags/llm/</loc>
+    <lastmod>2026-08-06T00:00:00+00:00</lastmod>
   </url><url>
     <loc>https://sendoray.github.io/tags/function-call/</loc>
     <lastmod>2026-07-13T00:00:00+00:00</lastmod>
@@ -27,9 +36,6 @@
     <lastmod>2026-07-13T00:00:00+00:00</lastmod>
   </url><url>
     <loc>https://sendoray.github.io/tags/kv-cache/</loc>
-    <lastmod>2026-07-13T00:00:00+00:00</lastmod>
-  </url><url>
-    <loc>https://sendoray.github.io/tags/llm/</loc>
     <lastmod>2026-07-13T00:00:00+00:00</lastmod>
   </url><url>
     <loc>https://sendoray.github.io/tags/memory-management/</loc>
@@ -119,9 +125,6 @@
     <loc>https://sendoray.github.io/tags/credit-assignment/</loc>
     <lastmod>2026-07-02T00:00:00+00:00</lastmod>
   </url><url>
-    <loc>https://sendoray.github.io/tags/gpu/</loc>
-    <lastmod>2026-07-02T00:00:00+00:00</lastmod>
-  </url><url>
     <loc>https://sendoray.github.io/tags/hpc/</loc>
     <lastmod>2026-07-02T00:00:00+00:00</lastmod>
   </url><url>
@@ -134,9 +137,6 @@
     <loc>https://sendoray.github.io/tags/offloading/</loc>
     <lastmod>2026-07-02T00:00:00+00:00</lastmod>
   </url><url>
-    <loc>https://sendoray.github.io/self/</loc>
-    <lastmod>2026-07-02T00:00:00+00:00</lastmod>
-  </url><url>
     <loc>https://sendoray.github.io/tags/ssd/</loc>
     <lastmod>2026-07-02T00:00:00+00:00</lastmod>
   </url><url>
@@ -144,9 +144,6 @@
     <lastmod>2026-07-02T00:00:00+00:00</lastmod>
   </url><url>
     <loc>https://sendoray.github.io/tags/storage/</loc>
-    <lastmod>2026-07-02T00:00:00+00:00</lastmod>
-  </url><url>
-    <loc>https://sendoray.github.io/tags/training/</loc>
     <lastmod>2026-07-02T00:00:00+00:00</lastmod>
   </url><url>
     <loc>https://sendoray.github.io/paperreading/2026-07-02-tutti-ssd-kv-cache/</loc>
@@ -222,6 +219,9 @@
     <lastmod>2026-05-26T00:00:00+00:00</lastmod>
   </url><url>
     <loc>https://sendoray.github.io/tags/investment/</loc>
+    <lastmod>2026-05-25T00:00:00+00:00</lastmod>
+  </url><url>
+    <loc>https://sendoray.github.io/posts/</loc>
     <lastmod>2026-05-25T00:00:00+00:00</lastmod>
   </url><url>
     <loc>https://sendoray.github.io/self/2026-05-25-investor-essential-handbook/</loc>

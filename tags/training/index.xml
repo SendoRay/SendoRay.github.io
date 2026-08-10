@@ -6,8 +6,81 @@
     <description>Recent content in Training on chengzhy&#39;s blog</description>
     <generator>Hugo</generator>
     <language>en</language>
-    <lastBuildDate>Thu, 02 Jul 2026 00:00:00 +0000</lastBuildDate>
+    <lastBuildDate>Mon, 10 Aug 2026 00:00:00 +0000</lastBuildDate>
     <atom:link href="https://sendoray.github.io/tags/training/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>深入理解 PyTorch</title>
+      <link>https://sendoray.github.io/self/2026-08-10-pytorch-internals-deep-dive/</link>
+      <pubDate>Mon, 10 Aug 2026 00:00:00 +0000</pubDate>
+      <guid>https://sendoray.github.io/self/2026-08-10-pytorch-internals-deep-dive/</guid>
+      <description>&lt;blockquote&gt;
+&lt;p&gt;&lt;strong&gt;本文回答一个问题&lt;/strong&gt;：当你写下 &lt;code&gt;y = x * 2; y.sum().backward()&lt;/code&gt; 这行看似平凡的代码时，PyTorch 内部到底发生了什么？——从 Python 绑定层的参数解析，到 Dispatcher 的算子路由，到 CUDA 内存池的 Block 分配，再到 Autograd 引擎多线程执行反向图，最后延伸到 torch.compile 如何把这一切整个&amp;quot;编译掉&amp;quot;。&lt;/p&gt;&lt;/blockquote&gt;
+&lt;p&gt;作为 LLM Infra 工程师，你大概率每天都在和 PyTorch 打交道：排查一个诡异的 &lt;code&gt;CUDA out of memory. Tried to allocate ...&lt;/code&gt;（明明 &lt;code&gt;nvidia-smi&lt;/code&gt; 显示还有空余），定位一次 DDP 训练中的通信 hang，或者琢磨为什么 &lt;code&gt;torch.compile&lt;/code&gt; 之后模型反而变慢了。这些问题的答案都不在 API 文档里，而在源码里。&lt;/p&gt;
+&lt;p&gt;本文以 PyTorch main branch（2024-2026）为参考版本，自底向上拆解 PyTorch 的核心子系统。全文结构鸟瞰如下：&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code class=&#34;language-text&#34; data-lang=&#34;text&#34;&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;                        ┌─────────────────────────────────────────┐
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;                        │   一、为什么要读源码   二、仓库全景地图      │
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;                        │              （导览层）                   │
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;                        └───────────────────┬─────────────────────┘
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;                                            ▼
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;        ┌───────────────────────────────────────────────────────────┐
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;        │                     Eager 执行栈（自底向上）                  │
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;        │                                                           │
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;        │   三、Tensor 内部     TensorImpl / Storage / stride        │
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;        │   四、Dispatcher     DispatchKey / native_functions.yaml  │
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;        │   五、Autograd       Node / Edge / ReadyQueue              │
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;        │   六、Python 绑定    THPVariable / GIL                     │
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;        │   七、nn.Module      __setattr__ / state_dict / hooks     │
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;        │   八、CUDA 内存      CUDACachingAllocator / stream 语义     │
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;        └───────────────────────────┬───────────────────────────────┘
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;                                    ▼
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;        ┌───────────────────────────────────────────────────────────┐
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;        │                    2.x 编译与分布式栈                        │
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;        │                                                           │
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;        │   九、torch.compile  Dynamo / AOTAutograd / Inductor       │
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;        │   十、分布式          c10d / DDP bucket / FSDP             │
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;        │   十一、演进脉络      从 Eager 到 Compile 的取舍             │
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;        └───────────────────────────────────────────────────────────┘
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;hr&gt;
+&lt;h2 id=&#34;一为什么要读-pytorch-源码&#34;&gt;一、为什么要读 PyTorch 源码&lt;/h2&gt;
+&lt;h3 id=&#34;11-api-文档回答不了的问题&#34;&gt;1.1 API 文档回答不了的问题&lt;/h3&gt;
+&lt;p&gt;PyTorch 的文档很完善，但它回答的是&amp;quot;怎么用&amp;quot;。下面这类问题，文档不会告诉你答案：&lt;/p&gt;</description>
+    </item>
+    <item>
+      <title>GPU训练中的内存管理详解</title>
+      <link>https://sendoray.github.io/self/2026-08-06-gpu-memory-management-deep-dive/</link>
+      <pubDate>Thu, 06 Aug 2026 00:00:00 +0000</pubDate>
+      <guid>https://sendoray.github.io/self/2026-08-06-gpu-memory-management-deep-dive/</guid>
+      <description>&lt;p&gt;如果统计一下大模型训练工程师最常见的报错，冠军毫无悬念：&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code class=&#34;language-text&#34; data-lang=&#34;text&#34;&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;torch.cuda.OutOfMemoryError: CUDA out of memory. Tried to allocate
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;2.50 GiB (GPU 0; 79.35 GiB total capacity; 68.42 GiB already allocated;
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;1.83 GiB free; 74.51 GiB reserved in total by PyTorch)
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;p&gt;这条报错里的每一个数字——&lt;code&gt;allocated&lt;/code&gt;、&lt;code&gt;free&lt;/code&gt;、&lt;code&gt;reserved&lt;/code&gt;——背后都是一套精密的内存管理机制。为什么 &lt;code&gt;total&lt;/code&gt; 减 &lt;code&gt;allocated&lt;/code&gt; 明明还剩 10GB，却只有 1.83GB &lt;code&gt;free&lt;/code&gt;？为什么 batch size 从 4 降到 2 还是 OOM？为什么训练跑了三天之后显存&amp;quot;莫名&amp;quot;涨了 5GB？&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;本文的主线只有一句话：显存里到底放了什么、怎么省、怎么查泄漏。&lt;/strong&gt; 全文结构如下：&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code class=&#34;language-text&#34; data-lang=&#34;text&#34;&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;┌─────────────────────────────────────────────────────────────────┐
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;│                  本文地图（GPU 训练内存管理）                     │
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;│                                                                 │
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;│  一、内存类型全景          寄存器 → HBM → RAM → NVMe             │
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;│      │                    （容量/带宽/延迟，pinned + CPU 侧分配）│
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;│      ▼                                                          │
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;│  二、显存构成剖析          每个 rank 的 80GB 里到底放了什么       │
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;│      │                    （五类静态数据 + 激活值 + 隐性占用）    │
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;│      ▼                                                          │
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;│  三、分配器机制            PyTorch caching allocator 与碎片      │
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;│      │                    （Tensor 生命周期 + cudaMallocAsync）  │
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;│      ▼                                                          │
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;│  四、Kernel 视角的内存     寄存器 / shared memory / device malloc│
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;│      │                    （UVM + 申请释放 API 总收口）          │
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;│      ▼                                                          │
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;│  五、优化技术              checkpointing / offload / 混合精度    │
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;│      │                    （ZeRO / 并行策略 / OOM 决策树）       │
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;│      ▼                                                          │
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;│  六、泄漏排查              工具链与实战 debug                    │
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;│      │                    （七大成因 + snapshot 快照分析）       │
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;│      ▼                                                          │
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;│  七、生产监控              监控指标 / 告警阈值 / 最佳实践         │
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;└─────────────────────────────────────────────────────────────────┘
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;p&gt;&lt;strong&gt;与已有文章的关系&lt;/strong&gt;：&lt;a href=&#34;https://sendoray.github.io/self/2026-06-09-training/&#34;&gt;LLM训练全解&lt;/a&gt; 讲的是训练机制本身——前向、反向、优化器为什么需要这些数据；本文则换一个视角，&lt;strong&gt;从内存的角度深挖&lt;/strong&gt;：这些数据在物理上放在哪、怎么布局、生命周期如何、如何被分配器管理。两篇互为表里，建议先读那篇再读本文。&lt;/p&gt;</description>
+    </item>
     <item>
       <title>MLP-Offload：多层级、多路径卸载突破GPU内存墙</title>
       <link>https://sendoray.github.io/paperreading/2026-07-02-mlp-offload/</link>
