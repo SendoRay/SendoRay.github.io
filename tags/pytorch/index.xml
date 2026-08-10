@@ -6,13 +6,13 @@
     <description>Recent content in PyTorch on chengzhy&#39;s blog</description>
     <generator>Hugo</generator>
     <language>en</language>
-    <lastBuildDate>Mon, 10 Aug 2026 00:00:00 +0000</lastBuildDate>
+    <lastBuildDate>Wed, 10 Jun 2026 00:00:00 +0000</lastBuildDate>
     <atom:link href="https://sendoray.github.io/tags/pytorch/index.xml" rel="self" type="application/rss+xml" />
     <item>
       <title>深入理解 PyTorch</title>
-      <link>https://sendoray.github.io/self/2026-08-10-pytorch-internals-deep-dive/</link>
-      <pubDate>Mon, 10 Aug 2026 00:00:00 +0000</pubDate>
-      <guid>https://sendoray.github.io/self/2026-08-10-pytorch-internals-deep-dive/</guid>
+      <link>https://sendoray.github.io/posts/2026-08-10-pytorch-internals-deep-dive/</link>
+      <pubDate>Wed, 10 Jun 2026 00:00:00 +0000</pubDate>
+      <guid>https://sendoray.github.io/posts/2026-08-10-pytorch-internals-deep-dive/</guid>
       <description>&lt;blockquote&gt;
 &lt;p&gt;&lt;strong&gt;本文回答一个问题&lt;/strong&gt;：当你写下 &lt;code&gt;y = x * 2; y.sum().backward()&lt;/code&gt; 这行看似平凡的代码时，PyTorch 内部到底发生了什么？——从 Python 绑定层的参数解析，到 Dispatcher 的算子路由，到 CUDA 内存池的 Block 分配，再到 Autograd 引擎多线程执行反向图，最后延伸到 torch.compile 如何把这一切整个&amp;quot;编译掉&amp;quot;。&lt;/p&gt;&lt;/blockquote&gt;
 &lt;p&gt;作为 LLM Infra 工程师，你大概率每天都在和 PyTorch 打交道：排查一个诡异的 &lt;code&gt;CUDA out of memory. Tried to allocate ...&lt;/code&gt;（明明 &lt;code&gt;nvidia-smi&lt;/code&gt; 显示还有空余），定位一次 DDP 训练中的通信 hang，或者琢磨为什么 &lt;code&gt;torch.compile&lt;/code&gt; 之后模型反而变慢了。这些问题的答案都不在 API 文档里，而在源码里。&lt;/p&gt;

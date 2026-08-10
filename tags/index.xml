@@ -6,36 +6,8 @@
     <description>Recent content in Tags on chengzhy&#39;s blog</description>
     <generator>Hugo</generator>
     <language>en</language>
-    <lastBuildDate>Mon, 10 Aug 2026 00:00:00 +0000</lastBuildDate>
+    <lastBuildDate>Mon, 13 Jul 2026 00:00:00 +0000</lastBuildDate>
     <atom:link href="https://sendoray.github.io/tags/index.xml" rel="self" type="application/rss+xml" />
-    <item>
-      <title>GPU</title>
-      <link>https://sendoray.github.io/tags/gpu/</link>
-      <pubDate>Mon, 10 Aug 2026 00:00:00 +0000</pubDate>
-      <guid>https://sendoray.github.io/tags/gpu/</guid>
-      <description></description>
-    </item>
-    <item>
-      <title>PyTorch</title>
-      <link>https://sendoray.github.io/tags/pytorch/</link>
-      <pubDate>Mon, 10 Aug 2026 00:00:00 +0000</pubDate>
-      <guid>https://sendoray.github.io/tags/pytorch/</guid>
-      <description></description>
-    </item>
-    <item>
-      <title>Training</title>
-      <link>https://sendoray.github.io/tags/training/</link>
-      <pubDate>Mon, 10 Aug 2026 00:00:00 +0000</pubDate>
-      <guid>https://sendoray.github.io/tags/training/</guid>
-      <description></description>
-    </item>
-    <item>
-      <title>LLM</title>
-      <link>https://sendoray.github.io/tags/llm/</link>
-      <pubDate>Thu, 06 Aug 2026 00:00:00 +0000</pubDate>
-      <guid>https://sendoray.github.io/tags/llm/</guid>
-      <description></description>
-    </item>
     <item>
       <title>Function-Call</title>
       <link>https://sendoray.github.io/tags/function-call/</link>
@@ -55,6 +27,13 @@
       <link>https://sendoray.github.io/tags/kv-cache/</link>
       <pubDate>Mon, 13 Jul 2026 00:00:00 +0000</pubDate>
       <guid>https://sendoray.github.io/tags/kv-cache/</guid>
+      <description></description>
+    </item>
+    <item>
+      <title>LLM</title>
+      <link>https://sendoray.github.io/tags/llm/</link>
+      <pubDate>Mon, 13 Jul 2026 00:00:00 +0000</pubDate>
+      <guid>https://sendoray.github.io/tags/llm/</guid>
       <description></description>
     </item>
     <item>
@@ -212,6 +191,13 @@
       <description></description>
     </item>
     <item>
+      <title>GPU</title>
+      <link>https://sendoray.github.io/tags/gpu/</link>
+      <pubDate>Thu, 02 Jul 2026 00:00:00 +0000</pubDate>
+      <guid>https://sendoray.github.io/tags/gpu/</guid>
+      <description></description>
+    </item>
+    <item>
       <title>HPC</title>
       <link>https://sendoray.github.io/tags/hpc/</link>
       <pubDate>Thu, 02 Jul 2026 00:00:00 +0000</pubDate>
@@ -254,6 +240,13 @@
       <description></description>
     </item>
     <item>
+      <title>Training</title>
+      <link>https://sendoray.github.io/tags/training/</link>
+      <pubDate>Thu, 02 Jul 2026 00:00:00 +0000</pubDate>
+      <guid>https://sendoray.github.io/tags/training/</guid>
+      <description></description>
+    </item>
+    <item>
       <title>Agent</title>
       <link>https://sendoray.github.io/tags/agent/</link>
       <pubDate>Fri, 26 Jun 2026 00:00:00 +0000</pubDate>
@@ -286,6 +279,13 @@
       <link>https://sendoray.github.io/tags/cs-foundations/</link>
       <pubDate>Mon, 15 Jun 2026 00:00:00 +0000</pubDate>
       <guid>https://sendoray.github.io/tags/cs-foundations/</guid>
+      <description></description>
+    </item>
+    <item>
+      <title>PyTorch</title>
+      <link>https://sendoray.github.io/tags/pytorch/</link>
+      <pubDate>Wed, 10 Jun 2026 00:00:00 +0000</pubDate>
+      <guid>https://sendoray.github.io/tags/pytorch/</guid>
       <description></description>
     </item>
     <item>
