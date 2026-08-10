@@ -12,7 +12,7 @@ ShowBreadCrumbs: true
 ShowPostNavLinks: true
 ---
 
-> 一份覆盖日常开发高频场景的速查手册，涵盖 Git 规范、Linux 命令、Vim、Shell 脚本、Docker、正则表达式、tmux、行业黑话、Claude Code。
+> 一份覆盖日常开发高频场景的速查手册，涵盖 Git 规范、Linux 命令、Vim、Shell 脚本、Docker、正则表达式、tmux、Claude Code。
 
 ---
 

@@ -1,6 +1,2 @@
-{{ if .Store.Get "hasMermaid" }}
-<script type="module">
-  import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.esm.min.mjs';
-  mermaid.initialize({ startOnLoad: true });
-</script>
-{{ end }}
+{{/* mermaid 已改由 extend_head.html 按 front matter 参数 mermaid: true 加载：
+     footer 经 partialCached（按 Layout/Kind 缓存）渲染，Page Store 标记在此不可靠 */}}

@@ -1,3 +1,9 @@
 {{ if .Param "math" }}
 {{ partial "math.html" . }}
 {{ end }}
+{{ if .Param "mermaid" }}
+<script type="module">
+  import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.esm.min.mjs';
+  mermaid.initialize({ startOnLoad: true });
+</script>
+{{ end }}
