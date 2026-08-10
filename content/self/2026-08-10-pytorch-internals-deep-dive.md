@@ -529,6 +529,8 @@ hook 存在 `_forward_pre_hooks` / `_forward_hooks` / `_backward_hooks` 等 Orde
 
 ## 八、CUDA 内存管理：CUDACachingAllocator
 
+> 本章是源码视角的精简概述。更完整的显存全景——CPU 侧分配机制、CUDA API 全家族、Kernel 视角的内存层次——参见 [GPU训练中的内存管理详解](/self/2026-08-06-gpu-memory-management-deep-dive/)。
+
 ### 8.1 为什么需要缓存分配器
 
 `cudaMalloc` / `cudaFree` 的代价极高：不仅本身慢，`cudaFree` 还会**隐式同步整个设备**——在异步执行流水线里等于强行清空 pipeline。而 eager 模式每个 op 都要为输出分配显存，训练一个 step 就是成千上万次分配。PyTorch 的解法是 `c10/cuda/CUDACachingAllocator.cpp`（5000+ 行）：向 CUDA 批发，向 Tensor 零售，free 时不还给 CUDA 而是回池缓存。
