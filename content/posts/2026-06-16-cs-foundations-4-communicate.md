@@ -5,6 +5,7 @@ tags:
 - CS-Foundations
 
 draft: false
+math: true
 ShowToc: true
 TocOpen: false
 ShowReadingTime: true
@@ -13,6 +14,17 @@ ShowPostNavLinks: true
 ---
 
 > 从一台机器的硬件结构出发，逐步讲清 DMA、Pinned Memory、Zero-Copy 等底层原理，再纵览 AI 基础设施通信的五层架构：硬件互连 → 节点间网络 → 通信库 → 底层框架 → 上层应用。
+
+---
+
+> **系列导航 · 程序员的硬核基础四部曲**
+>
+> | 篇 | 负责讲清 | 不负责 |
+> |---|---|---|
+> | [一：体系结构](/posts/2026-06-13-cs-foundations-1-architecture/) | CPU 微架构、缓存与内存序、页表/TLB、PCIe/NVLink、NUMA 硬件拓扑、GPU 硬件 | OS 如何调度使用这些硬件 |
+> | [二：操作系统](/posts/2026-06-14-cs-foundations-2-os/) | 进程/线程、同步原语、虚拟内存与 Page Cache、容器、I/O 模型、零拷贝、内核旁路 | 具体网络协议细节 |
+> | [三：计算机网络](/posts/2026-06-15-cs-foundations-3-network/) | 五层协议栈、TCP/UDP/QUIC、DNS/HTTP/TLS、数据中心网络、RSS/XDP/DPDK | 上层通信库与分布式框架 |
+> | [四：通信](/posts/2026-06-16-cs-foundations-4-communicate/) | DMA/Pinned Memory、RDMA 实战、NCCL 等通信库、集合通信、RPC/gRPC | 硬件拓扑细节（见篇一） |
 
 ---
 
@@ -56,42 +68,20 @@ ShowPostNavLinks: true
 
 ## 基础篇：一台机器长什么样
 
-```
-┌─────────────────────────────────────────────────────────────────────┐
-│                        一台物理机（一个节点）                         │
-│                                                                      │
-│   ┌─────────────────────────────────────────────────────────┐       │
-│   │                    主板 (Motherboard)                    │       │
-│   │                                                          │       │
-│   │   ┌──────────┐        ┌──────────────────────────────┐  │       │
-│   │   │   CPU    │        │       内存条 (DRAM)           │  │       │
-│   │   │  (大脑)  │◄──────►│    CPU 能直接读写的地方       │  │       │
-│   │   │          │  内存总线│       DDR5, 64~512GB         │  │       │
-│   │   └────┬─────┘        └──────────────────────────────┘  │       │
-│   │        │                                                  │       │
-│   │        │  PCIe 总线（高速公路，连接各种外设）             │       │
-│   │   ─────┼──────────────────────────────────────           │       │
-│   │        │         │              │            │            │       │
-│   │   ┌────┴───┐ ┌───┴────┐ ┌──────┴───┐ ┌─────┴────┐      │       │
-│   │   │  GPU   │ │  NIC   │ │  NVMe    │ │  其他    │      │       │
-│   │   │(显卡)  │ │ (网卡) │ │  (硬盘)  │ │  外设    │      │       │
-│   │   │ HBM内存│ │        │ │          │ │          │      │       │
-│   │   └────────┘ └────────┘ └──────────┘ └──────────┘      │       │
-│   └─────────────────────────────────────────────────────────┘       │
-│                                                                      │
-│   多台这样的机器用网线连起来 = 集群                                   │
-└─────────────────────────────────────────────────────────────────────┘
-```
+**关键认知（六行速览）：**
 
-**关键认知：**
+- CPU 能直接读写的只有 DRAM（主内存），走内存总线
+- GPU/NIC/NVMe 都是"外设"，全部挂在 PCIe 总线上
+- CPU 不能直接用指针访问 GPU HBM / NVMe 里的数据——搬运必须靠 DMA
+- 多台这样的机器用网线连起来 = 集群
 
-- CPU 能直接读写的只有 DRAM（主内存）
-- GPU/NIC/NVMe 都是"外设"，挂在 PCIe 总线上
-- CPU 不能直接用指针访问 GPU HBM / NVMe 里的数据
+完整的服务器硬件拓扑图（CPU/内存总线/PCIe/GPU/网卡全景）见[体系结构篇 §一](/posts/2026-06-13-cs-foundations-1-architecture/#一冯诺依曼到现代-cpu你写的-a--b--c-究竟发生了什么)与 [§九：从单机到集群](/posts/2026-06-13-cs-foundations-1-architecture/#九从单机到集群gpu-拓扑全景)。
 
 ---
 
 ## 基础篇：DMA（最重要的底层机制）
+
+> 本节是白话图解版；MMIO/IOMMU/设备页表的硬核机制见[体系结构篇 §七](/posts/2026-06-13-cs-foundations-1-architecture/#七dma-与-mmiocpu-不是数据搬运工)。
 
 ### PIO 时代：CPU 全程搬运
 
@@ -243,21 +233,9 @@ Pinned Memory（页锁定内存）：
 
 ### 发送文件的对比
 
-```
-传统方式（4次拷贝）：
-  NVMe       内核缓冲区      用户空间        内核Socket缓冲区     NIC
-  ┌────┐    ┌──────────┐   ┌──────────┐    ┌──────────────┐   ┌────┐
-  │文件│───►│page cache│──►│  你的    │───►│   socket     │──►│发送│
-  └────┘    └──────────┘   │  buffer  │    │   buffer     │   └────┘
-            ①DMA拷贝       ②CPU拷贝        ③CPU拷贝           ④DMA拷贝
-
-sendfile() Zero-Copy（2次拷贝）：
-  NVMe       内核缓冲区                                          NIC
-  ┌────┐    ┌──────────┐                                       ┌────┐
-  │文件│───►│page cache│──────────────────────────────────────►│发送│
-  └────┘    └──────────┘                                       └────┘
-            ①DMA拷贝          数据从没进入用户空间！             ②DMA拷贝
-```
+- 传统 `read()` + `write()` 发文件：NVMe →① page cache →② 用户 buffer →③ socket buffer →④ NIC，共 **4 次拷贝**（2 次 DMA + 2 次 CPU）+ 2 次用户态/内核态上下文切换
+- `sendfile()` 之后：数据从没进入用户空间，只剩 **2 次 DMA 拷贝**，CPU 不再搬运任何字节
+- sendfile/splice/MSG_ZEROCOPY 零拷贝全家桶的逐个拆解见[操作系统篇 §十：零拷贝](/posts/2026-06-14-cs-foundations-2-os/#十零拷贝内核和用户态的拉锯战)
 
 ### GPU 场景的 Zero-Copy
 
@@ -277,29 +255,18 @@ GPUDirect RDMA（Zero-Copy）：1次拷贝
 
 ## 第一层：芯片与单机内部互连
 
-### PCIe（Peripheral Component Interconnect Express）
+单机内部四种互连，一张速查表带走：
 
-主板上的通用高速扩展总线。在 AI Infra 场景下扮演两个关键角色：
+| 互连 | 关键数字 | 一句话定位 |
+|---|---|---|
+| PCIe | Gen5 x16 单向 **64 GB/s**、双向 **128 GB/s** | 通用扩展总线，CPU↔GPU、GPU↔网卡的默认通路 |
+| NVLink | NVLink4（H100）双向聚合 **900 GB/s**，约为 PCIe Gen5 x16 双向（128 GB/s）的 **7 倍** | NVIDIA 专有 GPU 间高速链路 |
+| NVSwitch | 节点内 8 卡全互联，任意两卡满带宽 | GPU 互联交换芯片 |
+| CXL | 基于 PCIe 物理层演进 | PCIe 的缓存一致性升级：CPU 与加速器共享内存地址空间，无需显式 DMA 拷贝 |
 
-- **CPU ↔ GPU** 的数据通路：模型权重加载、调度指令下发都经过 PCIe
-- **GPU ↔ 网卡** 的数据通路：GPUDirect RDMA 让网卡直接通过 PCIe 读写 GPU 显存
+> 做性能分析前，第一步用 `nvidia-smi topo -m` 确认实际互联拓扑——DGX H100 是 8 卡 NVSwitch 全互联；普通云 GPU 实例可能只有 PCIe。
 
-当前主流 PCIe 5.0（x16 双向约 128 GB/s），PCIe 6.0 进一步翻倍。
-
-### NVLink / NVSwitch
-
-NVIDIA 专有的节点内 GPU 高速互连技术：
-
-- **NVLink**：连接两个 GPU 的高速链路
-- **NVSwitch**：节点内 GPU 互联交换芯片，实现全互联拓扑
-
-关键数据：H100 节点 NVLink 合计单向 **900 GB/s** vs PCIe 5.0 x16 的 **32 GB/s**，差距接近 30 倍。
-
-> 做性能分析前，第一步用 `nvidia-smi topo -m` 确认实际互联拓扑。DGX H100 是 8 卡 NVSwitch 全互联；普通云 GPU 实例可能只有 PCIe。
-
-### CXL（Compute Express Link）
-
-PCIe 的缓存一致性升级版。核心升级点：CPU 和加速器可以共享同一块内存地址空间，不需要显式 DMA 拷贝。目前处于快速商业化阶段，是下一代 AI 集群的重要方向。
+lane/Generation 参数、PCIe Switch 与完整单机/集群拓扑见[体系结构篇 §六：总线](/posts/2026-06-13-cs-foundations-1-architecture/#六总线决定数据搬运上限的高速公路)与 [§九：从单机到集群](/posts/2026-06-13-cs-foundations-1-architecture/#九从单机到集群gpu-拓扑全景)。
 
 ### GPUDirect RDMA
 
@@ -947,6 +914,66 @@ AI 训练集合通信的行业事实标准。
 
 局限：算法固定，用户无法自定义。
 
+#### NCCL 实操：环境变量、诊断与排障
+
+上面讲了 NCCL "是什么"，这一小节回答"怎么看清它在干什么、不对劲时怎么查"。
+
+**第一步：打开日志，看它选了哪条路** 🔍
+
+```bash
+# 打开 NCCL 日志跑一次 8 卡训练（也适用于任何 torch.distributed 程序）
+NCCL_DEBUG=INFO torchrun --nproc_per_node=8 train.py
+# 关键日志行（截取）：
+# node1:1234:1234 [0] NCCL INFO NET/IB : Using [0]mlx5_0:1/RoCE [RO]; OOB eth0:192.168.1.10
+# node1:1234:1234 [0] NCCL INFO Channel 00/16 :    0   1   2   3   4   5   6   7
+# node1:1234:1234 [0] NCCL INFO Ring 00 : 0[0] -> 1[1] via P2P/NVL
+```
+
+逐行解读：
+
+- `NET/IB : Using [0]mlx5_0:1/RoCE`：跨机数据面选中了 RDMA 网卡 mlx5_0 端口 1（RoCE 模式）。如果这里出现的是 `NET/Socket`，说明 NCCL 没找到可用的 IB/RoCE 设备，**跨机通信在走 TCP，带宽会差一个数量级**
+- `Channel 00/16`：NCCL 建立了 16 条并行通信通道（channel 数影响能否吃满多轨网卡带宽）
+- `Ring 00 : 0[0] -> 1[1] via P2P/NVL`：环拓扑里 GPU0→GPU1 走 NVLink；若显示 `via P2P/PCI` 则走 PCIe P2P，`via SHM` 则退化为 CPU 共享内存中转——同一台 8 卡机上看到 SHM 通常就是拓扑或 ACS 配置有问题
+
+**第二步：三个最常用的环境变量**
+
+| 环境变量 | 示例值 | 作用 |
+|---|---|---|
+| `NCCL_IB_HCA` | `mlx5_0:1,mlx5_1:1` | 指定数据面用哪几张 RDMA 网卡（及端口），多轨网络必配 |
+| `NCCL_SOCKET_IFNAME` | `eth0` | 控制面 bootstrap / TCP 回退走哪个内核网络接口 |
+| `NCCL_DEBUG_SUBSYS` | `INIT,NET` | 细分日志子系统，只看初始化与网络选路，避免日志刷屏 |
+
+**第三步：用 nccl-tests 量化带宽** 📏
+
+```bash
+# AllReduce 压测：8 卡，消息大小从 8 B 每次 ×2 直到 4 GB
+./build/all_reduce_perf -b 8 -e 4G -f 2 -g 8
+# 输出（截取大消息段，8x H100 NVSwitch 机器的参考量级）：
+#        size         count      type     time     algbw    busbw
+#         (B)                              (us)    (GB/s)   (GB/s)
+#   1073741824     268435456     float     xxxx    270.31   473.04
+#   4294967296    1073741824     float     xxxx    274.92   481.11
+```
+
+algbw vs busbw，两列的区别：
+
+- **algbw（算法带宽）** = 消息大小 ÷ 耗时——应用视角"感觉到"的速度
+- **busbw（总线带宽）** = algbw × 2(N-1)/N——按 Ring AllReduce 的通信量公式折算出每张卡实际压在链路上的流量
+- **评估硬件是否跑满看 busbw**：它可以直接和 NVLink/网卡的标称带宽对比（8 卡时 busbw = algbw × 1.75；上面 481 GB/s 已接近 H100 单向 450 GB/s 的理论线，正常）
+
+**第四步：排障隔离流程** 🛠️
+
+```bash
+# 逐层关闭传输路径做二分定位（配合 all_reduce_perf 或最小训练脚本）
+NCCL_P2P_DISABLE=1 ./build/all_reduce_perf -b 8 -e 1G -f 2 -g 8   # ① 排除 NVLink/PCIe P2P
+NCCL_SHM_DISABLE=1 ./build/all_reduce_perf -b 8 -e 1G -f 2 -g 8   # ② 再排除共享内存
+NCCL_IB_DISABLE=1  ./build/all_reduce_perf -b 8 -e 1G -f 2 -g 8   # ③ 禁 RDMA，跨机强制走 TCP
+```
+
+哪一步"恢复正常"就说明问题在哪一层：禁 P2P 后 hang 消失 → 查 NVLink/IOMMU/ACS；禁 SHM 后正常 → 查 /dev/shm 容量（见下文共享内存专题）；禁 IB 后能跑通 → 问题在 RDMA 链路，回到本文"实战篇"的 perftest 流程逐层往下排。
+
+> 环境要求：多卡 GPU 机器（示例数字来自 8x H100 NVSwitch 机型）；nccl-tests 需从 [github.com/NVIDIA/nccl-tests](https://github.com/NVIDIA/nccl-tests) 拉源码 `make CUDA_HOME=... NCCL_HOME=...` 编译。
+
 #### 其他训练通信库
 
 | 库 | 厂商 | 说明 |
@@ -1096,6 +1123,101 @@ KV Cache 复用库，跨请求、跨实例复用已计算的 KV Cache。长上�
 | vLLM | UC Berkeley | NIXL |
 | SGLang | CMU/LMSYS | MSCCL++ |
 | TensorRT-LLM | NVIDIA | Dynamo + NIXL |
+
+---
+
+## 专题：共享内存 IPC——同机进程通信的天花板
+
+跨机器的数据面靠 RDMA/NCCL，而**同一台机器上，进程间最快的路是共享内存**——两个进程把同一块物理内存映射进各自的地址空间，之后读写不经过内核、零拷贝。进程/线程与各种通信方式的完整实战对照，见[操作系统篇 §2.5：进程/线程实战对照](/posts/2026-06-14-cs-foundations-2-os/#25-实战对照一个深度学习训练任务里到底有几个进程几个线程)。
+
+### /dev/shm：最常见的入口
+
+`/dev/shm` 本质一句话：**一个 tmpfs 挂载点——用文件接口操作的共享内存**。
+
+```bash
+df -h /dev/shm
+# Filesystem      Size  Used Avail Use% Mounted on
+# tmpfs            63G  1.2G   62G   2% /dev/shm
+# 逐行解读：
+#   tmpfs ← 数据全在内存里，不落盘；进程写进去的"文件"就是共享内存
+#   63G   ← 物理机默认为 DRAM 的一半（本机 128 GB 内存）
+```
+
+> ⚠️ 经典坑：**K8s Pod 里 /dev/shm 默认只有 64 MB**。PyTorch DataLoader（`num_workers>0`）靠它在 worker 进程间传 batch，报 `unable to open shared memory object` / `DataLoader worker killed (bus error)` 十有八九就是它——给 Pod 挂一个 `emptyDir: {medium: Memory}` 到 /dev/shm 即可。
+
+### Python 版：multiprocessing.shared_memory
+
+```python
+# ===== 进程 A：创建并写入 =====
+import numpy as np
+from multiprocessing import shared_memory
+
+shm = shared_memory.SharedMemory(create=True, size=4 * 1024 * 1024, name="demo_shm")
+arr = np.ndarray((1024, 1024), dtype=np.float32, buffer=shm.buf)
+arr[:] = np.random.randn(1024, 1024)   # 直接写共享内存，4 MB
+print(shm.name)                        # "demo_shm"，把名字告诉进程 B 即可
+
+# ===== 进程 B：attach 并零拷贝读取 =====
+import numpy as np
+from multiprocessing import shared_memory
+
+shm = shared_memory.SharedMemory(name="demo_shm")   # 按名字 attach，不复制数据
+arr = np.ndarray((1024, 1024), dtype=np.float32, buffer=shm.buf)
+print(arr.mean())    # 直接读进程 A 写的数据，零拷贝
+shm.close()          # 用完关闭；创建方还要 shm.unlink() 释放
+```
+
+### C 版：shm_open + ftruncate + mmap 最小对
+
+```c
+/* ===== 写端 writer.c ===== */
+#include <fcntl.h>
+#include <sys/mman.h>
+#include <unistd.h>
+#include <string.h>
+
+int main() {
+    int fd = shm_open("/demo_shm", O_CREAT | O_RDWR, 0666); /* 出现在 /dev/shm/demo_shm */
+    ftruncate(fd, 4096);                                    /* 设定共享区大小 */
+    char *p = mmap(NULL, 4096, PROT_WRITE, MAP_SHARED, fd, 0);
+    strcpy(p, "hello from writer");                         /* 直接写内存 */
+    return 0;
+}
+
+/* ===== 读端 reader.c ===== */
+#include <fcntl.h>
+#include <sys/mman.h>
+#include <stdio.h>
+
+int main() {
+    int fd = shm_open("/demo_shm", O_RDONLY, 0666);
+    char *p = mmap(NULL, 4096, PROT_READ, MAP_SHARED, fd, 0);
+    printf("%s\n", p);           /* 读到写端的数据，零拷贝 */
+    shm_unlink("/demo_shm");     /* 用完删除 */
+    return 0;
+}
+/* 编译：gcc writer.c -o writer（老 glibc 需加 -lrt） */
+```
+
+### CUDA IPC：跨进程共享"显存"
+
+同一套思路搬到 GPU 上：CUDA IPC 让同机两个进程直接访问对方的显存：
+
+```text
+进程 A（显存的主人）：
+    cudaMalloc(&d_ptr, size)                 # 正常分配显存
+    cudaIpcGetMemHandle(&handle, d_ptr)      # 导出一个 64 字节的 handle
+    把 handle 发给进程 B（走 Unix socket / 管道，几十字节的控制面消息）
+
+进程 B：
+    cudaIpcOpenMemHandle(&d_ptr_b, handle)   # 拿 handle 换指针
+    对 d_ptr_b 直接发 kernel / cudaMemcpy   # 读写的就是进程 A 的那块显存！
+    cudaIpcCloseMemHandle(d_ptr_b)           # 用完关闭
+```
+
+这正是 vLLM/SGLang 多进程引擎的常用机制：调度进程和 worker 进程各自独立，但 tensor 不需要跨进程复制。更广地说，**Ray 的 Plasma 对象存储（/dev/shm + mmap）、vLLM 的 tensor 跨进程共享，都是"映射同一块物理内存"这套思路**。Python 进程与线程的完整入门见本文附录 B。
+
+> 环境要求：Python 示例需 Python ≥ 3.8（`shared_memory` 模块）；C 示例需 Linux；CUDA IPC 示例需 NVIDIA GPU（同机两个进程可见同一张卡）。
 
 ---
 
@@ -1342,6 +1464,17 @@ vLLM Multi-Instance 架构：
 - 控制平面（请求路由、状态管理）→ gRPC
 - 数据平面（GPU 间 Tensor 传输）→ NCCL
 
+#### RPC 生态速查：gRPC vs Thrift vs Cap'n Proto vs Ray
+
+| 框架 | 序列化方式 | 传输 | 延迟量级 | 典型场景 |
+|---|---|---|---|---|
+| gRPC | Protobuf（二进制，需 protoc 编译） | HTTP/2 | 1–10 ms | 微服务、K8s 生态、AI Infra 控制面事实标准 |
+| Thrift | Thrift Binary/Compact | TCP 裸 socket | 亚毫秒–数毫秒 | 老牌大厂内部 RPC（Meta 系） |
+| Cap'n Proto | 零拷贝（内存布局即线上格式，无编解码） | TCP / 共享内存 | 微秒–亚毫秒 | 延迟敏感服务、同机 IPC |
+| Ray | pickle5 + Plasma 共享内存（大对象零拷贝） | gRPC（控制）+ /dev/shm（数据） | 毫秒（调用）/ 零拷贝（数据） | Python 分布式计算、RLHF/推理编排 |
+
+一句话总结：**AI Infra 控制面基本是 gRPC 的天下，数据面则交给 NCCL/RDMA/共享内存**——选型争论通常只发生在控制面。
+
 ---
 
 ## 专题：通信-计算 Overlap 技术族
@@ -1392,6 +1525,10 @@ vLLM Multi-Instance 架构：
 | AllToAll | MoE 专家并行核心原语 | 总通信量 (N-1)×M |
 | `perftest` (ib_write_bw) | RDMA 链路质量与带宽压测工具 | 200G 卡实测 180–195 Gbps |
 | GID Index | RoCE 选择哪种地址，错了会连不上 | RoCEv2 通常选 3 |
+| CUDA IPC | 同机跨进程直接访问对方 GPU 显存（handle 换指针） | handle 仅 64 B，数据零拷贝 |
+| /dev/shm | tmpfs 挂载点，文件接口的共享内存 | 物理机默认 RAM 的一半；K8s Pod 默认仅 64 MB |
+| algbw vs busbw | nccl-tests 两列带宽：应用视角 vs 链路实压流量 | busbw = algbw × 2(N-1)/N |
+| NCCL_DEBUG | NCCL 日志开关，看选路（IB/Socket、NVL/PCIe） | INFO 级足够定位绝大多数问题 |
 
 ---
 
@@ -1408,6 +1545,8 @@ vLLM Multi-Instance 架构：
 - [程序员的硬核基础（一）：体系结构](/posts/2026-06-13-cs-foundations-1-architecture/) — PCIe/NUMA/DMA 是本篇所有高速传输的物理基础
 - [程序员的硬核基础（二）：操作系统](/posts/2026-06-14-cs-foundations-2-os/) — 内核旁路和 io_uring 模式在 RDMA/NCCL 中随处可见
 - [程序员的硬核基础（三）：计算机网络](/posts/2026-06-15-cs-foundations-3-network/) — TCP 的局限性解释了为什么数据中心需要 RDMA
+
+另外，本篇新增了「NCCL 实操」与「共享内存 IPC」两个实操专题，建议配合[操作系统篇](/posts/2026-06-14-cs-foundations-2-os/) §2.5 的进程/线程实战对照一起阅读。
 
 ---
 

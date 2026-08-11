@@ -17,9 +17,18 @@ ShowPostNavLinks: true
 >
 > **操作系统内核到底在你和硬件之间做了什么？什么时候它是帮手，什么时候是路障？**
 >
-> 这是《程序员的硬核基础三件套》的第二篇。前置阅读：[体系结构篇](/posts/2026-06-13-cs-foundations-1-architecture/)（如果你还不知道页表、MMIO、IOMMU，请先读它）。读完本篇你应该能回答：为什么 RDMA 要"绕过内核"，又如何只绕过一部分？
+> 这是《程序员的硬核基础四部曲》的第二篇。前置阅读：[体系结构篇](/posts/2026-06-13-cs-foundations-1-architecture/)（如果你还不知道页表、MMIO、IOMMU，请先读它）。读完本篇你应该能回答：为什么 RDMA 要"绕过内核"，又如何只绕过一部分？
 
 ---
+
+> **系列导航 · 程序员的硬核基础四部曲**
+>
+> | 篇 | 负责讲清 | 不负责 |
+> |---|---|---|
+> | [一：体系结构](/posts/2026-06-13-cs-foundations-1-architecture/) | CPU 微架构、缓存与内存序、页表/TLB、PCIe/NVLink、NUMA 硬件拓扑、GPU 硬件 | OS 如何调度使用这些硬件 |
+> | [二：操作系统](/posts/2026-06-14-cs-foundations-2-os/) | 进程/线程、同步原语、虚拟内存与 Page Cache、容器、I/O 模型、零拷贝、内核旁路 | 具体网络协议细节 |
+> | [三：计算机网络](/posts/2026-06-15-cs-foundations-3-network/) | 五层协议栈、TCP/UDP/QUIC、DNS/HTTP/TLS、数据中心网络、RSS/XDP/DPDK | 上层通信库与分布式框架 |
+> | [四：通信](/posts/2026-06-16-cs-foundations-4-communicate/) | DMA/Pinned Memory、RDMA 实战、NCCL 等通信库、集合通信、RPC/gRPC | 硬件拓扑细节（见篇一） |
 
 ## 一、用户态 vs 内核态：CPU 自带的"二分法"
 
@@ -191,6 +200,89 @@ pthread_mutex_unlock(&m);
 
 > **钩子**：RDMA 的 completion queue 有两种消费模式——polling（用户态忙等，像 spinlock）和 event-driven（等中断通知，像 futex）。低延迟选前者，省 CPU 选后者。
 
+### 2.5 实战对照：一个深度学习训练任务里，到底有几个进程、几个线程？
+
+前面全是概念，现在落到你天天跑的东西上。先把判据钉死：
+
+- **进程**：有独立 PID、独立虚拟地址空间的实体，是**资源分配单位**——页表、fd 表、CUDA context 都挂在它身上
+- **线程**：进程内部的执行流，共享地址空间，各自有独立的栈和寄存器，是**调度单位**——CFS 调度的是线程
+- `ps`、`top`、`nvidia-smi` 里看到的每一行都是**进程**；线程得用 `ps -eLf` 或 `/proc/<pid>/task/` 才看得见
+
+#### torchrun 起 8 卡训练，进程树长什么样
+
+`torchrun --nproc_per_node=8`（每个 rank 的 DataLoader 设 `num_workers=4`）跑起来后的真实形态：
+
+```text
+torchrun (PID 4000)                          ← 父进程：只负责拉起、监控、挂了拉重
+ ├─ python train.py rank=0 (PID 4001)        ← 独立进程，绑 GPU0
+ │    内部线程（共享 4001 的地址空间）：
+ │      ├─ 主线程               ← 跑你的训练 loop
+ │      ├─ CUDA runtime 线程 ×N ← launch kernel、管理 stream/event
+ │      ├─ NCCL 后台线程        ← proxy 线程，盯着通信进度
+ │      └─ OpenMP 线程池        ← CPU 算子并行（默认核数个）
+ │    子进程（各自独立 PID、独立地址空间）：
+ │      ├─ DataLoader worker 0 (PID 4010) ┐
+ │      ├─ DataLoader worker 1 (PID 4011) │ num_workers=4
+ │      ├─ DataLoader worker 2 (PID 4012) │ → 4 个进程，不是线程！
+ │      └─ DataLoader worker 3 (PID 4013) ┘
+ ├─ python train.py rank=1 (PID 4002)        ← 结构同 rank0，绑 GPU1
+ ├─ ...
+ └─ python train.py rank=7 (PID 4008)        ← 绑 GPU7
+```
+
+#### 逐场景对照
+
+| 你跑的东西 | 进程/线程构成 | 关键细节 |
+|---|---|---|
+| `python train.py`（单机单卡） | **1 个进程**，内部几十个线程 | 主线程 + CUDA/NCCL/OpenMP 线程共享同一地址空间 |
+| DataLoader `num_workers=4` | **4 个子进程**（不是线程！） | GIL 使 Python 的 CPU 密集并行必须走多进程；batch 经 /dev/shm 共享内存 + pickle 传回主进程 |
+| `torchrun --nproc_per_node=8` | **8 个独立进程**，每 GPU 一个 rank | `nvidia-smi` 每张卡一个 PID；梯度同步 = 进程间通信 = NCCL（机内走 NVLink/共享内存，跨机走 RDMA/TCP） |
+| Ray | driver 是进程、raylet 是进程、每个 actor/task worker 都是独立 Python 进程 | 控制面走 gRPC，数据面走 Plasma 共享内存对象存储 |
+
+所以「一个深度学习训练任务是不是一个进程？」答案是：**单卡脚本是一个进程；一旦上了 torchrun / Ray / DataLoader worker，它就是一棵进程树**。
+
+#### 观测三连：亲眼确认
+
+```bash
+# ① 看进程树（假设 torchrun 的 PID 是 4000）
+pstree -p 4000
+# torchrun(4000)─┬─python(4001)─┬─python(4010)     ← rank0 和它的 4 个 DataLoader worker
+#                │              ├─python(4011)
+#                │              ├─python(4012)
+#                │              └─python(4013)
+#                ├─python(4002)─┬─python(4020)     ← rank1，结构相同
+#                │              └─...
+#                └─...
+# 每个 python(...) 都有独立 PID = 独立进程，和 nvidia-smi 里的 PID 能一一对上
+
+# ② 数一个 rank 进程里有多少线程
+ls /proc/4001/task | wc -l
+# 47      ← /proc/<pid>/task/ 下每个目录是一个线程；
+#            一个典型 PyTorch rank 进程有 30~60 个线程（CUDA/NCCL/OpenMP 全要开线程）
+
+# ③ 看每个线程到底在干嘛（需 pip install py-spy）
+py-spy dump --pid 4001
+# Thread 4001 (active): "MainThread"
+#     backward (torch/autograd/__init__.py:266)      ← 主线程在跑反向
+# Thread 4033 (idle): "Thread-1 (_pin_memory_loop)"
+#     _pin_memory_loop (torch/utils/data/_utils/pin_memory.py:54)  ← pin memory 线程在等 batch
+# 训练 hang 住时，这条命令能直接告诉你每个线程卡在哪一行——比加 print 好用一百倍
+```
+
+#### 通信方式全谱系
+
+进程树画清楚了，下一个问题：这些进程/线程之间怎么说话？
+
+| 范围 | 手段 | 延迟量级 | DL 场景例子 |
+|---|---|---|---|
+| 线程之间（同进程） | 共享变量 + 锁 / 队列（直接读写同一地址空间） | 纳秒级 | OpenMP 线程池归约一个 CPU 张量 |
+| 进程之间（同机） | pipe / Unix domain socket / 共享内存（/dev/shm） | 微秒级 | DataLoader worker 经共享内存把 batch 传回主进程 |
+| 进程之间（跨机） | TCP / gRPC / RDMA | 微秒~毫秒级 | NCCL AllReduce 跨节点同步梯度 |
+
+判断口诀收尾：**有独立 PID 的是进程；GIL 逼着 Python 用多进程；跨进程传大数据靠共享内存，跨机器靠 NCCL/RDMA**。
+
+进程间共享内存与跨机通信的完整图景，见[通信篇](/posts/2026-06-16-cs-foundations-4-communicate/)（含 Python 进程详解附录）。
+
 ---
 
 ## 三、虚拟内存：从 OS 视角再看一次
@@ -219,6 +311,42 @@ pthread_mutex_unlock(&m);
 
 机制：内核在你的页表里建一些 PTE，但**不分配真实的物理页**。等你第一次访问触发 page fault 时，内核才把对应内容从后端读进来、分配物理页、修页表。这叫 **demand paging**。
 
+#### 3.1.1 实战：strace 亲眼看 mmap，Python 亲手玩共享内存
+
+不用写 C，随便跑个命令就能看到 mmap 无处不在：
+
+```bash
+strace -e trace=mmap,brk cat /dev/null 2>&1 | head
+# brk(NULL)                               = 0x55f8a1c9e000   ← 查当前堆顶，malloc 小块内存靠它推高
+# mmap(NULL, 8192, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_ANONYMOUS, -1, 0) = 0x7f3c...
+#                                         ← 匿名映射：glibc 自己的内部缓冲区
+# mmap(NULL, 187880, PROT_READ, MAP_PRIVATE|MAP_DENYWRITE, 3, 0) = 0x7f3c...
+#                                         ← 加载 libc.so 也是 mmap！动态链接器把共享库
+#                                            文件映射进地址空间，所有进程共享同一份物理页
+```
+
+两个结论：**加载动态库就是 mmap 文件映射**；`malloc` 大块内存（glibc 默认 ≥128 KB）底层也是 mmap 匿名映射，而不是 brk 推堆顶。
+
+再用 Python 验证 §3.3 要讲的「共享内存：改一边、另一边可见」：
+
+```python
+import mmap, os
+
+# 匿名共享映射：fd=-1 表示不背任何文件，默认 MAP_SHARED
+shm = mmap.mmap(-1, 4096)
+
+if os.fork() == 0:                  # 子进程：独立 PID，但和父进程映射同一物理页
+    shm.seek(0)
+    shm.write(b"hello from child")
+    os._exit(0)
+
+os.wait()                           # 等子进程写完
+shm.seek(0)
+print(shm.read(16))                 # b'hello from child'  ← 父进程直接读到！
+```
+
+子进程写、父进程读，中间没有任何 pipe/socket/拷贝——两个进程的页表指向同一张物理页。§2.5 里 DataLoader worker 传 batch、Ray 的 Plasma 对象存储，底层就是这个机制的工程化版本。
+
 ### 3.2 page fault：所有"懒加载"的入口
 
 Page fault 不全是错误。Linux 内核大量"按需分配"机制都是借 page fault 实现的：
@@ -235,6 +363,54 @@ Page fault 不全是错误。Linux 内核大量"按需分配"机制都是借 pag
 两个进程 mmap 同一个 shm 段，相同的物理页就出现在它们各自的虚拟地址空间里。读写零拷贝，不过 syscall。Redis、PostgreSQL、CUDA IPC 都靠它。
 
 > **钩子**：RDMA 注册的 MR（Memory Region），本质就是把"用户态进程 + 网卡"两个 IOMMU 域 mmap 到同一段物理页。
+
+### 3.4 Hugepage：THP 的便利与抖动，显式大页的确定性
+
+默认页 4 KB，大页 2 MB（甚至 1 GB）。TLB 为什么需要大页（硬件视角）见[体系结构篇](/posts/2026-06-13-cs-foundations-1-architecture/)第五章；本节只讲 OS 怎么管它——两条路线，哲学完全相反。
+
+**路线一：THP（Transparent Huge Pages），内核自动帮你**。`khugepaged` 内核线程在后台扫描，把连续的 512 张 4 KB 页自动合并成一张 2 MB 大页，应用零改动：
+
+```bash
+cat /sys/kernel/mm/transparent_hugepage/enabled
+# always [madvise] never
+# ← 方括号标出当前模式：madvise = 只对显式调过 madvise(MADV_HUGEPAGE) 的区域启用；
+#   always = 全局自动合并；never = 关闭。很多发行版默认 madvise，因为 always 有坑（见下）
+```
+
+便利的代价是**抖动**：合并 2 MB 大页需要 512 张物理连续的 4 KB 页，内存碎片化后内核得先做 compaction（碎片整理，搬页 + 改页表），这会让正在分配内存的进程卡住几十 ms——**大模型训练进程偶发卡顿的经典嫌疑人之一**（P99 延迟抖动在数据库圈同样臭名昭著）。排查：
+
+```bash
+grep thp /proc/vmstat
+# thp_fault_alloc 182931        ← page fault 时直接分到大页的次数（好事）
+# thp_collapse_alloc 421        ← khugepaged 后台合并次数
+# thp_fault_fallback 8712       ← 想要大页但碎片化拿不到、退回 4 KB 的次数
+#                                  这个数字飞涨 = 内存碎片严重，compaction 在疯狂工作
+```
+
+**路线二：显式 hugetlbfs，你自己预留**。启动时预留一池大页，不参与普通内存分配，永不被碎片化影响——用确定性换灵活性：
+
+```bash
+echo 1024 > /proc/sys/vm/nr_hugepages       # 预留 1024 张 2MB 大页（需 root）
+mount -t hugetlbfs none /mnt/huge           # 挂载 hugetlbfs（需 root）
+grep Huge /proc/meminfo
+# HugePages_Total:    1024      ← 池子里一共 1024 张
+# HugePages_Free:     1024      ← 还没人用
+# Hugepagesize:       2048 kB
+```
+
+代码里拿大页只需要一个 flag：
+
+```c
+#include <sys/mman.h>
+// 分配一张 2 MB 大页支撑的匿名映射（需要上面预留的大页池里有余额）
+void *p = mmap(NULL, 2 << 20, PROT_READ | PROT_WRITE,
+               MAP_PRIVATE | MAP_ANONYMOUS | MAP_HUGETLB, -1, 0);
+if (p == MAP_FAILED) { /* 池里没额度会直接失败，不会退回 4 KB */ }
+```
+
+选型一句话：**THP 适合懒人和通用负载；延迟敏感场景（DPDK、数据库、推理服务）用显式大页，甚至直接把 THP 设成 never**。DPDK 的包缓冲区、CUDA 的 pinned memory 大块分配，背后都有大页的影子。
+
+> **钩子**：RDMA 注册几十 GB 的 MR 时，网卡要缓存每一页的地址翻译——用 2 MB 大页能把网卡上的翻译表项数压到 1/512，这就是高性能通信库偏爱大页内存的原因。
 
 ---
 
@@ -446,6 +622,55 @@ Docker 没有发明任何一项底层技术——它只是把“namespace + cgro
 
 > **钩子**：AI Infra 几乎全跑在 K8s 上——GPU 调度、网络隔离（CNI）、存储挂载（CSI）、训练任务的资源限额，全部建立在 namespace + cgroups 之上。理解这两样，等于拿到 K8s 内部运作的钥匙。
 
+### 5.6 cgroups v2 实操：限住 CPU、掐住内存、藏起 GPU
+
+§5.2 给了四行速成版，这里把完整流程走一遍，并把几个容易混淆的开关讲清楚（全程需 root，cgroup v2，现代发行版默认）：
+
+```bash
+# ① 建 cgroup，并在父节点开启控制器（不开的话子节点看不到 cpu/memory 接口文件）
+mkdir /sys/fs/cgroup/train
+echo "+cpu +memory" > /sys/fs/cgroup/cgroup.subtree_control
+
+# ② 设限额：注意 memory.high 和 memory.max 的区别
+echo "400000 100000" > /sys/fs/cgroup/train/cpu.max        # 每 100ms 最多 400ms = 4 核
+echo 8G  > /sys/fs/cgroup/train/memory.high                # 软限：超了不杀，而是 throttle（疯狂回收+限速）
+echo 10G > /sys/fs/cgroup/train/memory.max                 # 硬限：超了直接 OOM kill
+
+# ③ 把进程扔进去（写入 PID 即可，子进程自动继承）
+echo $$ > /sys/fs/cgroup/train/cgroup.procs
+
+# ④ 用 stress 验证（apt install stress）：分配 9G，超过 high 但没到 max
+stress --vm 1 --vm-bytes 9G --vm-keep &
+cat /sys/fs/cgroup/train/memory.events
+# high 3127        ← 碰 memory.high 的次数：进程没死，但被 throttle 得很慢
+# max 0
+# oom_kill 0       ← 还没人被杀；如果再分 2G 碰到 max，这里会变 1
+```
+
+直观区别：**memory.high 是减速带（throttle，进程变慢但活着），memory.max 是断头台（OOM kill）**。K8s 的 memory request/limit 最终就是翻译成这些文件。实时观测用 `systemd-cgtop`，按 cgroup 层级实时显示 CPU/内存/IO，相当于 cgroup 版的 top。
+
+**设备隔离（藏 GPU）走的是另一套机制**，而且 v1/v2 实现完全不同：
+
+- cgroup v1：写 `devices.allow` 文件，如 `c 195:* rwm`（major 195 就是 NVIDIA 字符设备）
+- cgroup v2：**没有 devices 接口文件了**，改用 eBPF device controller（`BPF_CGROUP_DEVICE` 类型的 BPF 程序挂在 cgroup 上，每次 open 设备时内核跑一段字节码做判决）
+
+K8s 的 NVIDIA device plugin 底层正是这套机制决定容器里 `nvidia-smi` 能看到哪几张卡——不是魔法，就是对 `/dev/nvidia0`~`/dev/nvidia7` 的 open 权限控制。
+
+最后是每个 Infra 工程师都要会的 **OOM-killed 排查路径**：
+
+```bash
+dmesg | grep -i oom
+# [12345.6] Memory cgroup out of memory: Killed process 4001 (python)
+#           total-vm:98304000kB, anon-rss:10485760kB ...
+# [12345.6] oom-kill:constraint=CONSTRAINT_MEMCG,
+#           task_memcg=/kubepods.slice/kubepods-pod3f2a...slice   ← 关键！cgroup 路径
+#                                                                    里的 pod UID 能直接定位是哪个 Pod
+```
+
+训练进程神秘消失、exit code 137，先 `dmesg | grep -i oom`，看 `task_memcg` 里的 cgroup 路径定位到 Pod——八成是 memory limit 设小了或 DataLoader worker 吃爆了内存。
+
+> **钩子**：第七章会看到，v2 的设备控制器只是 eBPF 在内核里众多用途之一——它能挂的钩子遍布整个内核。
+
 ---
 
 ## 六、系统调用：用户态唯一的“出入境口岸”
@@ -539,6 +764,51 @@ echo 2 > /proc/irq/<irq>/smp_affinity   # 2 = bitmask = CPU1
 
 更进一步，配合 RSS（Receive Side Scaling）：网卡硬件按 hash 把不同的连接分到不同 RX 队列，每个队列绑一个 CPU——这样多连接的负载就被均匀打散到全部核上。
 
+### 7.4 eBPF 与 bpftrace：不改内核、不重启的系统透视
+
+前面几节反复提到内核里的各种事件（中断、软中断、调度），那怎么**看见**它们？答案是 eBPF：**在内核里安全地运行沙箱字节码，观测/过滤/改写内核事件——不改内核代码、不装内核模块、不重启**。
+
+```text
+用户态工具 (bpftrace / BCC)
+    │ 编译成 BPF 字节码，bpf() syscall 载入
+    ▼
+╔═ 内核 ══════════════════════════╗
+║ verifier 验证 ─▶ JIT 编译成机器码        ║
+║ （证明不死循环、不越界——安全的根基）    ║
+║      │ 挂到钩子上                        ║
+║      ├─▶ tracepoint（syscall/调度/缺页） ║
+║      ├─▶ kprobe（任意内核函数入口）      ║
+║      └─▶ 网络钩子（XDP/tc/socket）       ║
+╚═════════════════════════════════╝
+```
+
+最顺手的入口是 bpftrace（需 root，`apt install bpftrace`），一行就能回答以前要改内核才能回答的问题：
+
+```bash
+# ① 谁在疯狂 read？（按进程名计数，Ctrl-C 结束时打印）
+bpftrace -e 'tracepoint:syscalls:sys_enter_read { @[comm] = count(); }'
+# @[sshd]: 14
+# @[python]: 83219        ← DataLoader 在狂读数据集，每秒八万次 read
+#                            如果这里是小文件碎读，就该上 WebDataset/tar 打包了
+
+# ② 谁在疯狂缺页？（对照 §3.2：每次 minor fault 几个 µs）
+bpftrace -e 'tracepoint:exceptions:page_fault_user { @[comm] = count(); }'
+# @[python]: 251034       ← 刚 mmap 了大文件在逐页 fault 进来（回看 MAP_POPULATE）
+
+# ③ BCC 工具集（apt install bpfcc-tools）：内核 TCP 函数调用频率
+funccount 'tcp_*'
+# FUNC                    COUNT
+# tcp_sendmsg             48291        ← 发包频率
+# tcp_clean_rtx_queue     47102
+# tcp_ack                 91847        ← 每个 ack 都要进这个函数，高并发下它就是热点
+```
+
+**AI 场景的杀手级用法**：训练 hang 住、py-spy 看不出名堂时，用 bpftrace 挂 `tcp_sendmsg` 和 `sched_switch`、过滤训练进程 PID：如果 `tcp_sendmsg` 计数为零但 `sched_switch` 疯涨，说明进程在频繁被调度却不发网络包——卡在本地等锁/等 GPU；反之则卡在网络对端。不插桩代码、不重启训练，就能把「卡在谁身上」定性。
+
+顺带一句：XDP（eXpress Data Path）就是 eBPF 挂在网卡驱动层的应用——包还没进协议栈就能被处理/丢弃/转发，详见[网络篇](/posts/2026-06-15-cs-foundations-3-network/)。
+
+> **钩子**：上一节 cgroup v2 的设备控制器、下一篇的 XDP、K8s 的 Cilium 网络插件——全是同一套 eBPF 基础设施的不同挂点。
+
 ---
 
 ## 八、调度器：CFS 一句话原理
@@ -568,6 +838,49 @@ Linux 默认调度器叫 **CFS（Completely Fair Scheduler）**。它的目标�
 - `nohz_full=4-7`：连时钟中断都关掉，CPU 真正"独占"
 
 DPDK / 高频交易系统几乎全都这么干。**绑核 + 大页 + IRQ 亲和性**是高性能 Linux 的"圣三件套"。
+
+### 8.4 NUMA 感知：内核怎么帮你，你怎么帮内核
+
+硬件拓扑与五条观测命令见[体系结构篇](/posts/2026-06-13-cs-foundations-1-architecture/)第八章；本节只讲 OS 层：调度器把线程踢来踢去时，它的内存还留在原来的 NUMA 节点上，跨节点访存延迟翻倍——谁来修这个错位？
+
+**内核帮你：NUMA balancing**。内核周期性地把页标记为不可访问，靠 page fault 采样「谁在哪个节点访问哪些页」，然后自动迁移页（或迁移进程）去弥合错位：
+
+```bash
+cat /proc/sys/kernel/numa_balancing
+# 1        ← 默认开启。代价是扫描 + 采样 fault + 迁移开销；
+#            延迟敏感场景（已经手动绑核绑内存的推理服务）常把它关掉：
+#            echo 0 > /proc/sys/kernel/numa_balancing
+```
+
+**你帮内核：显式绑定**。`numactl --cpunodebind=0 --membind=0` 底层就是两个 syscall：`set_mempolicy()`（设进程级内存策略）和 `mbind()`（给某段地址范围设策略）。绑完之后怎么验证真的生效了？看 `numa_maps`：
+
+```bash
+cat /proc/4001/numa_maps | head -4
+# 55f8a1c00000 default file=/usr/bin/python3.10 mapped=1024 N0=1020 N1=4
+# 7f3c00000000 bind:0 anon=524288 dirty=524288 N0=524288
+# 7f3b80000000 default anon=8098 dirty=8098 N0=8086 N1=12
+# 7f3b60000000 default file=/usr/lib/libtorch.so mapped=45056 N0=44800 N1=256
+# 逐列解读：每行是一段 VMA；第二列是内存策略（default / bind:0 / interleave）；
+# N0=8086 N1=12 表示这段内存 8086 页在节点 0、12 页在节点 1——
+# 如果你绑了 node0 却看到大量 N1，说明绑定前内存已分配，策略不会追溯已有页
+```
+
+单进程的跨节点分布总览用 `numastat`：
+
+```bash
+numastat -p 4001
+# Per-node process memory usage (in MBs) for PID 4001 (python)
+#                 Node 0     Node 1    Total
+# Huge                 0          0        0
+# Heap             18432        126    18558     ← 堆几乎全在 node0，绑定生效
+# Stack                8          0        8
+# Private          22101        340    22441
+# 如果 Node 1 列占比大，说明存在跨节点访存，配合体系结构篇的延迟数据估损失
+```
+
+还有个折中方案：`numad` 守护进程，用户态监控 + 动态建议/迁移，适合不想手动绑但又嫌 numa_balancing 采样开销的虚拟化场景。
+
+实践口诀：**长寿命、内存大、延迟敏感的进程（训练 rank、推理引擎）用 numactl 显式绑；短寿命、难预测的负载交给 numa_balancing**。每 GPU 一个 rank 的训练任务，把 rank 绑到 GPU 同侧的 NUMA 节点（`nvidia-smi topo -m` 查亲和性）是标准动作——DataLoader 的 pinned memory 和 H2D 拷贝都能少跨一次 QPI/UPI。
 
 ---
 
@@ -641,6 +954,50 @@ epoll 解决了"等"的问题，但**操作本身**（read/write）还是 syscal
 
 一次可以提交几百个 op，syscall 次数从 N 降到 1（甚至 0）。**架构上和 RDMA 的 work queue / completion queue 已经非常神似**——这不是巧合，**所有高性能 I/O 的终局都是"用户态-内核态共享环形队列"**。
 
+### 9.5 io_uring 上手：30 行 C 看清提交队列与完成队列
+
+§9.4 的 SQ/CQ 共享环听着抽象，写 30 行代码就具体了。环境：内核 ≥5.10，`apt install liburing-dev`，编译 `gcc uring_demo.c -o uring_demo -luring`：
+
+```c
+#include <liburing.h>
+#include <fcntl.h>
+#include <stdio.h>
+#include <sys/uio.h>
+
+int main() {
+    struct io_uring ring;
+    // ① 初始化：内核分配 SQ/CQ 两个环，mmap 到用户态——
+    //    就是 §9.4 说的"共享内存里的环形队列"，8 是队列深度
+    io_uring_queue_init(8, &ring, 0);
+
+    int fd = open("/etc/hostname", O_RDONLY);
+    char buf[4096];
+    struct iovec iov = { .iov_base = buf, .iov_len = sizeof(buf) };
+
+    // ② 从 SQ 环里拿一个空的提交项（SQE）——纯用户态操作，无 syscall
+    struct io_uring_sqe *sqe = io_uring_get_sqe(&ring);
+    // ③ 把"读 fd 到 iov"这个操作描述填进 SQE——也还没进内核
+    io_uring_prep_readv(sqe, fd, &iov, 1, 0);
+
+    // ④ 唯一一次 syscall：告诉内核"SQ 里有活了"；丢几百个 op 也只需这一次
+    io_uring_submit(&ring);
+
+    // ⑤ 等完成事件（CQE）从 CQ 环里冒出来；cqe->res 是读到的字节数
+    struct io_uring_cqe *cqe;
+    io_uring_wait_cqe(&ring, &cqe);
+    printf("read %d bytes: %.*s", cqe->res, cqe->res, buf);
+
+    // ⑥ 告诉内核"这个 CQE 我消费完了"，CQ 环的位置可以复用
+    io_uring_cqe_seen(&ring, cqe);
+    io_uring_queue_exit(&ring);
+    return 0;
+}
+```
+
+把步骤和 §9.4 的抽象对上：②③是「应用把 op 写进 SQ」，④是「调 io_uring_enter 告诉内核」（开 SQPOLL 模式后内核线程自己盯着 SQ，连这次都能省），⑤⑥是「从 CQ 读结果」。真正的威力在批量：循环 ②③ 填几百个 SQE 再一次 submit，syscall 成本被摊薄到忽略不计。
+
+两句展望：**这套 get_sqe → prep → submit → wait_cqe 的节奏，和 RDMA 的 post WQE → doorbell → poll CQ 几乎逐一对应**（QP 对应 SQ、CQ 连名字都一样）——通信篇会再见到它；另外 io_uring 不止能读文件，`send`/`recv`/`accept` 等网络操作也已支持，是现代高性能服务端的新路线。
+
 ---
 
 ## 十、零拷贝：内核和用户态的拉锯战
@@ -686,6 +1043,8 @@ epoll 解决了"等"的问题，但**操作本身**（read/write）还是 syscal
 文里讨论"为什么不能让用户态直接提供缓冲区"——答案就在 `MSG_ZEROCOPY` 的限制里：**应用必须保证发送完成前不修改 buf**。普通 socket 编程模型里没有这个契约，所以默认行为是复制；提供了契约（用户愿意等内核通知）才能 zero-copy。
 
 **RDMA 把这个契约做到了极致**：应用注册 MR 时承诺"我不会动这块内存，直到完成事件通知我为止"。换来的是数据面完全跳过内核 + 完全跳过 CPU 拷贝。
+
+> GPU 场景的零拷贝（GPUDirect 家族）见[通信篇](/posts/2026-06-16-cs-foundations-4-communicate/)。
 
 ---
 
@@ -784,6 +1143,10 @@ DPDK（用户态网络栈）、SPDK（用户态存储栈）、ibverbs（RDMA 用
 | **Namespace** | Linux 进程隔离机制（六种） |
 | **cgroups** | Linux 进程资源限额机制 |
 | **容器** | namespace + cgroups + Union FS |
+| **eBPF** | 在内核里安全运行沙箱字节码，观测/过滤/改写内核事件 |
+| **THP** | 透明大页，内核自动合并 4KB→2MB，便利但有 compaction 抖动 |
+| **numa_balancing** | 内核自动 NUMA 页迁移，延迟敏感场景常关闭 |
+| **GIL** | Python 全局解释器锁，逼着 CPU 密集并行走多进程 |
 
 ---
 
@@ -792,3 +1155,5 @@ DPDK（用户态网络栈）、SPDK（用户态存储栈）、ibverbs（RDMA 用
 到这里你应该能回答：syscall 为什么慢、内核旁路为什么可行、io_uring 和 RDMA 为什么长得像。但还有一块拼图——**网络协议本身**。下一篇我们从一根网线讲到 socket 编程，然后你就能从硬件、软件、协议三个方向同时夹击 RDMA 那篇文章里的每一个段落。
 
 下一篇：[程序员的硬核基础（三）：计算机网络，从一根网线到 socket 编程](/posts/2026-06-15-cs-foundations-3-network/)。
+
+网络之后还有最后一篇：[程序员的硬核基础（四）：通信](/posts/2026-06-16-cs-foundations-4-communicate/)——DMA、RDMA、NCCL 与集合通信，把本篇埋下的所有钩子（内核旁路、共享内存、SQ/CQ 环）全部收网。

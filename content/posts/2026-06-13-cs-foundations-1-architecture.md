@@ -18,7 +18,18 @@ ShowPostNavLinks: true
 >
 > **当我们说"数据从内存搬到网卡"时，它到底走了哪条物理路径？**
 >
-> 这是《程序员的硬核基础三件套》的第一篇。读完它，你应该能在脑子里画出一台现代服务器的内部布线图，并且解释清楚：为什么 PCIe 拓扑会决定 RDMA 能跑多快。
+> 这是《程序员的硬核基础四部曲》的第一篇。读完它，你应该能在脑子里画出一台现代服务器的内部布线图，并且解释清楚：为什么 PCIe 拓扑会决定 RDMA 能跑多快。
+
+---
+
+> **系列导航 · 程序员的硬核基础四部曲**
+>
+> | 篇 | 负责讲清 | 不负责 |
+> |---|---|---|
+> | [一：体系结构](/posts/2026-06-13-cs-foundations-1-architecture/) | CPU 微架构、缓存与内存序、页表/TLB、PCIe/NVLink、NUMA 硬件拓扑、GPU 硬件 | OS 如何调度使用这些硬件 |
+> | [二：操作系统](/posts/2026-06-14-cs-foundations-2-os/) | 进程/线程、同步原语、虚拟内存与 Page Cache、容器、I/O 模型、零拷贝、内核旁路 | 具体网络协议细节 |
+> | [三：计算机网络](/posts/2026-06-15-cs-foundations-3-network/) | 五层协议栈、TCP/UDP/QUIC、DNS/HTTP/TLS、数据中心网络、RSS/XDP/DPDK | 上层通信库与分布式框架 |
+> | [四：通信](/posts/2026-06-16-cs-foundations-4-communicate/) | DMA/Pinned Memory、RDMA 实战、NCCL 等通信库、集合通信、RPC/gRPC | 硬件拓扑细节（见篇一） |
 
 ---
 
@@ -72,6 +83,32 @@ CPU 设计师为了把 IPC（Instructions Per Cycle）从 1 拉到 4 以上，�
 4. **SIMD 是"免费"的 4–16 倍加速**：但前提是数据布局要对齐、要连续。这是 NumPy/PyTorch 比手写 Python 循环快几百倍的物理基础。
 
 > **钩子**：当你以后看到"vectorized 实现比 naive 实现快 8 倍"，记住这不是软件玄学，是一条 AVX-256 指令一次干 8 个 float32 加法。
+
+### 1.3 SMT 超线程：一个物理核如何伪装成两个
+
+**SMT（Simultaneous Multi-Threading，Intel 叫 Hyper-Threading）** 的本质：一个物理核里放**两套寄存器组 + 两个指令指针**，但共享同一套执行单元和 L1/L2 cache。当线程 A 因 cache miss 卡住时，执行单元切过去跑线程 B——把"等内存"的流水线空泡填上。
+
+- **收益**：吞吐型、访存不规则的负载（Web 服务、编译、数据预处理），典型 **+20~30%**
+- **负收益**：延迟敏感或缓存敏感的负载，两个逻辑核互相冲刷对方的 L1/L2，反而更慢
+
+两条命令看清你机器的 SMT 拓扑（任意 Linux 机器可跑）：
+
+```bash
+lscpu | grep -E "^CPU\(s\)|Thread|Core|Socket"
+# CPU(s):                192     ← 逻辑核总数
+# Thread(s) per core:    2       ← SMT 已开启：每个物理核 2 个硬件线程
+# Core(s) per socket:    48      ← 每颗 CPU 48 个物理核
+# Socket(s):             2       ← 双路服务器
+```
+
+192 CPU = 2 socket × 48 core × 2 thread（双路 EPYC 服务器典型输出）。再看哪两个逻辑核是同一个物理核伪装出来的：
+
+```bash
+cat /sys/devices/system/cpu/cpu0/topology/thread_siblings_list
+# 0,96     ← cpu0 和 cpu96 是"兄弟逻辑核"，共享同一个物理核
+```
+
+**AI Infra 挂钩**：GPU 训练机上常见做法是**直接关 HT**，或者把 dataloader worker 显式绑到**独立的物理核**上。原因：训练主线程要低延迟地 launch kernel，是延迟敏感型；dataloader 预处理是吞吐型。两者若落在同一物理核的兄弟逻辑核上，worker 一忙就把主线程的 L1/L2 冲掉，kernel launch 的延迟抖动直接体现为 GPU 利用率毛刺。
 
 ---
 
@@ -190,6 +227,62 @@ struct Counter {
    CPU0 ──▶ 自己的 line       CPU1 ──▶ 自己的 line
    互不干扰
 ```
+
+### 3.4 实测：False Sharing 能把吞吐拖慢几倍
+
+3.3 小节讲了原理，这里给一段能自己跑的最小复现：两个线程分别狂加同一个 struct 里**相邻**的两个 `long`。
+
+```c
+// false_sharing.c   编译：gcc -O2 -pthread false_sharing.c -o fs_bad
+#include <pthread.h>
+#include <stdio.h>
+
+#define N 200000000L
+
+#ifdef PADDED
+struct Pair {                     // padding 版：a、b 各占一条 cache line
+    _Alignas(64) long a;
+    _Alignas(64) long b;
+};
+#else
+struct Pair { long a; long b; };  // 原始版：a、b 挤在同一条 64B line 里
+#endif
+
+struct Pair pair;
+
+void* inc_a(void* _) { for (long i = 0; i < N; i++) pair.a++; return NULL; }
+void* inc_b(void* _) { for (long i = 0; i < N; i++) pair.b++; return NULL; }
+
+int main() {
+    pthread_t t1, t2;
+    pthread_create(&t1, NULL, inc_a, NULL);
+    pthread_create(&t2, NULL, inc_b, NULL);
+    pthread_join(t1, NULL);
+    pthread_join(t2, NULL);
+    printf("%ld %ld\n", pair.a, pair.b);
+}
+```
+
+两个版本各编译一份，用 `perf stat` 对比（需安装 perf；数字为典型 x86 双路服务器示意）：
+
+```bash
+gcc -O2 -pthread false_sharing.c -o fs_bad
+gcc -O2 -pthread -DPADDED false_sharing.c -o fs_good
+
+perf stat -e cache-misses,cycles ./fs_bad
+#  1,842,375,210  cache-misses    ← 每次写都把对方核的 line 打成 Invalid
+#  9,610,224,853  cycles
+#       2.41 seconds time elapsed
+
+perf stat -e cache-misses,cycles ./fs_good
+#      3,127,845  cache-misses    ← 掉了近三个数量级
+#  1,922,014,637  cycles
+#       0.52 seconds time elapsed
+```
+
+**解读**：两个版本的逻辑工作量一模一样，padding 版却快了约 4.6 倍。这正是 3.3 小节讲的 MESI 无效化风暴：a、b 同住一条 cache line 时，CPU0 每写一次 a 就把 CPU1 的 line 打成 Invalid，CPU1 写 b 前必须发 RFO（Read For Ownership）把独占权抢回来——这条 line 在两个核之间来回弹跳，cache-misses 高出的那三个数量级就是弹跳次数。
+
+**AI Infra 挂钩**：翻 PyTorch / vLLM 这类推理引擎的 C++ 源码，会看到大量 `alignas(64)`：无锁队列的 head/tail 指针、per-thread 统计计数器，全被强制 padding 到独立 cache line。这不是玄学洁癖——是有人被上面这几倍的差距教育过。
 
 --
 
@@ -449,6 +542,41 @@ x86-64 用 4 级页表（Linux 5.x 之后是 5 级），每级有 512 个表项�
 
 > 这就是为什么 RDMA 必须先调用 `register_mr` 这种慢路径——它是在改页表。但**改完之后**，数据面上每次 send/recv 都不用再过内核了。
 
+### 5.4 大页实操：分配、验证与收益测量
+
+5.2 小节讲了大页的原理，这里把它落地成三步：看现状 → 分配 → 测收益。
+
+**第一步：看现状**（任意 Linux 机器可跑）：
+
+```bash
+grep Huge /proc/meminfo
+# AnonHugePages:   2048000 kB   ← THP（透明大页）当前自动合并出的量
+# HugePages_Total:       0      ← 显式大页总数，0 = 还没分配
+# HugePages_Free:        0      ← 其中空闲的数量
+# Hugepagesize:       2048 kB   ← 默认大页规格：2 MB
+```
+
+**第二步：分配显式大页**（需 root）：
+
+```bash
+echo 1024 | sudo tee /sys/kernel/mm/hugepages/hugepages-2048kB/nr_hugepages
+# 1024                          ← 申请 1024 个 2MB 大页 = 2 GB
+
+grep HugePages_Total /proc/meminfo
+# HugePages_Total:    1024      ← 分配成功；若小于 1024，说明内存碎片化到凑不出连续 2MB 块
+```
+
+**第三步：测收益**。思路：同一个随机访存大块内存的程序，分别用普通 4KB 页和大页（如 `mmap` 时加 `MAP_HUGETLB`）各跑一遍，对比 TLB miss：
+
+```bash
+perf stat -e dTLB-load-misses ./bench_4k     # 普通页：dTLB-load-misses 典型上亿
+perf stat -e dTLB-load-misses ./bench_huge   # 大页：常见降 1~2 个数量级
+```
+
+一句话区分：**THP 是内核自动把 4KB 合并成 2MB（省心但不可控），显式大页是你预留专用池（可控但要自己管）**。OS 层的管理策略（THP/compaction 抖动）详见系列第二篇[《操作系统》](/posts/2026-06-14-cs-foundations-2-os/)第三章。
+
+**AI Infra 挂钩**：RDMA 用 `ibv_reg_mr` 注册几十 GB 的显存/内存时，网卡侧也要建页表项（见 7.3 的 IOMMU）——4KB 页意味着上千万条表项，换成 2MB 大页直接除以 512，注册更快、网卡的地址翻译缓存命中率更高。DPDK 则干脆**强制要求大页**才能启动。
+
 ---
 
 ## 六、总线：决定数据搬运上限的"高速公路"
@@ -487,6 +615,50 @@ CPU 上 PCIe lane 数是有限的（比如 EPYC 9004 单 socket 128 lane）。�
 
 **关键观察**：Switch 下挂的设备之间可以**点对点（Peer-to-Peer, P2P）**直接通信，**不必绕回 CPU**。这就是 GPUDirect RDMA 的物理基础——同一个 Switch 下的 GPU 和网卡可以直接对话。
 
+### 6.4 实操：两条命令画出你机器的 PCIe 拓扑
+
+上面的拓扑图是纸上的，你自己的机器长什么样，两条命令就能看清。
+
+**第一条：`lspci -tv`**（任意 Linux 机器可跑），输出是一棵树，截取 GPU/网卡挂载部分（双路 GPU 服务器典型输出）：
+
+```bash
+lspci -tv
+# -+-[0000:c0]-+-01.1-[c1-c4]----00.0-[c2-c4]--+-00.0-[c3]----00.0  NVIDIA H100
+#  |           |                               \-01.0-[c4]----00.0  Mellanox ConnectX-7
+#  \-[0000:00]-+-01.1-[01]----00.0  Samsung NVMe SSD
+#              \-03.1-[02]----00.0  Intel Ethernet Controller
+```
+
+逐层解读：
+
+- `[0000:c0]`、`[0000:00]`：两个 **Root Complex**（PCIe 树根，集成在 CPU 里），双路机器每颗 CPU 至少一个
+- `00.0-[c2-c4]`：一颗 **PCIe Switch**，下面同时挂着 H100（`[c3]`）和 ConnectX-7（`[c4]`）——这对组合能做 P2P
+- 叶子节点（GPU/NIC/NVMe）叫 **Endpoint**
+
+**第二条：`nvidia-smi topo -m`**（需 NVIDIA GPU + 驱动），输出一个设备对设备的矩阵（4 GPU + 2 NIC 机器截取示意）：
+
+```bash
+nvidia-smi topo -m
+#        GPU0   GPU1   GPU2   GPU3   NIC0   NIC1
+# GPU0    X     NV18   NV18   NV18   PIX    SYS
+# GPU1   NV18    X     NV18   NV18   PXB    SYS
+# GPU2   NV18   NV18    X     NV18   SYS    PIX
+# GPU3   NV18   NV18   NV18    X     SYS    PXB
+```
+
+逐个解释图例（从快到慢）：
+
+| 图例 | 含义 | 路径 |
+|---|---|---|
+| **NV18** | NVLink 直连（18 条 link） | 不走 PCIe |
+| **PIX** | 同一颗 PCIe Switch 下 | 一次 Switch 转发，最短 PCIe 路径 |
+| **PXB** | 跨多个 PCIe 桥/Switch，但不经 Root Complex | 多级 Switch 转发 |
+| **PHB** | 要穿过 Root Complex（同 CPU） | 进出 CPU 的 PCIe 根 |
+| **NODE** | 同 NUMA node，但跨不同 PHB | 同一颗 CPU 内两棵 PCIe 树之间 |
+| **SYS** | 跨 NUMA / 跨 UPI | 最长路径，带宽最差 |
+
+为什么 **GPUDirect RDMA 要求 GPU 与 NIC 处于 PIX/PXB 关系**：P2P DMA 的报文由 Switch 直接转发；一旦关系是 PHB/SYS，每个 TLP 都要穿过 Root Complex 甚至 UPI，延迟飙升、带宽腰斩，部分平台上 Root Complex 对 P2P 转发的支持还残缺。所以上面矩阵里 GPU0 发跨机流量应走 NIC0（PIX）而不是 NIC1（SYS）——NCCL 的拓扑探测干的就是这件事。
+
 
 
 ---
@@ -498,6 +670,8 @@ CPU 上 PCIe lane 数是有限的（比如 EPYC 9004 单 socket 128 lane）。�
 如果每次网卡收到数据都要 CPU 一字节一字节拷到内存，那 100 Gbps 网卡能把单核 CPU 拖死。**DMA（Direct Memory Access）** 解决这问题——外设里有专门的 DMA 引擎，CPU 只要告诉它"从这个地址读 N 字节"，剩下的搬运它自己来，搬完发个中断通知 CPU。
 
 **DMA 是现代 I/O 的命脉**。NVMe、网卡、GPU 没一个不靠 DMA。
+
+> 想看更白话的 PIO→DMA 演进图解，见[通信篇的基础部分](/posts/2026-06-16-cs-foundations-4-communicate/)。
 
 ### 7.2 MMIO：把寄存器当内存读
 
@@ -603,6 +777,91 @@ GPU 显存其实也能"被 DMA"。NVIDIA 把这套能力命名为 **GPUDirect** 
 3. **网卡和 GPU 也有 NUMA 亲和性**：一张网卡是挂在 CPU0 还是 CPU1 下，决定了它"该被哪个 NUMA node 的进程使用"
 
  AWS p5 的拓扑图就是个标准的双 NUMA：左半边 4 GPU + 16 网卡属于 CPU0，右半边属于 CPU1。**绝不要让进程在 CPU0 上、却用 CPU1 下的网卡**——那是双倍 NUMA 税 + 双倍 PCIe 跨域。
+
+### 8.3 NUMA 实操：五条命令把拓扑看透
+
+**① `numactl --hardware`**（需安装 numactl），看硬件拓扑全貌（双路 EPYC 服务器典型输出）：
+
+```bash
+numactl --hardware
+# available: 2 nodes (0-1)              ← 两个 NUMA node = 双路
+# node 0 cpus: 0-47 96-143              ← node 0 的逻辑核（含 SMT 兄弟核 96-143）
+# node 0 size: 515708 MB                ← node 0 直连的 DRAM 总量（~504 GB）
+# node 0 free: 336924 MB                ← 当前空闲
+# node 1 cpus: 48-95 144-191
+# node 1 size: 516052 MB
+# node 1 free: 412187 MB
+# node distances:
+# node   0   1
+#   0:  10  21                          ← 访问代价矩阵：本地=10（基准）
+#   1:  21  10                          ← 跨 node=21，即远端访问慢 2.1 倍
+```
+
+重点看最后的 **node distances 矩阵**：10 是本地访问的基准值，21 表示跨 node 访问的相对代价——和 8.1 里 80 ns vs 130 ns 的实测数字对得上。四路机器会出现 32（要跨两跳互联）。
+
+**② `numastat`**，看内存分配有没有跨界：
+
+```bash
+numastat
+#                            node0           node1
+# numa_hit              8942716821      9273648210   ← 在本 node 分配成功的次数
+# numa_miss                2471932       184629347   ← 想在本 node 分、被迫分到对面的次数
+# other_node               2471932       184629347   ← 运行在其他 node 的进程在本 node 分的量
+```
+
+`numa_miss` 持续增长 = 有进程的内存分配在跨界——要么本 node 内存不够了，要么绑核/绑内存策略配错了。上面 node1 的 miss 比 node0 高两个数量级，典型原因就是大进程堆在 node0 把内存吃光了。
+
+**③ `lstopo-no-graphics --of txt`**（需安装 hwloc）：一张图看清每个 PCIe 设备（GPU/NIC/NVMe）挂在哪个 NUMA node 下，比逐个翻 sysfs 快得多。
+
+**④ 查单张网卡的 NUMA 归属**：
+
+```bash
+cat /sys/class/net/eth0/device/numa_node
+# 1        ← 这张网卡挂在 node 1 下；输出 -1 表示无亲和信息（常见于单路机/虚拟机）
+```
+
+**⑤ `nvidia-smi topo -m` 最后的 NUMA Affinity 列**：GPU 归属哪个 node 直接列在矩阵右侧，与 6.4 的矩阵是同一条命令，不再展开。
+
+### 8.4 NUMA 与 AI 训练：绑核、绑内存、绑对网卡
+
+先搞清楚 Linux 的三种内存分配策略：
+
+| 策略 | 行为 | 适用场景 |
+|---|---|---|
+| **first-touch**（默认） | 页归**第一个碰它的线程**所在的 node | 单 node 内跑的普通进程；但主线程分配、worker 使用的模式会踩坑 |
+| **bind**（`--membind`） | 强制在指定 node 分配，不够就 OOM | 延迟敏感、要确定性的关键进程 |
+| **interleave**（`--interleave=all`） | 逐页轮流打散到所有 node | 单进程内存超过单 node 容量、全核共享大表（如嵌入表） |
+
+标准绑法：`numactl --cpunodebind=0 --membind=0 python train.py`——CPU 和内存都钉在 node 0。不绑的后果：调度器可能把线程迁到 node 1 的核上，而它的内存还留在 node 0（页不会跟着线程走），从此每次访存都交 NUMA 税。
+
+用一个验证脚本把“NUMA 税”测出来（需 NVIDIA GPU + PyTorch + numactl；假设 GPU0 挂在 node 0 下）：
+
+```python
+# h2d_bench.py：测 CPU 内存 → GPU0 的 H2D 拷贝带宽
+import time, torch
+
+x = torch.randn(4 * 1024**3 // 4)          # 4 GB float32，first-touch 分在 numactl 指定的 node
+torch.cuda.synchronize()
+t0 = time.perf_counter()
+y = x.to('cuda:0', non_blocking=False)     # H2D 拷贝，走 PCIe
+torch.cuda.synchronize()
+dt = time.perf_counter() - t0
+print(f"H2D: {4 / dt:.1f} GB/s")
+```
+
+```bash
+numactl --cpunodebind=0 --membind=0 python h2d_bench.py
+# H2D: 24.8 GB/s    ← 内存与 GPU0 同侧，PCIe Gen4 x16 接近跑满
+
+numactl --cpunodebind=0 --membind=1 python h2d_bench.py
+# H2D: 14.2 GB/s    ← 每个字节都要多穿一次 UPI，带宽近乎腰斩
+```
+
+（双路服务器示意数字，实测以你的机器为准；差距大小取决于 UPI/IF 代数与负载）
+
+**错绑案例**：比内存跨界更隐蔽的是**绑错网卡**——进程跑在 CPU0，发包却走 CPU1 下的 NIC：数据先从 node 0 的内存跨 UPI 到 CPU1，再从 CPU1 的 PCIe 根出去，每个包都交双倍 NUMA 税（就是 8.2 那条红线的定量版本）。用④的命令查清 NIC 归属、再用 `--cpunodebind` 对齐，就能避免。NCCL 一句话：它自己会探测拓扑、给每张 GPU 选同侧的 NIC，但 **dataloader/预处理进程的绑定要你自己负责**——NCCL 不管你的 Python 进程跑在哪。
+
+OS 怎么自动做 NUMA balancing、`numa_maps` 怎么读，见系列第二篇[《操作系统》](/posts/2026-06-14-cs-foundations-2-os/)第八章。
 
 ---
 
@@ -859,7 +1118,20 @@ GPU 之间如果通过 PCIe 通信，单向只有 64 GB/s。NVIDIA 又造了一�
 | **Acquire/Release** | 内存序语义：加锁/解锁方向 | 配对使用 |
 | **节点（Node）** | 一台物理服务器，= Machine | 集群的基本单元 |
 | **NVSwitch** | GPU 间全互联交换芯片 | 8 GPU any-to-any |
+| **SMT/超线程** | 一个物理核跑两个硬件线程，共享执行单元与 L1/L2 | 吞吐型负载 +20~30% |
+| **False Sharing** | 不同变量同住一条 cache line 引发 MESI 弹跳 | 吞吐可差 3~6 倍 |
+| **THP** | 内核自动合并的透明大页 | 4 KB → 2 MB，不可控 |
+| **first-touch** | 默认内存策略：页归第一个碰它的线程的 node | Linux 默认 |
+| **node distance** | NUMA 访问代价矩阵，本地为基准 10 | 跨 node 典型 21 |
 
+
+---
+
+## 十二、下一步
+
+- [二：操作系统](/posts/2026-06-14-cs-foundations-2-os/)——读它你会得到：OS 怎么调度本篇讲的这些硬件：进程绑核、Page Cache、NUMA balancing、零拷贝
+- [三：计算机网络](/posts/2026-06-15-cs-foundations-3-network/)——读它你会得到：数据出了网卡之后，在协议栈与数据中心网络里走完剩下的路
+- [四：通信](/posts/2026-06-16-cs-foundations-4-communicate/)——读它你会得到：本篇的 PCIe/NUMA/GPUDirect 拓扑知识怎么变成 RDMA/NCCL 的实战调优能力
 
 ---
 
