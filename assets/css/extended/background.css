@@ -1,4 +1,5 @@
-/* 站点全局背景图（/images/blog-background.jpg），随主题自动调整遮罩明暗 */
+/* 首页背景图（/images/blog-background.jpg），仅在 profile 首页显示，
+   其余页面（posts / paperreading / 文章页等）保持主题默认外观 */
 :root {
   --backdrop-scrim: rgba(255, 255, 255, 0.62);
 }
@@ -13,9 +14,10 @@
   }
 }
 
-/* 用 fixed 伪元素承载背景，兼容 iOS（background-attachment: fixed 在 iOS 失效）；
+/* 只有首页会渲染 .profile 区块，借助 :has 把背景限定在首页；
+   用 fixed 伪元素承载背景，兼容 iOS（background-attachment: fixed 在 iOS 失效）；
    inset 外扩配合轻微模糊，避免边缘出现光晕 */
-body::before {
+body:has(.profile)::before {
   content: "";
   position: fixed;
   inset: -24px;
@@ -27,31 +29,8 @@ body::before {
   filter: blur(6px);
 }
 
-/* 正文区域垫一层磨砂底板，保证长文可读性；
-   color-mix 不支持时回退为纯色底板 */
-.main {
-  background: var(--theme);
-  background: color-mix(in srgb, var(--theme) 78%, transparent);
-  -webkit-backdrop-filter: blur(12px);
-  backdrop-filter: blur(12px);
-  border-radius: var(--radius);
-}
-
-/* 首页 profile 模式不加底板，让照片直接透出来 */
-.main:has(.profile) {
-  background: transparent;
-  -webkit-backdrop-filter: none;
-  backdrop-filter: none;
-}
-
 @media print {
-  body::before {
+  body:has(.profile)::before {
     display: none;
-  }
-
-  .main {
-    background: none;
-    -webkit-backdrop-filter: none;
-    backdrop-filter: none;
   }
 }
