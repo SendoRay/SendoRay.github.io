@@ -1,0 +1,57 @@
+/* 站点全局背景图（/images/blog-background.jpg），随主题自动调整遮罩明暗 */
+:root {
+  --backdrop-scrim: rgba(255, 255, 255, 0.62);
+}
+
+:root[data-theme="dark"] {
+  --backdrop-scrim: rgba(21, 22, 24, 0.74);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root[data-theme="auto"] {
+    --backdrop-scrim: rgba(21, 22, 24, 0.74);
+  }
+}
+
+/* 用 fixed 伪元素承载背景，兼容 iOS（background-attachment: fixed 在 iOS 失效）；
+   inset 外扩配合轻微模糊，避免边缘出现光晕 */
+body::before {
+  content: "";
+  position: fixed;
+  inset: -24px;
+  z-index: -1;
+  /* 构图偏向左侧天际线，避免窄屏裁切时人脸占满全屏 */
+  background:
+    linear-gradient(var(--backdrop-scrim), var(--backdrop-scrim)),
+    url("/images/blog-background.jpg") 12% 55% / cover no-repeat;
+  filter: blur(6px);
+}
+
+/* 正文区域垫一层磨砂底板，保证长文可读性；
+   color-mix 不支持时回退为纯色底板 */
+.main {
+  background: var(--theme);
+  background: color-mix(in srgb, var(--theme) 78%, transparent);
+  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(12px);
+  border-radius: var(--radius);
+}
+
+/* 首页 profile 模式不加底板，让照片直接透出来 */
+.main:has(.profile) {
+  background: transparent;
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+
+@media print {
+  body::before {
+    display: none;
+  }
+
+  .main {
+    background: none;
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+}

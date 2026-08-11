@@ -2,15 +2,14 @@
 title: 一次新功能开发的工程方法论：以接入 Min-P 采样算子为例
 date: '2026-05-21'
 tags:
-- LLM
 - Engineering
 draft: false
 math: true
 ShowToc: true
 TocOpen: false
 ShowReadingTime: true
-ShowBreadCrumbs: true
-ShowPostNavLinks: true
+ShowBreadCrumbs: false
+ShowPostNavLinks: false
 ---
 
 
