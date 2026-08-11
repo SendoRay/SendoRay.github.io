@@ -298,10 +298,49 @@
 &lt;/code&gt;&lt;/pre&gt;&lt;p&gt;先用一句话抓住主线：&lt;/p&gt;</description>
     </item>
     <item>
+      <title>程序员的硬核基础（四）：通信</title>
+      <link>https://sendoray.github.io/posts/2026-06-16-cs-foundations-4-communicate/</link>
+      <pubDate>Tue, 16 Jun 2026 00:00:00 +0000</pubDate>
+      <guid>https://sendoray.github.io/posts/2026-06-16-cs-foundations-4-communicate/</guid>
+      <description>&lt;blockquote&gt;
+&lt;p&gt;从一台机器的硬件结构出发，逐步讲清 DMA、Pinned Memory、Zero-Copy 等底层原理，再纵览 AI 基础设施通信的五层架构：硬件互连 → 节点间网络 → 通信库 → 底层框架 → 上层应用。&lt;/p&gt;&lt;/blockquote&gt;
+&lt;hr&gt;
+&lt;h2 id=&#34;全局架构图&#34;&gt;全局架构图&lt;/h2&gt;
+&lt;pre tabindex=&#34;0&#34;&gt;&lt;code&gt;┌─────────────────────────────────────────────────────────────────────────┐
+│  第五层：上层框架与生态                                                   │
+│  ┌──────────┐  ┌──────────┐  ┌──────────┐  ┌──────────┐               │
+│  │  vLLM    │  │  SGLang  │  │ TRT-LLM  │  │  Dynamo  │  LMCache     │
+│  └────┬─────┘  └────┬─────┘  └────┬─────┘  └────┬─────┘               │
+├───────┼──────────────┼─────────────┼─────────────┼──────────────────────┤
+│  第四层：底层传输框架                                                     │
+│  ┌──────────┐  ┌──────────┐  ┌──────────┐                              │
+│  │   UCX    │  │   UCC    │  │ NVSHMEM  │  (MPI)                       │
+│  └────┬─────┘  └────┬─────┘  └────┬─────┘                              │
+├───────┼──────────────┼─────────────┼────────────────────────────────────┤
+│  第三层：通信库 (xCCL)                                                    │
+│  ┌────────┐ ┌────────┐ ┌────────┐ ┌────────┐ ┌────────┐               │
+│  │  NCCL  │ │ MSCCL++│ │  NIXL  │ │ DeepEP │ │  RCCL  │  oneCCL Gloo │
+│  │(训练)   │ │(可编程)│ │(推理)  │ │ (MoE)  │ │ (AMD)  │               │
+│  └────┬───┘ └────┬───┘ └────┬───┘ └────┬───┘ └────┬───┘               │
+├───────┼──────────┼──────────┼──────────┼──────────┼─────────────────────┤
+│  第二层：节点间网络                                                       │
+│  ┌────────────────┐  ┌────────────────┐  ┌────────────────┐            │
+│  │  InfiniBand    │  │    RoCEv2      │  │    iWARP       │            │
+│  │  (原生RDMA)    │  │  (以太网RDMA)  │  │  (TCP/IP RDMA) │            │
+│  └────────┬───────┘  └────────┬───────┘  └────────┬───────┘            │
+├───────────┼───────────────────┼───────────────────┼─────────────────────┤
+│  第一层：芯片与单机内部互连                                               │
+│  ┌──────┐  ┌────────────┐  ┌─────┐  ┌───────────────────┐             │
+│  │ PCIe │  │NVLink/NVSw │  │ CXL │  │ GPUDirect RDMA    │             │
+│  └──────┘  └────────────┘  └─────┘  └───────────────────┘             │
+└─────────────────────────────────────────────────────────────────────────┘
+&lt;/code&gt;&lt;/pre&gt;&lt;p&gt;&lt;strong&gt;一句话理解每一层的作用：&lt;/strong&gt; 硬件决定带宽上限，网络决定延迟下限，通信库决定可达性能，上层框架决定业务价值的兑现效率。&lt;/p&gt;</description>
+    </item>
+    <item>
       <title>程序员的硬核基础（三）：计算机网络，从一根网线到 socket 编程</title>
-      <link>https://sendoray.github.io/self/2026-06-15-cs-foundations-3-network/</link>
+      <link>https://sendoray.github.io/posts/2026-06-15-cs-foundations-3-network/</link>
       <pubDate>Mon, 15 Jun 2026 00:00:00 +0000</pubDate>
-      <guid>https://sendoray.github.io/self/2026-06-15-cs-foundations-3-network/</guid>
+      <guid>https://sendoray.github.io/posts/2026-06-15-cs-foundations-3-network/</guid>
       <description>&lt;blockquote&gt;
 &lt;p&gt;这篇文章不写&amp;quot;七层模型背诵题&amp;quot;，只回答一个问题：&lt;/p&gt;
 &lt;p&gt;&lt;strong&gt;为什么 TCP 慢、UDP 不可靠、socket API 简单？这些设计决定背后的取舍是什么？&lt;/strong&gt;&lt;/p&gt;
@@ -354,49 +393,10 @@
 &lt;p&gt;&lt;strong&gt;核心心智模型&lt;/strong&gt;：每一层只解决自己那一层的问题，并且&lt;strong&gt;只信任直接相邻层的服务&lt;/strong&gt;。下层抽象出&amp;quot;我能传一个 X 单位&amp;quot;，上层就把自己的东西塞进 X 里——这叫&lt;strong&gt;封装（encapsulation）&lt;/strong&gt;。一个 HTTP 请求发出去时，从上到下逐层加头、加完变成一串比特上线：&lt;/p&gt;</description>
     </item>
     <item>
-      <title>程序员的硬核基础（四）：通信</title>
-      <link>https://sendoray.github.io/self/2026-06-16-cs-foundations-4-communicate/</link>
-      <pubDate>Mon, 15 Jun 2026 00:00:00 +0000</pubDate>
-      <guid>https://sendoray.github.io/self/2026-06-16-cs-foundations-4-communicate/</guid>
-      <description>&lt;blockquote&gt;
-&lt;p&gt;从一台机器的硬件结构出发，逐步讲清 DMA、Pinned Memory、Zero-Copy 等底层原理，再纵览 AI 基础设施通信的五层架构：硬件互连 → 节点间网络 → 通信库 → 底层框架 → 上层应用。&lt;/p&gt;&lt;/blockquote&gt;
-&lt;hr&gt;
-&lt;h2 id=&#34;全局架构图&#34;&gt;全局架构图&lt;/h2&gt;
-&lt;pre tabindex=&#34;0&#34;&gt;&lt;code&gt;┌─────────────────────────────────────────────────────────────────────────┐
-│  第五层：上层框架与生态                                                   │
-│  ┌──────────┐  ┌──────────┐  ┌──────────┐  ┌──────────┐               │
-│  │  vLLM    │  │  SGLang  │  │ TRT-LLM  │  │  Dynamo  │  LMCache     │
-│  └────┬─────┘  └────┬─────┘  └────┬─────┘  └────┬─────┘               │
-├───────┼──────────────┼─────────────┼─────────────┼──────────────────────┤
-│  第四层：底层传输框架                                                     │
-│  ┌──────────┐  ┌──────────┐  ┌──────────┐                              │
-│  │   UCX    │  │   UCC    │  │ NVSHMEM  │  (MPI)                       │
-│  └────┬─────┘  └────┬─────┘  └────┬─────┘                              │
-├───────┼──────────────┼─────────────┼────────────────────────────────────┤
-│  第三层：通信库 (xCCL)                                                    │
-│  ┌────────┐ ┌────────┐ ┌────────┐ ┌────────┐ ┌────────┐               │
-│  │  NCCL  │ │ MSCCL++│ │  NIXL  │ │ DeepEP │ │  RCCL  │  oneCCL Gloo │
-│  │(训练)   │ │(可编程)│ │(推理)  │ │ (MoE)  │ │ (AMD)  │               │
-│  └────┬───┘ └────┬───┘ └────┬───┘ └────┬───┘ └────┬───┘               │
-├───────┼──────────┼──────────┼──────────┼──────────┼─────────────────────┤
-│  第二层：节点间网络                                                       │
-│  ┌────────────────┐  ┌────────────────┐  ┌────────────────┐            │
-│  │  InfiniBand    │  │    RoCEv2      │  │    iWARP       │            │
-│  │  (原生RDMA)    │  │  (以太网RDMA)  │  │  (TCP/IP RDMA) │            │
-│  └────────┬───────┘  └────────┬───────┘  └────────┬───────┘            │
-├───────────┼───────────────────┼───────────────────┼─────────────────────┤
-│  第一层：芯片与单机内部互连                                               │
-│  ┌──────┐  ┌────────────┐  ┌─────┐  ┌───────────────────┐             │
-│  │ PCIe │  │NVLink/NVSw │  │ CXL │  │ GPUDirect RDMA    │             │
-│  └──────┘  └────────────┘  └─────┘  └───────────────────┘             │
-└─────────────────────────────────────────────────────────────────────────┘
-&lt;/code&gt;&lt;/pre&gt;&lt;p&gt;&lt;strong&gt;一句话理解每一层的作用：&lt;/strong&gt; 硬件决定带宽上限，网络决定延迟下限，通信库决定可达性能，上层框架决定业务价值的兑现效率。&lt;/p&gt;</description>
-    </item>
-    <item>
       <title>程序员的硬核基础（二）：操作系统，从用户态到内核旁路</title>
-      <link>https://sendoray.github.io/self/2026-06-14-cs-foundations-2-os/</link>
+      <link>https://sendoray.github.io/posts/2026-06-14-cs-foundations-2-os/</link>
       <pubDate>Sun, 14 Jun 2026 00:00:00 +0000</pubDate>
-      <guid>https://sendoray.github.io/self/2026-06-14-cs-foundations-2-os/</guid>
+      <guid>https://sendoray.github.io/posts/2026-06-14-cs-foundations-2-os/</guid>
       <description>&lt;blockquote&gt;
 &lt;p&gt;这篇文章不写&amp;quot;Linux 入门&amp;quot;，只回答一个问题：&lt;/p&gt;
 &lt;p&gt;&lt;strong&gt;操作系统内核到底在你和硬件之间做了什么？什么时候它是帮手，什么时候是路障？&lt;/strong&gt;&lt;/p&gt;
@@ -425,9 +425,9 @@
     </item>
     <item>
       <title>程序员的硬核基础（一）：体系结构，从晶体管到 PCIe 拓扑</title>
-      <link>https://sendoray.github.io/self/2026-06-13-cs-foundations-1-architecture/</link>
+      <link>https://sendoray.github.io/posts/2026-06-13-cs-foundations-1-architecture/</link>
       <pubDate>Sat, 13 Jun 2026 00:00:00 +0000</pubDate>
-      <guid>https://sendoray.github.io/self/2026-06-13-cs-foundations-1-architecture/</guid>
+      <guid>https://sendoray.github.io/posts/2026-06-13-cs-foundations-1-architecture/</guid>
       <description>&lt;blockquote&gt;
 &lt;p&gt;这篇文章不讲&amp;quot;CPU 怎么造出来的&amp;quot;，只回答一个问题：&lt;/p&gt;
 &lt;p&gt;&lt;strong&gt;当我们说&amp;quot;数据从内存搬到网卡&amp;quot;时，它到底走了哪条物理路径？&lt;/strong&gt;&lt;/p&gt;

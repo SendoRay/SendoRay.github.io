@@ -164,22 +164,25 @@
     <loc>https://sendoray.github.io/self/2026-06-22-diffusion-model-optimization/</loc>
     <lastmod>2026-06-22T00:00:00+00:00</lastmod>
   </url><url>
+    <loc>https://sendoray.github.io/tags/cs-foundations/</loc>
+    <lastmod>2026-06-16T00:00:00+00:00</lastmod>
+  </url><url>
+    <loc>https://sendoray.github.io/posts/</loc>
+    <lastmod>2026-06-16T00:00:00+00:00</lastmod>
+  </url><url>
     <loc>https://sendoray.github.io/self/2026-06-16-llm-training-toolchain-map/</loc>
     <lastmod>2026-06-16T00:00:00+00:00</lastmod>
   </url><url>
-    <loc>https://sendoray.github.io/tags/cs-foundations/</loc>
+    <loc>https://sendoray.github.io/posts/2026-06-16-cs-foundations-4-communicate/</loc>
+    <lastmod>2026-06-16T00:00:00+00:00</lastmod>
+  </url><url>
+    <loc>https://sendoray.github.io/posts/2026-06-15-cs-foundations-3-network/</loc>
     <lastmod>2026-06-15T00:00:00+00:00</lastmod>
   </url><url>
-    <loc>https://sendoray.github.io/self/2026-06-15-cs-foundations-3-network/</loc>
-    <lastmod>2026-06-15T00:00:00+00:00</lastmod>
-  </url><url>
-    <loc>https://sendoray.github.io/self/2026-06-16-cs-foundations-4-communicate/</loc>
-    <lastmod>2026-06-15T00:00:00+00:00</lastmod>
-  </url><url>
-    <loc>https://sendoray.github.io/self/2026-06-14-cs-foundations-2-os/</loc>
+    <loc>https://sendoray.github.io/posts/2026-06-14-cs-foundations-2-os/</loc>
     <lastmod>2026-06-14T00:00:00+00:00</lastmod>
   </url><url>
-    <loc>https://sendoray.github.io/self/2026-06-13-cs-foundations-1-architecture/</loc>
+    <loc>https://sendoray.github.io/posts/2026-06-13-cs-foundations-1-architecture/</loc>
     <lastmod>2026-06-13T00:00:00+00:00</lastmod>
   </url><url>
     <loc>https://sendoray.github.io/self/2026-06-12-kubernetes-for-ai-infra/</loc>
@@ -192,9 +195,6 @@
     <lastmod>2026-06-11T00:00:00+00:00</lastmod>
   </url><url>
     <loc>https://sendoray.github.io/self/2026-06-10-kvcache-compute-vs-transfer/</loc>
-    <lastmod>2026-06-10T00:00:00+00:00</lastmod>
-  </url><url>
-    <loc>https://sendoray.github.io/posts/</loc>
     <lastmod>2026-06-10T00:00:00+00:00</lastmod>
   </url><url>
     <loc>https://sendoray.github.io/tags/pytorch/</loc>
