@@ -9,6 +9,84 @@
     <lastBuildDate>Fri, 14 Aug 2026 00:00:00 +0000</lastBuildDate>
     <atom:link href="https://sendoray.github.io/index.xml" rel="self" type="application/rss+xml" />
     <item>
+      <title>CUDA 入门：从第一个 Kernel 到 PyTorch 自定义算子</title>
+      <link>https://sendoray.github.io/posts/2026-08-14-cuda-basics/</link>
+      <pubDate>Fri, 14 Aug 2026 00:00:00 +0000</pubDate>
+      <guid>https://sendoray.github.io/posts/2026-08-14-cuda-basics/</guid>
+      <description>&lt;blockquote&gt;
+&lt;p&gt;&lt;strong&gt;出处声明&lt;/strong&gt;：本文编译自 tinkerd.net 的 &lt;a href=&#34;https://tinkerd.net/blog/machine-learning/cuda-basics/&#34;&gt;Writing CUDA Kernels for PyTorch&lt;/a&gt;（原文发表于 tinkerd.net，站点作者未具名，2024-04-20）。文中所有示意图均为按原图逻辑用 ASCII 字符&lt;strong&gt;重绘&lt;/strong&gt;，代码示例源自原文（属标准 CUDA / PyTorch API 的教学用法），版权归原作者所有。本文以自己的中文表述改写组织，不构成对原文的逐句翻译。&lt;/p&gt;&lt;/blockquote&gt;
+&lt;p&gt;如果你每天都在用 PyTorch 训练模型，却从来没有亲手写过一行 CUDA 代码，这篇文章就是为你准备的。它不要求任何 GPU 编程经验，只要求你会写基本的 C++ 和 Python。读完之后你将能够回答三个问题：&lt;/p&gt;
+&lt;ol&gt;
+&lt;li&gt;&lt;strong&gt;一个 CUDA Kernel 到底是什么&lt;/strong&gt;——线程（Thread）、线程块（Block）、Warp、SM 这些词分别指什么，它们如何映射到硬件上？&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;GPU 的内存层级长什么样&lt;/strong&gt;——为什么同样的算法，用不用 Shared Memory 能差出 7 倍性能？&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;怎么把自己写的 Kernel 接进 PyTorch&lt;/strong&gt;——&lt;code&gt;torch.utils.cpp_extension&lt;/code&gt; 和 pybind11 是如何把一个 &lt;code&gt;.cu&lt;/code&gt; 文件变成可以 &lt;code&gt;import&lt;/code&gt; 的 Python 模块的？&lt;/li&gt;
+&lt;/ol&gt;
+&lt;p&gt;全文结构鸟瞰如下：&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code class=&#34;language-text&#34; data-lang=&#34;text&#34;&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;┌────────────────────────────────────────────────────────────────────┐
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;│           本文地图（CUDA 入门 → PyTorch 自定义算子）                 │
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;│                                                                    │
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;│  第一部分 CUDA 基础                                                 │
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;│  ├── 一、为什么并行        CPU 顺序执行 vs GPU 数千线程              │
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;│  ├── 二、第一个 Kernel     __global__ / threadIdx / &amp;lt;&amp;lt;&amp;lt;&amp;gt;&amp;gt;&amp;gt;          │
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;│  ├── 三、读写数据          cudaMalloc / cudaMemcpy / cudaFree       │
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;│  ├── 四、Thread Block      1D/2D/3D 线程块、1024 线程上限           │
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;│  └── 五、SM 与 Warp        Block→SM 分配、32 线程编组、调度器        │
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;│                          ▼                                         │
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;│  第二部分 CUDA 内存层级                                             │
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;│  ├── 六、三类逻辑内存      Global / Local &amp;amp; Register / Shared       │
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;│  ├── 七、逐层拆解          sector、L1/L2、寄存器、__shared__        │
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;│  └── 八、Softmax 实战      __syncthreads() + Shared Memory ≈ 7.5×  │
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;│                          ▼                                         │
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;│  第三部分 接入 PyTorch                                              │
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;│  ├── 九、pybind11 桥接     kernel(.cu) + binding(.cpp) + setup.py   │
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;│  ├── 十、操作 Tensor       data_ptr / AT_DISPATCH 多 dtype          │
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;│  └── 十一、速查小结与结语                                            │
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;└────────────────────────────────────────────────────────────────────┘
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;hr&gt;
+&lt;h2 id=&#34;一为什么需要-cuda从顺序到并行&#34;&gt;一、为什么需要 CUDA：从顺序到并行&lt;/h2&gt;
+&lt;p&gt;CUDA（Compute Unified Device Architecture）是 NVIDIA 提供的 GPU 编程平台：它扩展了 C/C++ 语言，让你可以写出在 GPU 上运行的函数。&lt;/p&gt;</description>
+    </item>
+    <item>
+      <title>Delta Weight Sync：当 RL 权重同步从硬件问题变成软件问题（编译）</title>
+      <link>https://sendoray.github.io/posts/2026-08-14-delta-weight-sync/</link>
+      <pubDate>Fri, 14 Aug 2026 00:00:00 +0000</pubDate>
+      <guid>https://sendoray.github.io/posts/2026-08-14-delta-weight-sync/</guid>
+      <description>&lt;blockquote&gt;
+&lt;p&gt;&lt;strong&gt;出处声明&lt;/strong&gt;：本文为编译笔记，基于 Changyi Yang 的原文《[Tech] Delta Weight Sync》（&lt;a href=&#34;https://changyi.fun/zh/posts/delta-weight-sync/&#34;&gt;https://changyi.fun/zh/posts/delta-weight-sync/&lt;/a&gt;）整理改写而成。文中示意图按原图逻辑用 ASCII 重绘，所有技术观点与实现细节的版权归原作者所有。本文只是笔者消化后的重新组织，强烈建议读者移步阅读原文。&lt;/p&gt;&lt;/blockquote&gt;
+&lt;p&gt;&lt;strong&gt;TL;DR&lt;/strong&gt;：在 RL post-training 的解耦架构里，训练器（trainer）每一步都要把最新权重同步给推理引擎（rollout engine），这一直被当成一个&amp;quot;带宽问题&amp;quot;——要靠 NCCL、靠 RDMA、靠更粗的管子。但一个朴素的观察改变了整个故事：在典型的 RL 学习率下，把 Adam 更新量 cast 回 BF16 之后，&lt;strong&gt;超过 99% 的权重元素逐字节完全没有变化&lt;/strong&gt;。既然如此，只传真正变了的那 1%~3%（即 delta），通信量直接降低约两个数量级；而且接收端的重建是&lt;strong&gt;无损、bit-identical&lt;/strong&gt; 的——不是近似，不是压缩后的&amp;quot;差不多&amp;quot;。于是权重同步从&amp;quot;必须上 RDMA 的硬件问题&amp;quot;，变成了&amp;quot;如何高效编码稀疏 delta 的软件问题&amp;quot;。&lt;/p&gt;
+&lt;p&gt;全文结构鸟瞰：&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code class=&#34;language-text&#34; data-lang=&#34;text&#34;&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;┌─────────────────────────────────────────────────────────────────┐
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;│  一、背景：weight sync 为什么是瓶颈                                │
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;│      解耦架构 / full broadcast / slime 60s→7s 仍不够 / 跨 DC 不可行 │
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;├─────────────────────────────────────────────────────────────────┤
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;│  二、关键观察：RL 权重更新天然稀疏                                  │
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;│      compute-visible sparsity / BF16 舍入阈值 / 1%~3% 实测        │
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;│      → 只传 (indices, values)，无损 bit-identical                 │
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;├─────────────────────────────────────────────────────────────────┤
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;│  三、三条线四个月内独立收敛                                        │
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;│      学术（PULSE/SparrowRL/Helix）× 工业（Fireworks）              │
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;│      × 开源（TRL/slime/vLLM），分歧在传输介质/位置编码/diff 基准     │
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;├─────────────────────────────────────────────────────────────────┤
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;│  四、slime 的实现详解（全文重心）                                   │
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;│      4.0 改动位置：发送端在 slime / 接收端在 SGLang                 │
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;│      4.1 发送端：diff → encode → bucket &amp;amp; flush → snapshot 更新    │
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;│          三条 CUDA stream + chunk 级 + 段级重叠      【ASCII 图 1】 │
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;│      4.2 接收端：NaN-masked overwrite                             │
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;│          checksum / densify / monkeypatch copy_     【ASCII 图 2】 │
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;│      4.3 侵入性评估   4.4 与 RDMA 正交（mode × transport）          │
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;├─────────────────────────────────────────────────────────────────┤
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;│  五、量化如何改变这套故事                                          │
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;│      全量任意精度都行 / delta 依赖三个条件 /                        │
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;│      BF16、FP8 block-wise 可行，NVFP4 难                          │
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;├─────────────────────────────────────────────────────────────────┤
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;│  六、小结与开放问题                                                │
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;└─────────────────────────────────────────────────────────────────┘
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;hr&gt;
+&lt;h2 id=&#34;一背景weight-sync-为什么是瓶颈&#34;&gt;一、背景：weight sync 为什么是瓶颈&lt;/h2&gt;
+&lt;h3 id=&#34;11-解耦架构下的每步同步&#34;&gt;1.1 解耦架构下的每步同步&lt;/h3&gt;
+&lt;p&gt;现代 RL post-training 系统普遍采用解耦（disaggregated）架构：训练侧跑 Megatron 或 FSDP，rollout 侧跑 SGLang 或 vLLM，两边是不同的进程组，常常在不同节点上，甚至可以在不同的数据中心。这种拆分带来了资源利用率和弹性上的好处，但也引入了一个绕不开的动作——&lt;strong&gt;每个训练步结束后，trainer 必须把新权重推给所有 rollout engine&lt;/strong&gt;，否则 rollout 采样用的就是旧策略。&lt;/p&gt;</description>
+    </item>
+    <item>
       <title>论文浅读笔记</title>
       <link>https://sendoray.github.io/paperreading/paper-shallow-notes/</link>
       <pubDate>Fri, 14 Aug 2026 00:00:00 +0000</pubDate>
