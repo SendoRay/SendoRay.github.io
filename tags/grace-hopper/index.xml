@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom" xmlns:content="http://purl.org/rss/1.0/modules/content/">
+  <channel>
+    <title>Grace-Hopper on chengzhy&#39;s blog</title>
+    <link>https://sendoray.github.io/tags/grace-hopper/</link>
+    <description>Recent content in Grace-Hopper on chengzhy&#39;s blog</description>
+    <generator>Hugo</generator>
+    <language>en</language>
+    <lastBuildDate>Thu, 13 Aug 2026 00:00:00 +0000</lastBuildDate>
+    <atom:link href="https://sendoray.github.io/tags/grace-hopper/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>Understanding Data Movement in Tightly Coupled Heterogeneous Systems: A Case Study with the Grace Hopper Superchip</title>
+      <link>https://sendoray.github.io/paperreading/2026-08-13-grace-hopper-data-movement/</link>
+      <pubDate>Thu, 13 Aug 2026 00:00:00 +0000</pubDate>
+      <guid>https://sendoray.github.io/paperreading/2026-08-13-grace-hopper-data-movement/</guid>
+      <description>以 GH200 为案例分析紧耦合异构系统的数据移动：本地 HBM 带宽 4000 GB/s，NVLink-C2C 450 GB/s/方向，跨互联路径均受 C2C 限制。</description>
+    </item>
+  </channel>
+</rss>

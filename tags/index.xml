@@ -6,8 +6,64 @@
     <description>Recent content in Tags on chengzhy&#39;s blog</description>
     <generator>Hugo</generator>
     <language>en</language>
-    <lastBuildDate>Mon, 13 Jul 2026 00:00:00 +0000</lastBuildDate>
+    <lastBuildDate>Fri, 14 Aug 2026 00:00:00 +0000</lastBuildDate>
     <atom:link href="https://sendoray.github.io/tags/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>KV-Cache</title>
+      <link>https://sendoray.github.io/tags/kv-cache/</link>
+      <pubDate>Fri, 14 Aug 2026 00:00:00 +0000</pubDate>
+      <guid>https://sendoray.github.io/tags/kv-cache/</guid>
+      <description></description>
+    </item>
+    <item>
+      <title>Offload</title>
+      <link>https://sendoray.github.io/tags/offload/</link>
+      <pubDate>Fri, 14 Aug 2026 00:00:00 +0000</pubDate>
+      <guid>https://sendoray.github.io/tags/offload/</guid>
+      <description></description>
+    </item>
+    <item>
+      <title>Prefetch</title>
+      <link>https://sendoray.github.io/tags/prefetch/</link>
+      <pubDate>Fri, 14 Aug 2026 00:00:00 +0000</pubDate>
+      <guid>https://sendoray.github.io/tags/prefetch/</guid>
+      <description></description>
+    </item>
+    <item>
+      <title>TMA</title>
+      <link>https://sendoray.github.io/tags/tma/</link>
+      <pubDate>Fri, 14 Aug 2026 00:00:00 +0000</pubDate>
+      <guid>https://sendoray.github.io/tags/tma/</guid>
+      <description></description>
+    </item>
+    <item>
+      <title>Data-Movement</title>
+      <link>https://sendoray.github.io/tags/data-movement/</link>
+      <pubDate>Thu, 13 Aug 2026 00:00:00 +0000</pubDate>
+      <guid>https://sendoray.github.io/tags/data-movement/</guid>
+      <description></description>
+    </item>
+    <item>
+      <title>GPU</title>
+      <link>https://sendoray.github.io/tags/gpu/</link>
+      <pubDate>Thu, 13 Aug 2026 00:00:00 +0000</pubDate>
+      <guid>https://sendoray.github.io/tags/gpu/</guid>
+      <description></description>
+    </item>
+    <item>
+      <title>Grace-Hopper</title>
+      <link>https://sendoray.github.io/tags/grace-hopper/</link>
+      <pubDate>Thu, 13 Aug 2026 00:00:00 +0000</pubDate>
+      <guid>https://sendoray.github.io/tags/grace-hopper/</guid>
+      <description></description>
+    </item>
+    <item>
+      <title>NVLink-C2C</title>
+      <link>https://sendoray.github.io/tags/nvlink-c2c/</link>
+      <pubDate>Thu, 13 Aug 2026 00:00:00 +0000</pubDate>
+      <guid>https://sendoray.github.io/tags/nvlink-c2c/</guid>
+      <description></description>
+    </item>
     <item>
       <title>Function-Call</title>
       <link>https://sendoray.github.io/tags/function-call/</link>
@@ -20,13 +76,6 @@
       <link>https://sendoray.github.io/tags/inference/</link>
       <pubDate>Mon, 13 Jul 2026 00:00:00 +0000</pubDate>
       <guid>https://sendoray.github.io/tags/inference/</guid>
-      <description></description>
-    </item>
-    <item>
-      <title>KV-Cache</title>
-      <link>https://sendoray.github.io/tags/kv-cache/</link>
-      <pubDate>Mon, 13 Jul 2026 00:00:00 +0000</pubDate>
-      <guid>https://sendoray.github.io/tags/kv-cache/</guid>
       <description></description>
     </item>
     <item>
@@ -188,13 +237,6 @@
       <link>https://sendoray.github.io/tags/credit-assignment/</link>
       <pubDate>Thu, 02 Jul 2026 00:00:00 +0000</pubDate>
       <guid>https://sendoray.github.io/tags/credit-assignment/</guid>
-      <description></description>
-    </item>
-    <item>
-      <title>GPU</title>
-      <link>https://sendoray.github.io/tags/gpu/</link>
-      <pubDate>Thu, 02 Jul 2026 00:00:00 +0000</pubDate>
-      <guid>https://sendoray.github.io/tags/gpu/</guid>
       <description></description>
     </item>
     <item>

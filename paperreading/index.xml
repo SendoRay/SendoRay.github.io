@@ -6,8 +6,22 @@
     <description>Recent content in Paper Reading on chengzhy&#39;s blog</description>
     <generator>Hugo</generator>
     <language>en</language>
-    <lastBuildDate>Mon, 13 Jul 2026 00:00:00 +0000</lastBuildDate>
+    <lastBuildDate>Fri, 14 Aug 2026 00:00:00 +0000</lastBuildDate>
     <atom:link href="https://sendoray.github.io/paperreading/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>论文浅读笔记</title>
+      <link>https://sendoray.github.io/paperreading/paper-shallow-notes/</link>
+      <pubDate>Fri, 14 Aug 2026 00:00:00 +0000</pubDate>
+      <guid>https://sendoray.github.io/paperreading/paper-shallow-notes/</guid>
+      <description>不值得单独成文的论文浅读合集：只抓核心机制与关键数字，不做精读级展开。</description>
+    </item>
+    <item>
+      <title>Understanding Data Movement in Tightly Coupled Heterogeneous Systems: A Case Study with the Grace Hopper Superchip</title>
+      <link>https://sendoray.github.io/paperreading/2026-08-13-grace-hopper-data-movement/</link>
+      <pubDate>Thu, 13 Aug 2026 00:00:00 +0000</pubDate>
+      <guid>https://sendoray.github.io/paperreading/2026-08-13-grace-hopper-data-movement/</guid>
+      <description>以 GH200 为案例分析紧耦合异构系统的数据移动：本地 HBM 带宽 4000 GB/s，NVLink-C2C 450 GB/s/方向，跨互联路径均受 C2C 限制。</description>
+    </item>
     <item>
       <title>TokenCake：面向多智能体 LLM 应用的 KV-Cache 中心服务框架</title>
       <link>https://sendoray.github.io/paperreading/2026-07-13-tokencake/</link>
