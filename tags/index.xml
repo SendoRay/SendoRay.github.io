@@ -9,20 +9,6 @@
     <lastBuildDate>Fri, 14 Aug 2026 00:00:00 +0000</lastBuildDate>
     <atom:link href="https://sendoray.github.io/tags/index.xml" rel="self" type="application/rss+xml" />
     <item>
-      <title>CUDA</title>
-      <link>https://sendoray.github.io/tags/cuda/</link>
-      <pubDate>Fri, 14 Aug 2026 00:00:00 +0000</pubDate>
-      <guid>https://sendoray.github.io/tags/cuda/</guid>
-      <description></description>
-    </item>
-    <item>
-      <title>GPU</title>
-      <link>https://sendoray.github.io/tags/gpu/</link>
-      <pubDate>Fri, 14 Aug 2026 00:00:00 +0000</pubDate>
-      <guid>https://sendoray.github.io/tags/gpu/</guid>
-      <description></description>
-    </item>
-    <item>
       <title>Infra</title>
       <link>https://sendoray.github.io/tags/infra/</link>
       <pubDate>Fri, 14 Aug 2026 00:00:00 +0000</pubDate>
@@ -58,13 +44,6 @@
       <description></description>
     </item>
     <item>
-      <title>PyTorch</title>
-      <link>https://sendoray.github.io/tags/pytorch/</link>
-      <pubDate>Fri, 14 Aug 2026 00:00:00 +0000</pubDate>
-      <guid>https://sendoray.github.io/tags/pytorch/</guid>
-      <description></description>
-    </item>
-    <item>
       <title>RL</title>
       <link>https://sendoray.github.io/tags/rl/</link>
       <pubDate>Fri, 14 Aug 2026 00:00:00 +0000</pubDate>
@@ -79,17 +58,17 @@
       <description></description>
     </item>
     <item>
-      <title>WeightSync</title>
-      <link>https://sendoray.github.io/tags/weightsync/</link>
-      <pubDate>Fri, 14 Aug 2026 00:00:00 +0000</pubDate>
-      <guid>https://sendoray.github.io/tags/weightsync/</guid>
-      <description></description>
-    </item>
-    <item>
       <title>Data-Movement</title>
       <link>https://sendoray.github.io/tags/data-movement/</link>
       <pubDate>Thu, 13 Aug 2026 00:00:00 +0000</pubDate>
       <guid>https://sendoray.github.io/tags/data-movement/</guid>
+      <description></description>
+    </item>
+    <item>
+      <title>GPU</title>
+      <link>https://sendoray.github.io/tags/gpu/</link>
+      <pubDate>Thu, 13 Aug 2026 00:00:00 +0000</pubDate>
+      <guid>https://sendoray.github.io/tags/gpu/</guid>
       <description></description>
     </item>
     <item>
@@ -359,10 +338,24 @@
       <description></description>
     </item>
     <item>
+      <title>PyTorch</title>
+      <link>https://sendoray.github.io/tags/pytorch/</link>
+      <pubDate>Wed, 10 Jun 2026 00:00:00 +0000</pubDate>
+      <guid>https://sendoray.github.io/tags/pytorch/</guid>
+      <description></description>
+    </item>
+    <item>
       <title>Investment</title>
       <link>https://sendoray.github.io/tags/investment/</link>
       <pubDate>Mon, 25 May 2026 00:00:00 +0000</pubDate>
       <guid>https://sendoray.github.io/tags/investment/</guid>
+      <description></description>
+    </item>
+    <item>
+      <title>CUDA</title>
+      <link>https://sendoray.github.io/tags/cuda/</link>
+      <pubDate>Sat, 14 Mar 2026 00:00:00 +0000</pubDate>
+      <guid>https://sendoray.github.io/tags/cuda/</guid>
       <description></description>
     </item>
     <item>

@@ -6,46 +6,8 @@
     <description>Recent content in PyTorch on chengzhy&#39;s blog</description>
     <generator>Hugo</generator>
     <language>en</language>
-    <lastBuildDate>Fri, 14 Aug 2026 00:00:00 +0000</lastBuildDate>
+    <lastBuildDate>Wed, 10 Jun 2026 00:00:00 +0000</lastBuildDate>
     <atom:link href="https://sendoray.github.io/tags/pytorch/index.xml" rel="self" type="application/rss+xml" />
-    <item>
-      <title>CUDA 入门：从第一个 Kernel 到 PyTorch 自定义算子</title>
-      <link>https://sendoray.github.io/posts/2026-08-14-cuda-basics/</link>
-      <pubDate>Fri, 14 Aug 2026 00:00:00 +0000</pubDate>
-      <guid>https://sendoray.github.io/posts/2026-08-14-cuda-basics/</guid>
-      <description>&lt;blockquote&gt;
-&lt;p&gt;&lt;strong&gt;出处声明&lt;/strong&gt;：本文编译自 tinkerd.net 的 &lt;a href=&#34;https://tinkerd.net/blog/machine-learning/cuda-basics/&#34;&gt;Writing CUDA Kernels for PyTorch&lt;/a&gt;（原文发表于 tinkerd.net，站点作者未具名，2024-04-20）。文中所有示意图均为按原图逻辑用 ASCII 字符&lt;strong&gt;重绘&lt;/strong&gt;，代码示例源自原文（属标准 CUDA / PyTorch API 的教学用法），版权归原作者所有。本文以自己的中文表述改写组织，不构成对原文的逐句翻译。&lt;/p&gt;&lt;/blockquote&gt;
-&lt;p&gt;如果你每天都在用 PyTorch 训练模型，却从来没有亲手写过一行 CUDA 代码，这篇文章就是为你准备的。它不要求任何 GPU 编程经验，只要求你会写基本的 C++ 和 Python。读完之后你将能够回答三个问题：&lt;/p&gt;
-&lt;ol&gt;
-&lt;li&gt;&lt;strong&gt;一个 CUDA Kernel 到底是什么&lt;/strong&gt;——线程（Thread）、线程块（Block）、Warp、SM 这些词分别指什么，它们如何映射到硬件上？&lt;/li&gt;
-&lt;li&gt;&lt;strong&gt;GPU 的内存层级长什么样&lt;/strong&gt;——为什么同样的算法，用不用 Shared Memory 能差出 7 倍性能？&lt;/li&gt;
-&lt;li&gt;&lt;strong&gt;怎么把自己写的 Kernel 接进 PyTorch&lt;/strong&gt;——&lt;code&gt;torch.utils.cpp_extension&lt;/code&gt; 和 pybind11 是如何把一个 &lt;code&gt;.cu&lt;/code&gt; 文件变成可以 &lt;code&gt;import&lt;/code&gt; 的 Python 模块的？&lt;/li&gt;
-&lt;/ol&gt;
-&lt;p&gt;全文结构鸟瞰如下：&lt;/p&gt;
-&lt;div class=&#34;highlight&#34;&gt;&lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code class=&#34;language-text&#34; data-lang=&#34;text&#34;&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;┌────────────────────────────────────────────────────────────────────┐
-&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;│           本文地图（CUDA 入门 → PyTorch 自定义算子）                 │
-&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;│                                                                    │
-&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;│  第一部分 CUDA 基础                                                 │
-&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;│  ├── 一、为什么并行        CPU 顺序执行 vs GPU 数千线程              │
-&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;│  ├── 二、第一个 Kernel     __global__ / threadIdx / &amp;lt;&amp;lt;&amp;lt;&amp;gt;&amp;gt;&amp;gt;          │
-&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;│  ├── 三、读写数据          cudaMalloc / cudaMemcpy / cudaFree       │
-&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;│  ├── 四、Thread Block      1D/2D/3D 线程块、1024 线程上限           │
-&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;│  └── 五、SM 与 Warp        Block→SM 分配、32 线程编组、调度器        │
-&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;│                          ▼                                         │
-&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;│  第二部分 CUDA 内存层级                                             │
-&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;│  ├── 六、三类逻辑内存      Global / Local &amp;amp; Register / Shared       │
-&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;│  ├── 七、逐层拆解          sector、L1/L2、寄存器、__shared__        │
-&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;│  └── 八、Softmax 实战      __syncthreads() + Shared Memory ≈ 7.5×  │
-&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;│                          ▼                                         │
-&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;│  第三部分 接入 PyTorch                                              │
-&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;│  ├── 九、pybind11 桥接     kernel(.cu) + binding(.cpp) + setup.py   │
-&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;│  ├── 十、操作 Tensor       data_ptr / AT_DISPATCH 多 dtype          │
-&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;│  └── 十一、速查小结与结语                                            │
-&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;└────────────────────────────────────────────────────────────────────┘
-&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;hr&gt;
-&lt;h2 id=&#34;一为什么需要-cuda从顺序到并行&#34;&gt;一、为什么需要 CUDA：从顺序到并行&lt;/h2&gt;
-&lt;p&gt;CUDA（Compute Unified Device Architecture）是 NVIDIA 提供的 GPU 编程平台：它扩展了 C/C++ 语言，让你可以写出在 GPU 上运行的函数。&lt;/p&gt;</description>
-    </item>
     <item>
       <title>深入理解 PyTorch</title>
       <link>https://sendoray.github.io/posts/2026-08-10-pytorch-internals-deep-dive/</link>
