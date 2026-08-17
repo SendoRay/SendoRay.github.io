@@ -1,10 +1,10 @@
 ---
 title: "CUDA 入门：从第一个 Kernel 到 PyTorch 自定义算子"
-date: '2026-08-14'
+date: '2026-03-14'
 tags:
 - CUDA
 - GPU
-- PyTorch
+
 
 draft: false
 math: true
@@ -15,38 +15,6 @@ ShowBreadCrumbs: true
 ShowPostNavLinks: true
 ---
 
-> **出处声明**：本文编译自 tinkerd.net 的 [Writing CUDA Kernels for PyTorch](https://tinkerd.net/blog/machine-learning/cuda-basics/)（原文发表于 tinkerd.net，站点作者未具名，2024-04-20）。文中所有示意图均为按原图逻辑用 ASCII 字符**重绘**，代码示例源自原文（属标准 CUDA / PyTorch API 的教学用法），版权归原作者所有。本文以自己的中文表述改写组织，不构成对原文的逐句翻译。
-
-如果你每天都在用 PyTorch 训练模型，却从来没有亲手写过一行 CUDA 代码，这篇文章就是为你准备的。它不要求任何 GPU 编程经验，只要求你会写基本的 C++ 和 Python。读完之后你将能够回答三个问题：
-
-1. **一个 CUDA Kernel 到底是什么**——线程（Thread）、线程块（Block）、Warp、SM 这些词分别指什么，它们如何映射到硬件上？
-2. **GPU 的内存层级长什么样**——为什么同样的算法，用不用 Shared Memory 能差出 7 倍性能？
-3. **怎么把自己写的 Kernel 接进 PyTorch**——`torch.utils.cpp_extension` 和 pybind11 是如何把一个 `.cu` 文件变成可以 `import` 的 Python 模块的？
-
-全文结构鸟瞰如下：
-
-```text
-┌────────────────────────────────────────────────────────────────────┐
-│           本文地图（CUDA 入门 → PyTorch 自定义算子）                 │
-│                                                                    │
-│  第一部分 CUDA 基础                                                 │
-│  ├── 一、为什么并行        CPU 顺序执行 vs GPU 数千线程              │
-│  ├── 二、第一个 Kernel     __global__ / threadIdx / <<<>>>          │
-│  ├── 三、读写数据          cudaMalloc / cudaMemcpy / cudaFree       │
-│  ├── 四、Thread Block      1D/2D/3D 线程块、1024 线程上限           │
-│  └── 五、SM 与 Warp        Block→SM 分配、32 线程编组、调度器        │
-│                          ▼                                         │
-│  第二部分 CUDA 内存层级                                             │
-│  ├── 六、三类逻辑内存      Global / Local & Register / Shared       │
-│  ├── 七、逐层拆解          sector、L1/L2、寄存器、__shared__        │
-│  └── 八、Softmax 实战      __syncthreads() + Shared Memory ≈ 7.5×  │
-│                          ▼                                         │
-│  第三部分 接入 PyTorch                                              │
-│  ├── 九、pybind11 桥接     kernel(.cu) + binding(.cpp) + setup.py   │
-│  ├── 十、操作 Tensor       data_ptr / AT_DISPATCH 多 dtype          │
-│  └── 十一、速查小结与结语                                            │
-└────────────────────────────────────────────────────────────────────┘
-```
 
 ---
 
@@ -213,34 +181,7 @@ After:  1 2 3 4 5 6 7 8 9 10
 
 前面 `<<<1, 10>>>` 里的第二个参数其实不只是一个整数——它的完整类型是 `dim3`，一个含 x/y/z 三个维度的结构体。相应地，`threadIdx` 也有 `.x`、`.y`、`.z` 三个分量。也就是说，**一个 block 内的线程可以按一维、二维甚至三维网格来编号**：
 
-```text
-【图 1】Thread Block 的三种形态
-
-  1D block（如 dim3(6)）           每个线程一个 threadIdx.x
-  ┌───┬───┬───┬───┬───┬───┐
-  │ 0 │ 1 │ 2 │ 3 │ 4 │ 5 │ ──▶ threadIdx.x = 0..5
-  └───┴───┴───┴───┴───┴───┘
-
-  2D block（如 dim3(4, 3)）        每个线程一对 (x, y)
-        x=0   x=1   x=2   x=3
-      ┌─────┬─────┬─────┬─────┐
-  y=0 │(0,0)│(1,0)│(2,0)│(3,0)│
-      ├─────┼─────┼─────┼─────┤
-  y=1 │(0,1)│(1,1)│(2,1)│(3,1)│
-      ├─────┼─────┼─────┼─────┤
-  y=2 │(0,2)│(1,2)│(2,2)│(3,2)│
-      └─────┴─────┴─────┴─────┘
-
-  3D block（如 dim3(4, 3, 2)）     再叠一层 z 维
-        z=1 ┌─────┬─────┬─────┬─────┐
-       ┌────┴┬────┴┬────┴┬────┴┐    │
-   z=0 │(0,0)│(1,0)│(2,0)│(3,0)│    │
-       ├─────┼─────┼─────┼─────┤    │
-       │(0,1)│(1,1)│(2,1)│(3,1)│    │
-       ├─────┼─────┼─────┼─────┤────┘
-       │(0,2)│(1,2)│(2,2)│(3,2)│
-       └─────┴─────┴─────┴─────┘
-```
+{{< figure src="/images/posts/cuda-basics/thread-blocks.png" width="95%" align="center" caption="图 1：Thread Block 的三种形态——1D/2D/3D 只是线程编号方式上的便利，不改变硬件执行" >}}
 
 需要强调：多维只是**编号上的便利**，不改变硬件执行方式。它存在的意义是让处理图像、矩阵这类天然多维的数据时，索引计算更直观。
 
@@ -339,26 +280,7 @@ Block 3, Thread 1, running on SM 6
 
 同一 block 的两个线程总是报出同一个 SM 编号，而 4 个 block 被摊到了 4 个不同的 SM 上：
 
-```text
-【图 2】Block 到 SM 的分配
-
-   软件侧（Grid）                     硬件侧（GPU）
-  ┌──────────────────┐
-  │ Block 0          │ ───────────▶ ┌──────────┐
-  │  [T0] [T1]       │              │   SM 0   │
-  ├──────────────────┤              ├──────────┤
-  │ Block 1          │ ───────────▶ │   SM 2   │
-  │  [T0] [T1]       │              ├──────────┤
-  ├──────────────────┤              │   SM 4   │
-  │ Block 2          │ ───────────▶ │          │
-  │  [T0] [T1]       │              ├──────────┤
-  ├──────────────────┤              │   SM 6   │
-  │ Block 3          │ ───────────▶ │          │
-  │  [T0] [T1]       │              └──────────┘
-  └──────────────────┘
-   规则：一个 Block 的全部线程 ── 必在同一个 SM
-         不同 Block ──────────── 可在不同 SM
-```
+{{< figure src="/images/posts/cuda-basics/block-sm-mapping.png" width="85%" align="center" caption="图 2：Block 到 SM 的分配——同一 Block 的全部线程必落在同一个 SM，不同 Block 可被分派到不同 SM" >}}
 
 ### 5.2 Warp：32 个线程一组
 
@@ -398,34 +320,7 @@ warp 由谁来调度？每个 SM 内有若干个 **Warp Scheduler（线程束调
 
 把 SM 的内部结构画出来（按 A100 白皮书逻辑简化重绘）：
 
-```text
-【图 3】SM 内部结构简图（A100，逻辑示意）
-
-  ┌─────────────────────────────────────────────────────────┐
-  │                        SM (×108)                        │
-  │  ┌────────────┬────────────┬────────────┬────────────┐  │
-  │  │  Warp      │  Warp      │  Warp      │  Warp      │  │
-  │  │ Scheduler 0│ Scheduler 1│ Scheduler 2│ Scheduler 3│  │
-  │  │ Dispatch   │ Dispatch   │ Dispatch   │ Dispatch   │  │
-  │  │  Unit      │  Unit      │  Unit      │  Unit      │  │
-  │  └─────┬──────┴─────┬──────┴─────┬──────┴─────┬──────┘  │
-  │        ▼            ▼            ▼            ▼         │
-  │  ┌─────────────────────────────────────────────────┐    │
-  │  │            Register File（寄存器文件）           │    │
-  │  └─────────────────────┬───────────────────────────┘    │
-  │                        ▼                                │
-  │  ┌──────────┬──────────┬──────────────┬────────────┐    │
-  │  │  FP32    │  INT32   │ Tensor Core  │  LD/ST 等  │    │
-  │  │ 计算单元 │ 计算单元  │              │            │    │
-  │  └──────────┴──────────┴──────────────┴────────────┘    │
-  │                        ▼                                │
-  │  ┌─────────────────────────────────────────────────┐    │
-  │  │        L1 Data Cache / Shared Memory（同址）      │    │
-  │  └─────────────────────────────────────────────────┘    │
-  └─────────────────────────────────────────────────────────┘
-   每周期：4 个调度器各自从就绪 warp 中选指令 ──▶ 发射到计算单元
-   warp 停摆（等内存 / 等同步）时 ──▶ 调度器切换到其他 warp
-```
+{{< figure src="/images/posts/cuda-basics/sm-architecture.png" width="90%" align="center" caption="图 3：SM 内部结构简图（A100，逻辑示意）——每周期 4 个 Warp Scheduler 各自从就绪 warp 中选指令发射到计算单元；warp 停摆（等内存/等同步）时调度器切换到其他 warp" >}}
 
 至此，软件抽象与硬件的映射关系齐了：**Thread 由 kernel 代码定义 → 32 个 Thread 编成 Warp 被调度 → 若干 Warp 组成 Block 落在一个 SM 上 → 全部 Block 组成 Grid 铺满整块 GPU**。
 
@@ -439,28 +334,7 @@ warp 由谁来调度？每个 SM 内有若干个 **Warp Scheduler（线程束调
 2. **Shared Memory（共享内存）**：**同一 block 内**的线程共享，速度接近 L1 缓存。
 3. **Local Memory 与 Registers（本地内存与寄存器）**：单线程私有；寄存器最快，local memory 名字里带"local"但物理上其实很慢（后面细说）。
 
-```text
-【图 4】CUDA 逻辑内存层级：作用域 vs 速度
-
-   作用域大 ▲ 速度慢
-            │
-  ┌─────────┴──────────────────────────────────────┐
-  │ Global Memory        所有 Block 的所有线程可见   │
-  │ （cudaMalloc 分配，容量 = 显存，~数百周期延迟）    │
-  └─────────┬──────────────────────────────────────┘
-            │
-  ┌─────────┴──────────────────────────────────────┐
-  │ Shared Memory        仅本 Block 内线程可见       │
-  │ （__shared__ 声明，物理上与 L1 同址，~几十周期）  │
-  └─────────┬──────────────────────────────────────┘
-            │
-  ┌─────────┴──────────────────────────────────────┐
-  │ Registers / Local    仅本线程可见                │
-  │ （寄存器 ~1 周期最快；Local 实际落在显存、很慢）   │
-  └────────────────────────────────────────────────┘
-            │
-   作用域小 ▼ 速度快（Local 除外，注意这个陷阱）
-```
+{{< figure src="/images/posts/cuda-basics/memory-hierarchy.png" width="95%" align="center" caption="图 4：CUDA 三类逻辑内存的作用域与速度——Global 全局可见但最慢，Shared 仅 Block 内共享，Registers 线程私有最快；注意 Local 名字带 local 但物理上落在显存、很慢" >}}
 
 这个层级和第一部分的执行层级严格对应：**线程私有寄存器 ↔ Thread，Shared Memory ↔ Block（因为 block 独占一个 SM），Global Memory ↔ Grid**。
 
@@ -504,46 +378,11 @@ __global__ void dot_product(float* a, float* b, float* c, int size) {
 - **L1 向 L2 只发了 4 次 sector 读**：32 次请求里只有 4 次真正 miss——每个 sector 第一次被碰到时 miss 一次，之后同 sector 的读全部 L1 命中。
 - **L2 从显存读了 4 个 sector、Hit Rate 33.33%**：L2 收到 L1 的 4 次 miss 请求；由于"一次取 2 个 sector"的预取，第 1 次请求实际搬回 2 个 sector，于是第 2 次请求直接命中，a、b 两个数组各贡献 1 miss + 1 hit。但 profiler 统计的分母还包括预取本身产生的访问，最终 6 次访问中 2 次命中 = 33.33%。
 
-```text
-【图 5】dot_product 的内存请求流（Nsight 数据流逻辑重绘）
-
-  ┌────────────────┐
-  │  dot_product   │  单线程循环 16 轮，每轮读 a[i]、b[i]
-  │    Kernel      │
-  └───────┬────────┘
-          │ 32 次读请求（16×2）
-          ▼
-  ┌────────────────┐
-  │    L1 Cache    │  28 次命中
-  │   (SM 私有)    │
-  └───────┬────────┘
-          │ 4 次 sector 请求（4 次 miss）
-          ▼
-  ┌────────────────┐
-  │    L2 Cache    │  Hit Rate 33.33%（2 hit / 6 访问）
-  │   (全卡共享)   │
-  └───────┬────────┘
-          │ 读 4 sector = 128 字节（每次成对取 64B）
-          ▼
-  ┌────────────────┐
-  │ Device Memory  │  a、b 两数组共 128B，恰好 4 sector
-  └────────────────┘
-```
+{{< figure src="/images/posts/cuda-basics/global-memory-dataflow.png" width="80%" align="center" caption="图 5：dot_product 的内存请求流（按 Nsight Compute 数据逻辑重绘）——32 次读请求经 L1（仅 4 次 miss）到 L2（命中率 33.33%），最终从显存搬回 4 个 sector 共 128 字节" >}}
 
 数组与 sector 的对应关系：
 
-```text
-【图 6】float[16] 如何切成 sector
-
-  一个 float = 4B；一个 sector = 32B = 8 个 float
-  float[16] = 64B = 2 个 sector
-
-  数组 a：
-  ┌─── sector 0 (32B) ────────────┬─── sector 1 (32B) ────────────┐
-  │ a[0] a[1] a[2] ... a[6] a[7] │ a[8] a[9] a[10] ... a[15]     │
-  └───────────────────────────────┴───────────────────────────────┘
-  读 a[0] 时：整个 sector 0 被搬进缓存 ──▶ a[1..7] 的后续读直接命中
-```
+{{< figure src="/images/posts/cuda-basics/sector-layout.png" width="95%" align="center" caption="图 6：float[16] 如何切成 sector——一个 sector 为 32B 即 8 个 float；读 a[0] 时整个 sector 0 被搬进缓存，a[1..7] 的后续读直接命中；a、b 两个数组共 4 个 sector" >}}
 
 这个小实验给出的直觉非常值钱：**访问模式的局部性直接决定缓存效率**。相邻线程读相邻地址（合并访存，coalesced access）时，一个 sector 服务一整组线程；跳着读则每次都触发新的 sector 搬运，带宽瞬间被浪费掉数倍。
 
@@ -804,34 +643,7 @@ example_kernels.roll_call()
 
 三层调用关系一图看懂：
 
-```text
-【图 7】Python → binding.cpp → .cu 的三层桥接
-
-  Python 层
-  ┌─────────────────────────────────────────────┐
-  │ import example_kernels                      │
-  │ example_kernels.roll_call()                 │
-  └──────────────────────┬──────────────────────┘
-                         │ pybind11 生成的绑定
-                         ▼
-  C++ 绑定层（roll_call_binding.cpp，g++ 编译）
-  ┌─────────────────────────────────────────────┐
-  │ PYBIND11_MODULE(TORCH_EXTENSION_NAME, m)    │
-  │   m.def("roll_call", &roll_call_binding)    │
-  │ roll_call_binding() ──▶ roll_call_launcher()│ ←── 仅前向声明
-  └──────────────────────┬──────────────────────┘
-                         │ 链接期解析符号
-                         ▼
-  CUDA 层（roll_call.cu，nvcc 编译）
-  ┌─────────────────────────────────────────────┐
-  │ roll_call_launcher()                        │
-  │   └─▶ roll_call_kernel<<<1, 5>>>()   [GPU]  │
-  │       cudaDeviceSynchronize()               │
-  └─────────────────────────────────────────────┘
-          ▲
-          └── setup.py 用 CUDAExtension 把两个文件编译链接成
-              同一个 Python 扩展模块 example_kernels
-```
+{{< figure src="/images/posts/cuda-basics/pybind11-call-chain.png" width="95%" align="center" caption="图 7：Python → binding.cpp → .cu 的三层桥接——pybind11 生成 Python 到 C++ 的绑定，launcher 符号在链接期解析；setup.py 用 CUDAExtension 把两个文件编译链接成同一个扩展模块 example_kernels" >}}
 
 ### 10.2 在 C++ 里操作 PyTorch Tensor
 

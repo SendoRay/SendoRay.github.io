@@ -1,11 +1,11 @@
 ---
-title: "Delta Weight Sync：当 RL 权重同步从硬件问题变成软件问题（编译）"
+title: "Delta Weight Sync：当 RL 权重同步从硬件问题变成软件问题"
 date: '2026-08-14'
 tags:
 - RL
 - LLM
 - Infra
-- WeightSync
+
 
 draft: false
 math: true
@@ -16,7 +16,7 @@ ShowBreadCrumbs: true
 ShowPostNavLinks: true
 ---
 
-> **出处声明**：本文为编译笔记，基于 Changyi Yang 的原文《[Tech] Delta Weight Sync》（[https://changyi.fun/zh/posts/delta-weight-sync/](https://changyi.fun/zh/posts/delta-weight-sync/)）整理改写而成。文中示意图按原图逻辑用 ASCII 重绘，所有技术观点与实现细节的版权归原作者所有。本文只是笔者消化后的重新组织，强烈建议读者移步阅读原文。
+
 
 **TL;DR**：在 RL post-training 的解耦架构里，训练器（trainer）每一步都要把最新权重同步给推理引擎（rollout engine），这一直被当成一个"带宽问题"——要靠 NCCL、靠 RDMA、靠更粗的管子。但一个朴素的观察改变了整个故事：在典型的 RL 学习率下，把 Adam 更新量 cast 回 BF16 之后，**超过 99% 的权重元素逐字节完全没有变化**。既然如此，只传真正变了的那 1%~3%（即 delta），通信量直接降低约两个数量级；而且接收端的重建是**无损、bit-identical** 的——不是近似，不是压缩后的"差不多"。于是权重同步从"必须上 RDMA 的硬件问题"，变成了"如何高效编码稀疏 delta 的软件问题"。
 
@@ -226,33 +226,7 @@ diff 出的新值通过一条 side-stream 异步 D2H 回写到 pinned 快照—�
 
 #### 4.1.5 发送端流水线全景图
 
-```text
-                      发送端流水线（仅 PP-source rank 执行）
-
- ┌───────────────────────┐
- │  GPU: 当前权重 W_t     │────────────┐
- └───────────────────────┘            │  bytewise diff
-                                      │  current.view(int_dtype) !=
- ┌───────────────────────┐            │  snapshot.view(int_dtype)
- │  CPU pinned 全量快照   │────────────┤  （约 1~3% 元素命中）
- │  （h2d_stream 预取     │            ▼
- │   下一 chunk）         │   ┌─────────────────────────────────┐
- └───────────────────────┘   │ Encode: __positions__+__values__ │
-        ▲                    │  · indices     int32   4B/nnz   │
-        │ d2h_stream 回写     │  · deltas      uint16  ~2B/nnz  │
-        │ 变化的新值           │  · deltas_zstd 再压 zstd L1     │
-        │ =「下一步的          └───────────────┬─────────────────┘
-        │   diff 基准」                        │ 按 buffer size 攒桶
-        │                     ┌───────────────┴───────────────┐
-        │                     ▼                               ▼
-        │        ┌─────────────────────────┐   ┌─────────────────────────┐
-        │        │ NCCL broadcast          │   │ disk: safetensors       │
-        │        │ positions H2D 后        │   │ values D2H，后台线程     │
-        │        │ 与 values 一起广播       │   │ 编码+zstd+fsync+原子改名 │
-        │        └─────────────────────────┘   └─────────────────────────┘
-        │
-        └────────────（side-stream，与下一 chunk 的 diff 重叠）
-```
+{{< figure src="/images/posts/delta-weight-sync/sender-pipeline.png" width="95%" align="center" caption="发送端流水线全景（仅 PP-source rank 执行）——GPU 当前权重与 CPU pinned 快照做逐字节 diff（约 1~3% 元素命中），编码攒桶后分走 NCCL 广播与磁盘 safetensors 两路；变化的新值经 d2h_stream（side-stream）回写快照，作为下一步的 diff 基准" >}}
 
 ### 4.2 接收端：NaN-masked overwrite
 
@@ -365,49 +339,7 @@ def is_model_weight(t):
 
 #### 4.2.9 接收端 apply 流程全景图
 
-```text
-                      接收端 apply 流程（SGLang 内）
-
-  NCCL 入口                          Disk 入口
-  RPC 拿 DeltaSpec → 预分配          线程池并发读文件 → zstd 解压
-  buffer → broadcast                 → parse safetensors header
-        └──────────────┬──────────────────┘
-                       ▼
-        ┌───────────────────────────────┐
-        │ 稀疏 payload 上 GPU            │
-        │ __positions__ + __values__    │
-        └───────────────┬───────────────┘
-                        ▼
-        ┌───────────────────────────────┐
-        │ checksum 校验                  │
-        │ torch.hash_tensor XOR-reduce  │──✗ 不一致 → raise
-        └───────────────┬───────────────┘
-                        ▼
-        ┌───────────────────────────────┐
-        │ 逐参数 decode / densify        │
-        │ NaN buffer → unpack 位置       │
-        │ → cumsum → index_copy_        │
-        │ （wire 稀疏、apply 不稀疏）      │
-        └───────────────┬───────────────┘
-                        ▼
-   ┌─ ─ ─ _delta_apply_context ─ ─ ─ ─ ─ ─ ─ ─ ┐
-   │    ┌───────────────────────────────┐
-   │    │ 原生 model.load_weights(chunk)│      │
-   │    │ （512MB 一批，逻辑零修改）       │
-   │    └───────────────┬───────────────┘      │
-   │                    ▼
-   │    ┌───────────────────────────────┐      │
-   │    │ monkeypatch:                  │
-   │    │  copy_ → NaN-masked 覆盖       │      │
-   │    │  dst[~isnan(src)]=src[...]    │
-   │    │  fill_(NaN) → no-op           │      │
-   │    └───────────────┬───────────────┘      │
-   └─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ┼ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ┘
-                        ▼
-        ┌───────────────────────────────┐
-        │ GPU 权重就地更新（bit-identical）│
-        └───────────────────────────────┘
-```
+{{< figure src="/images/posts/delta-weight-sync/receiver-apply.png" width="90%" align="center" caption="接收端 apply 流程全景（SGLang 内）——NCCL 与磁盘两个入口汇入同一份稀疏 payload，经 checksum 校验、逐参数 densify 后，在 _delta_apply_context 内复用原生 model.load_weights，由 monkeypatch 的 copy_/fill_ 完成 NaN 掩码覆盖，最终 GPU 权重就地更新且 bit-identical" >}}
 
 ### 4.3 侵入性评估
 
